@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 
-from app.api import barberos
+from app.api import barberos, servicios
 
 app = FastAPI(
     title="Barber Pro App",
@@ -11,6 +11,7 @@ app = FastAPI(
 )
 
 app.include_router(barberos.router)
+app.include_router(servicios.router)
 
 
 @app.get("/")
