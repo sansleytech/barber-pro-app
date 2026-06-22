@@ -1,13 +1,12 @@
 """Modelo para representar un barbero en la base de datos."""
 
-from email.mime import base
-
 from sqlalchemy import Column, Integer, String, Date, Boolean
 from app.db.session import Base
 
+
 class Barbero(Base):
     __tablename__ = "barberos"
-    
+
     id_barbero = Column(Integer, primary_key=True, autoincrement=True)
     nombre = Column(String(50), nullable=False)
     apellido = Column(String(50), nullable=False)
