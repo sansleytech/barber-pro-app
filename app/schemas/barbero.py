@@ -24,3 +24,12 @@ class BarberoRespuesta(BarberoBase):
     activo: bool
 
     model_config = ConfigDict(from_attributes=True)
+    
+class BarberoActualizar(BaseModel):
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    fecha_nacimiento: Optional[date] = None
+    telefono: Optional[str] = None
+    email: Optional[str] = None
+    especialidad: Optional[str] = None
+    fecha_ingreso: Optional[date] = None
