@@ -6,28 +6,19 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
 from app.models.turno import EstadoTurnoEnum
-
-
-# --- Lo que el cliente envía para crear un turno ---
 class TurnoCrear(BaseModel):
     id_cliente: int
     id_barbero: int
     fecha: date
     hora_inicio: time
-    ids_servicios: list[int]  # lista de ids de los servicios elegidos
-
-
-# --- Para mostrar un servicio dentro de la respuesta del turno ---
+    ids_servicios: list[int]
+    observaciones: Optional[str] = None
 class ServicioEnTurno(BaseModel):
     id_servicio: int
-    nombre: str
-    precio: Decimal
-    duracion_minutos: int
+    precio_aplicado: Decimal
+    duracion_aplicada: int
 
     model_config = ConfigDict(from_attributes=True)
-
-
-# --- Lo que la API devuelve al consultar un turno ---
 class TurnoRespuesta(BaseModel):
     id_turno: int
     id_cliente: int
@@ -37,12 +28,17 @@ class TurnoRespuesta(BaseModel):
     hora_fin: time
     precio_total: Decimal
     estado: EstadoTurnoEnum
+    metodo_pago: Optional[str] = None
+    observaciones: Optional[str] = None
+    propina: Optional[Decimal] = None
+    id_barbero_propina: Optional[int] = None
     fecha_creacion: datetime
     servicios: list[ServicioEnTurno]
 
     model_config = ConfigDict(from_attributes=True)
-
-
-# --- Para cambiar el estado de un turno ---
 class TurnoCambiarEstado(BaseModel):
     estado: EstadoTurnoEnum
+class TurnoRegistrarPago(BaseModel):
+    metodo_pago: str
+    propina: Optional[Decimal] = 0
+    id_barbero_propina: Optional[int] = None

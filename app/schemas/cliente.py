@@ -15,6 +15,10 @@ class ClienteBase(BaseModel):
     genero: Optional[GeneroEnum] = None
     email: Optional[str] = None
     telefono: str
+    tipo_documento: Optional[str] = None
+    documento: Optional[str] = None
+    direccion: Optional[str] = None
+    foto: Optional[str] = None
     notas: Optional[str] = None
 
 
@@ -30,6 +34,10 @@ class ClienteActualizar(BaseModel):
     genero: Optional[GeneroEnum] = None
     email: Optional[str] = None
     telefono: Optional[str] = None
+    tipo_documento: Optional[str] = None
+    documento: Optional[str] = None
+    direccion: Optional[str] = None
+    foto: Optional[str] = None
     notas: Optional[str] = None
     fecha_ultima_visita: Optional[date] = None
     es_vip: Optional[bool] = None
