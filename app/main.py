@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import (
+    registro,
     barberos, servicios, clientes, turnos, usuarios,
     auth, horarios, configuracion, categorias, proveedores,
     productos, compras, ventas, caja, valoraciones,
@@ -30,6 +31,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(registro.router)
 app.include_router(auth.router)
 app.include_router(barberos.router)
 app.include_router(servicios.router)
