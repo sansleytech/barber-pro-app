@@ -1,4 +1,4 @@
-"""Dependencias de autenticación: obtener el usuario actual desde el token."""
+"""Dependencias de autenticación y multi-tenancy."""
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -8,7 +8,6 @@ from app.db.session import get_db
 from app.models.usuario import Usuario, RolEnum
 from app.core.security import decodificar_token
 
-# Le dice a FastAPI dónde se obtiene el token (el endpoint de login)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
@@ -38,10 +37,31 @@ def get_usuario_actual(
     return usuario
 
 
+def get_barberia_actual(
+    usuario: Usuario = Depends(get_usuario_actual),
+) -> int:
+    """Devuelve el id_barberia del usuario logueado (para filtrar datos).
+
+    Esta es la pieza clave del multi-tenant: cada endpoint la usa para
+    asegurarse de operar SOLO sobre los datos de la barbería del usuario.
+    """
+    # El super_admin del SaaS no pertenece a una barbería específica
+    if usuario.super_admin:
+        # Si es super admin, no tiene una barbería propia (gestiona todas)
+        # Para endpoints normales esto requeriría especificar la barbería aparte.
+        return usuario.id_barberia  # puede ser None para super_admin global
+
+    if usuario.id_barberia is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="El usuario no está asociado a ninguna barbería",
+        )
+    return usuario.id_barberia
+
+
 def requiere_rol(*roles_permitidos: RolEnum):
     """Crea una dependencia que exige que el usuario tenga uno de los roles dados."""
     def verificador(usuario: Usuario = Depends(get_usuario_actual)) -> Usuario:
-        # El super_admin puede todo
         if usuario.super_admin:
             return usuario
         if usuario.rol not in roles_permitidos:

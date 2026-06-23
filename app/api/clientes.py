@@ -1,34 +1,53 @@
-"""Endpoints (rutas) del recurso Cliente."""
+"""Endpoints (rutas) del recurso Cliente — multi-tenant."""
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.cliente import Cliente
+from app.models.usuario import Usuario, RolEnum
 from app.schemas.cliente import ClienteCrear, ClienteRespuesta, ClienteActualizar
+from app.core.dependencies import get_barberia_actual, requiere_rol
 
 router = APIRouter(prefix="/clientes", tags=["Clientes"])
 
 
 @router.get("", response_model=list[ClienteRespuesta])
-def listar_clientes(db: Session = Depends(get_db)):
-    """Devuelve todos los clientes activos."""
-    return db.query(Cliente).filter(Cliente.activo == True).all()
+def listar_clientes(
+    db: Session = Depends(get_db),
+    id_barberia: int = Depends(get_barberia_actual),
+):
+    """Devuelve los clientes activos DE LA BARBERÍA del usuario."""
+    return db.query(Cliente).filter(
+        Cliente.activo == True,
+        Cliente.id_barberia == id_barberia,
+    ).all()
 
 
 @router.get("/{id_cliente}", response_model=ClienteRespuesta)
-def obtener_cliente(id_cliente: int, db: Session = Depends(get_db)):
-    """Devuelve un cliente por su id."""
-    cliente = db.query(Cliente).filter(Cliente.id_cliente == id_cliente).first()
+def obtener_cliente(
+    id_cliente: int,
+    db: Session = Depends(get_db),
+    id_barberia: int = Depends(get_barberia_actual),
+):
+    """Devuelve un cliente por su id (solo si es de la barbería del usuario)."""
+    cliente = db.query(Cliente).filter(
+        Cliente.id_cliente == id_cliente,
+        Cliente.id_barberia == id_barberia,
+    ).first()
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     return cliente
 
 
 @router.post("", response_model=ClienteRespuesta, status_code=201)
-def crear_cliente(cliente: ClienteCrear, db: Session = Depends(get_db)):
-    """Crea un nuevo cliente."""
-    nuevo = Cliente(**cliente.model_dump())
+def crear_cliente(
+    cliente: ClienteCrear,
+    db: Session = Depends(get_db),
+    id_barberia: int = Depends(get_barberia_actual),
+):
+    """Crea un nuevo cliente EN LA BARBERÍA del usuario."""
+    nuevo = Cliente(**cliente.model_dump(), id_barberia=id_barberia)
     db.add(nuevo)
     db.commit()
     db.refresh(nuevo)
@@ -40,14 +59,17 @@ def actualizar_cliente(
     id_cliente: int,
     datos: ClienteActualizar,
     db: Session = Depends(get_db),
+    id_barberia: int = Depends(get_barberia_actual),
 ):
-    """Actualiza los datos de un cliente existente."""
-    cliente = db.query(Cliente).filter(Cliente.id_cliente == id_cliente).first()
+    """Actualiza un cliente (solo si es de la barbería del usuario)."""
+    cliente = db.query(Cliente).filter(
+        Cliente.id_cliente == id_cliente,
+        Cliente.id_barberia == id_barberia,
+    ).first()
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
 
-    datos_a_cambiar = datos.model_dump(exclude_unset=True)
-    for campo, valor in datos_a_cambiar.items():
+    for campo, valor in datos.model_dump(exclude_unset=True).items():
         setattr(cliente, campo, valor)
 
     db.commit()
@@ -56,9 +78,16 @@ def actualizar_cliente(
 
 
 @router.delete("/{id_cliente}", status_code=200)
-def desactivar_cliente(id_cliente: int, db: Session = Depends(get_db)):
-    """Desactiva un cliente (borrado lógico)."""
-    cliente = db.query(Cliente).filter(Cliente.id_cliente == id_cliente).first()
+def desactivar_cliente(
+    id_cliente: int,
+    db: Session = Depends(get_db),
+    id_barberia: int = Depends(get_barberia_actual),
+):
+    """Desactiva un cliente (solo si es de la barbería del usuario)."""
+    cliente = db.query(Cliente).filter(
+        Cliente.id_cliente == id_cliente,
+        Cliente.id_barberia == id_barberia,
+    ).first()
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
 
