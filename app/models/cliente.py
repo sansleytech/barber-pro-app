@@ -3,6 +3,7 @@
 import enum
 from sqlalchemy import Column, Integer, String, Text, Date, DateTime, Boolean, Enum, func
 from app.db.session import Base
+from app.models.mixins import TenantMixin
 
 
 class GeneroEnum(str, enum.Enum):
@@ -13,7 +14,7 @@ class GeneroEnum(str, enum.Enum):
     prefiero_no_decir = "prefiero_no_decir"
 
 
-class Cliente(Base):
+class Cliente(Base, TenantMixin):
     __tablename__ = "clientes"
     id_cliente = Column(Integer, primary_key=True, autoincrement=True)
     primer_nombre = Column(String(50), nullable=False)

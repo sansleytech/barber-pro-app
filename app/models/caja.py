@@ -3,9 +3,10 @@
 from sqlalchemy import Column, Integer, String, Text, DECIMAL, Date, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from app.models.mixins import TenantMixin
 
 
-class GastoCaja(Base):
+class GastoCaja(Base, TenantMixin):
     __tablename__ = "gastos_caja"
 
     id_gasto = Column(Integer, primary_key=True, autoincrement=True)
@@ -18,7 +19,7 @@ class GastoCaja(Base):
     fecha_creacion = Column(DateTime, server_default=func.now())
 
 
-class DescuentoCaja(Base):
+class DescuentoCaja(Base, TenantMixin):
     __tablename__ = "descuentos_caja"
 
     id_descuento = Column(Integer, primary_key=True, autoincrement=True)
@@ -30,7 +31,7 @@ class DescuentoCaja(Base):
     fecha_creacion = Column(DateTime, server_default=func.now())
 
 
-class CierreCaja(Base):
+class CierreCaja(Base, TenantMixin):
     __tablename__ = "cierres_caja"
 
     id_cierre = Column(Integer, primary_key=True, autoincrement=True)

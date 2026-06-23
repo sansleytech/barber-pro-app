@@ -3,9 +3,10 @@
 from sqlalchemy import Column, Integer, String, Text, DECIMAL, Boolean, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from app.models.mixins import TenantMixin
 
 
-class Producto(Base):
+class Producto(Base, TenantMixin):
     __tablename__ = "productos"
 
     id_producto = Column(Integer, primary_key=True, autoincrement=True)

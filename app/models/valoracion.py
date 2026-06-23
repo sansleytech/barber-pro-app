@@ -3,9 +3,10 @@
 from sqlalchemy import Column, Integer, Text, DateTime, ForeignKey, func, CheckConstraint
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from app.models.mixins import TenantMixin
 
 
-class Valoracion(Base):
+class Valoracion(Base, TenantMixin):
     __tablename__ = "valoraciones_turnos"
 
     id_valoracion = Column(Integer, primary_key=True, autoincrement=True)

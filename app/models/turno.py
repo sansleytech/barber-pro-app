@@ -6,6 +6,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from app.models.mixins import TenantMixin
 
 
 class EstadoTurnoEnum(str, enum.Enum):
@@ -18,7 +19,7 @@ class EstadoTurnoEnum(str, enum.Enum):
     no_asistio = "no_asistio"
 
 
-class Turno(Base):
+class Turno(Base, TenantMixin):
     __tablename__ = "turnos"
 
     id_turno = Column(Integer, primary_key=True, autoincrement=True)
@@ -40,7 +41,7 @@ class Turno(Base):
     servicios = relationship("TurnoServicio", back_populates="turno", cascade="all, delete-orphan")
 
 
-class TurnoServicio(Base):
+class TurnoServicio(Base, TenantMixin):
     """Tabla intermedia: conecta un turno con cada servicio que incluye."""
     __tablename__ = "turno_servicios"
 

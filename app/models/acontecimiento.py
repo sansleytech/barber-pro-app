@@ -4,6 +4,7 @@ import enum
 from sqlalchemy import Column, Integer, String, Text, Date, Boolean, DateTime, ForeignKey, Enum, func
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from app.models.mixins import TenantMixin
 
 
 class TipoAcontecimientoEnum(str, enum.Enum):
@@ -13,7 +14,7 @@ class TipoAcontecimientoEnum(str, enum.Enum):
     otro = "otro"
 
 
-class Acontecimiento(Base):
+class Acontecimiento(Base, TenantMixin):
     __tablename__ = "acontecimientos"
 
     id_acontecimiento = Column(Integer, primary_key=True, autoincrement=True)

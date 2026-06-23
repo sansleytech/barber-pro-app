@@ -2,9 +2,10 @@
 
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, func
 from app.db.session import Base
+from app.models.mixins import TenantMixin
 
 
-class Proveedor(Base):
+class Proveedor(Base, TenantMixin):
     __tablename__ = "proveedores"
 
     id_proveedor = Column(Integer, primary_key=True, autoincrement=True)

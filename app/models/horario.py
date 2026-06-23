@@ -3,9 +3,10 @@
 from sqlalchemy import Column, Integer, Time, ForeignKey
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from app.models.mixins import TenantMixin
 
 
-class HorarioBarbero(Base):
+class HorarioBarbero(Base, TenantMixin):
     __tablename__ = "horarios_barbero"
 
     id_horario = Column(Integer, primary_key=True, autoincrement=True)

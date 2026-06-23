@@ -4,6 +4,7 @@ import enum
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, func
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from app.models.mixins import TenantMixin
 
 
 class TipoQREnum(str, enum.Enum):
@@ -12,7 +13,7 @@ class TipoQREnum(str, enum.Enum):
     personalizado = "personalizado"
 
 
-class CodigoQR(Base):
+class CodigoQR(Base, TenantMixin):
     __tablename__ = "codigos_qr"
 
     id_qr = Column(Integer, primary_key=True, autoincrement=True)

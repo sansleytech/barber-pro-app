@@ -2,9 +2,10 @@
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
 from app.db.session import Base
+from app.models.mixins import TenantMixin
 
 
-class CategoriaProducto(Base):
+class CategoriaProducto(Base, TenantMixin):
     __tablename__ = "categorias_productos"
 
     id_categoria = Column(Integer, primary_key=True, autoincrement=True)

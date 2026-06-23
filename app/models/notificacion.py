@@ -4,6 +4,7 @@ import enum
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, Enum, func
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from app.models.mixins import TenantMixin
 
 
 class TipoNotificacionEnum(str, enum.Enum):
@@ -12,7 +13,7 @@ class TipoNotificacionEnum(str, enum.Enum):
     recordatorio = "recordatorio"
 
 
-class Notificacion(Base):
+class Notificacion(Base, TenantMixin):
     __tablename__ = "notificaciones"
 
     id_notificacion = Column(Integer, primary_key=True, autoincrement=True)

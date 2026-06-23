@@ -2,9 +2,10 @@
 
 from sqlalchemy import Column, String, Text, DateTime, func
 from app.db.session import Base
+from app.models.mixins import TenantMixin
 
 
-class Configuracion(Base):
+class Configuracion(Base, TenantMixin):
     __tablename__ = "configuracion"
 
     clave = Column(String(100), primary_key=True)

@@ -3,9 +3,10 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from app.models.mixins import TenantMixin
 
 
-class CarouselSlide(Base):
+class CarouselSlide(Base, TenantMixin):
     __tablename__ = "carousel_slides"
 
     id_slide = Column(Integer, primary_key=True, autoincrement=True)
@@ -19,7 +20,7 @@ class CarouselSlide(Base):
     fecha_creacion = Column(DateTime, server_default=func.now())
 
 
-class FotoCliente(Base):
+class FotoCliente(Base, TenantMixin):
     __tablename__ = "fotos_cliente"
 
     id_foto = Column(Integer, primary_key=True, autoincrement=True)

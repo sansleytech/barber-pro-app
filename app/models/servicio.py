@@ -2,9 +2,10 @@
 
 from sqlalchemy import Column, Integer, String, Text, DECIMAL, Boolean
 from app.db.session import Base
+from app.models.mixins import TenantMixin
 
 
-class Servicio(Base):
+class Servicio(Base, TenantMixin):
     __tablename__ = "servicios"
 
     id_servicio = Column(Integer, primary_key=True, autoincrement=True)
