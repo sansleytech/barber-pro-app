@@ -22,6 +22,8 @@ from app.models.producto import Producto
 from app.models.compra import CompraProducto
 from app.models.venta import VentaProducto, VentaCarrito
 from app.models.caja import GastoCaja, DescuentoCaja, CierreCaja
+from app.models.valoracion import Valoracion
+from app.models.notificacion import Notificacion
 
 # Configuración estándar de Alembic
 config = context.config
