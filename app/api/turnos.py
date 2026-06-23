@@ -1,4 +1,4 @@
-"""Endpoints del recurso Turno, con la lógica de negocio."""
+"""Endpoints del recurso Turno, con la lógica de negocio — multi-tenant."""
 
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,22 +9,34 @@ from app.models.turno import Turno, TurnoServicio, EstadoTurnoEnum
 from app.models.cliente import Cliente
 from app.models.barbero import Barbero
 from app.models.servicio import Servicio
+from app.models.usuario import Usuario, RolEnum
 from app.schemas.turno import TurnoCrear, TurnoRespuesta, TurnoCambiarEstado
+from app.core.dependencies import get_barberia_actual, requiere_rol
 
 router = APIRouter(prefix="/turnos", tags=["Turnos"])
 
 
 @router.post("", response_model=TurnoRespuesta, status_code=201)
-def crear_turno(datos: TurnoCrear, db: Session = Depends(get_db)):
+def crear_turno(
+    datos: TurnoCrear,
+    db: Session = Depends(get_db),
+    id_barberia: int = Depends(get_barberia_actual),
+):
     """Crea un turno validando cliente, barbero, servicios y disponibilidad."""
 
-    # 1. Validar que el cliente exista
-    cliente = db.query(Cliente).filter(Cliente.id_cliente == datos.id_cliente).first()
+    # 1. Validar que el cliente exista EN ESTA BARBERÍA
+    cliente = db.query(Cliente).filter(
+        Cliente.id_cliente == datos.id_cliente,
+        Cliente.id_barberia == id_barberia,
+    ).first()
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
 
-    # 2. Validar que el barbero exista
-    barbero = db.query(Barbero).filter(Barbero.id_barbero == datos.id_barbero).first()
+    # 2. Validar que el barbero exista EN ESTA BARBERÍA
+    barbero = db.query(Barbero).filter(
+        Barbero.id_barbero == datos.id_barbero,
+        Barbero.id_barberia == id_barberia,
+    ).first()
     if barbero is None:
         raise HTTPException(status_code=404, detail="Barbero no encontrado")
 
@@ -32,10 +44,11 @@ def crear_turno(datos: TurnoCrear, db: Session = Depends(get_db)):
     if not datos.ids_servicios:
         raise HTTPException(status_code=400, detail="Debe elegir al menos un servicio")
 
-    # 4. Buscar los servicios y validar que todos existan
-    servicios = (
-        db.query(Servicio).filter(Servicio.id_servicio.in_(datos.ids_servicios)).all()
-    )
+    # 4. Buscar los servicios DE ESTA BARBERÍA y validar que todos existan
+    servicios = db.query(Servicio).filter(
+        Servicio.id_servicio.in_(datos.ids_servicios),
+        Servicio.id_barberia == id_barberia,
+    ).all()
     if len(servicios) != len(set(datos.ids_servicios)):
         raise HTTPException(status_code=404, detail="Uno o más servicios no existen")
 
@@ -48,10 +61,11 @@ def crear_turno(datos: TurnoCrear, db: Session = Depends(get_db)):
     fin_dt = inicio_dt + timedelta(minutes=duracion_total)
     hora_fin = fin_dt.time()
 
-    # 7. Verificar que el barbero no tenga otro turno que se cruce
+    # 7. Verificar que el barbero no tenga otro turno que se cruce (en esta barbería)
     solapado = (
         db.query(Turno)
         .filter(
+            Turno.id_barberia == id_barberia,
             Turno.id_barbero == datos.id_barbero,
             Turno.fecha == datos.fecha,
             Turno.estado != EstadoTurnoEnum.cancelado,
@@ -66,7 +80,7 @@ def crear_turno(datos: TurnoCrear, db: Session = Depends(get_db)):
             detail="El barbero ya tiene un turno en ese horario",
         )
 
-    # 8. Crear el turno
+    # 8. Crear el turno (con su barbería)
     nuevo = Turno(
         id_cliente=datos.id_cliente,
         id_barbero=datos.id_barbero,
@@ -75,13 +89,18 @@ def crear_turno(datos: TurnoCrear, db: Session = Depends(get_db)):
         hora_fin=hora_fin,
         precio_total=precio_total,
         estado=EstadoTurnoEnum.pendiente,
+        id_barberia=id_barberia,
     )
     db.add(nuevo)
-    db.flush()  # genera el id_turno sin cerrar la transacción
+    db.flush()
 
     # 9. Asociar los servicios al turno
     for s in servicios:
-        db.add(TurnoServicio(id_turno=nuevo.id_turno, id_servicio=s.id_servicio))
+        db.add(TurnoServicio(
+            id_turno=nuevo.id_turno,
+            id_servicio=s.id_servicio,
+            id_barberia=id_barberia,
+        ))
 
     db.commit()
     db.refresh(nuevo)
@@ -89,15 +108,25 @@ def crear_turno(datos: TurnoCrear, db: Session = Depends(get_db)):
 
 
 @router.get("", response_model=list[TurnoRespuesta])
-def listar_turnos(db: Session = Depends(get_db)):
-    """Devuelve todos los turnos."""
-    return db.query(Turno).all()
+def listar_turnos(
+    db: Session = Depends(get_db),
+    id_barberia: int = Depends(get_barberia_actual),
+):
+    """Devuelve los turnos de la barbería."""
+    return db.query(Turno).filter(Turno.id_barberia == id_barberia).all()
 
 
 @router.get("/{id_turno}", response_model=TurnoRespuesta)
-def obtener_turno(id_turno: int, db: Session = Depends(get_db)):
-    """Devuelve un turno por su id."""
-    turno = db.query(Turno).filter(Turno.id_turno == id_turno).first()
+def obtener_turno(
+    id_turno: int,
+    db: Session = Depends(get_db),
+    id_barberia: int = Depends(get_barberia_actual),
+):
+    """Devuelve un turno por su id (solo de la barbería del usuario)."""
+    turno = db.query(Turno).filter(
+        Turno.id_turno == id_turno,
+        Turno.id_barberia == id_barberia,
+    ).first()
     if turno is None:
         raise HTTPException(status_code=404, detail="Turno no encontrado")
     return turno
@@ -108,9 +137,13 @@ def cambiar_estado_turno(
     id_turno: int,
     datos: TurnoCambiarEstado,
     db: Session = Depends(get_db),
+    id_barberia: int = Depends(get_barberia_actual),
 ):
-    """Cambia el estado de un turno (confirmar, completar, marcar no asistió, etc.)."""
-    turno = db.query(Turno).filter(Turno.id_turno == id_turno).first()
+    """Cambia el estado de un turno (de la barbería del usuario)."""
+    turno = db.query(Turno).filter(
+        Turno.id_turno == id_turno,
+        Turno.id_barberia == id_barberia,
+    ).first()
     if turno is None:
         raise HTTPException(status_code=404, detail="Turno no encontrado")
 
@@ -121,9 +154,16 @@ def cambiar_estado_turno(
 
 
 @router.delete("/{id_turno}", status_code=200)
-def cancelar_turno(id_turno: int, db: Session = Depends(get_db)):
-    """Cancela un turno (cambia su estado a cancelado)."""
-    turno = db.query(Turno).filter(Turno.id_turno == id_turno).first()
+def cancelar_turno(
+    id_turno: int,
+    db: Session = Depends(get_db),
+    id_barberia: int = Depends(get_barberia_actual),
+):
+    """Cancela un turno (de la barbería del usuario)."""
+    turno = db.query(Turno).filter(
+        Turno.id_turno == id_turno,
+        Turno.id_barberia == id_barberia,
+    ).first()
     if turno is None:
         raise HTTPException(status_code=404, detail="Turno no encontrado")
 
