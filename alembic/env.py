@@ -14,6 +14,7 @@ from app.models.servicio import Servicio
 from app.models.cliente import Cliente
 from app.models.turno import Turno, TurnoServicio
 from app.models.usuario import Usuario
+from app.models.horario import HorarioBarbero
 
 # Configuración estándar de Alembic
 config = context.config
