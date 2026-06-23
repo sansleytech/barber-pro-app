@@ -24,6 +24,7 @@ from app.models.venta import VentaProducto, VentaCarrito
 from app.models.caja import GastoCaja, DescuentoCaja, CierreCaja
 from app.models.valoracion import Valoracion
 from app.models.notificacion import Notificacion
+from app.models.contenido import CarouselSlide, FotoCliente
 
 # Configuración estándar de Alembic
 config = context.config
