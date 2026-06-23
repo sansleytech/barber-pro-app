@@ -4,7 +4,7 @@ from fastapi import FastAPI
 
 from app.api import (
     barberos, servicios, clientes, turnos, usuarios,
-    auth, horarios, configuracion, categorias, proveedores, productos, compras, ventas, caja, valoraciones, notificaciones, contenido
+    auth, horarios, configuracion, categorias, proveedores, productos, compras, ventas, caja, valoraciones, notificaciones, contenido, acontecimientos, codigos_qr
 )
 
 app = FastAPI(
@@ -30,6 +30,8 @@ app.include_router(caja.router)
 app.include_router(valoraciones.router)
 app.include_router(notificaciones.router)
 app.include_router(contenido.router)
+app.include_router(acontecimientos.router)
+app.include_router(codigos_qr.router)
 
 
 @app.get("/")
