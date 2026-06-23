@@ -13,6 +13,7 @@ from app.models.barbero import Barbero
 from app.models.servicio import Servicio
 from app.models.cliente import Cliente
 from app.models.turno import Turno, TurnoServicio
+from app.models.usuario import Usuario
 
 # Configuración estándar de Alembic
 config = context.config
