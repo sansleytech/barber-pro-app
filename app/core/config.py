@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     DB_HOST: str
     DB_PORT: int = 3306
     DB_NAME: str
+    SECRET_KEY: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
 
     @property
     def DATABASE_URL(self) -> str:
