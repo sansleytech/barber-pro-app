@@ -27,6 +27,8 @@ from app.models.notificacion import Notificacion
 from app.models.contenido import CarouselSlide, FotoCliente
 from app.models.acontecimiento import Acontecimiento
 from app.models.codigo_qr import CodigoQR
+from app.models.barberia import Barberia
+from app.models.plan import Plan, Suscripcion
 
 # Configuración estándar de Alembic
 config = context.config
