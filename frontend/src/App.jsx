@@ -1,122 +1,107 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
+import Layout from "./components/Layout";
+import Login from "./pages/Login";
+import Clientes from "./pages/Clientes";
+import ClienteForm from "./pages/ClienteForm";
+import Barberos from "./pages/Barberos";
+import BarberoForm from "./pages/barberoForm";
+import Servicios from "./pages/Servicios";
+import ServicioForm from "./pages/ServicioForm";
+import Productos from "./pages/Productos";
+import ProductoForm from "./pages/ProductoForm";
+import Categorias from "./pages/Categorias";
+import CategoriaForm from "./pages/CategoriaForm";
+import Proveedores from "./pages/Proveedores";
+import ProveedorForm from "./pages/ProveedorForm";
+import Usuarios from "./pages/Usuarios";
+import UsuarioForm from "./pages/UsuarioForm";
 
-function App() {
-  const [count, setCount] = useState(0)
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+function RutaProtegida({ children }) {
+  const { usuario } = useAuth();
+  return usuario ? children : <Navigate to="/login" replace />;
 }
 
-export default App
+// Placeholder temporal para las vistas que todavía no construimos
+function EnConstruccion({ nombre }) {
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-white mb-2">{nombre}</h1>
+      <p className="text-gray-400">Esta sección está en construcción.</p>
+    </div>
+  );
+}
+
+function Dashboard() {
+  const { usuario } = useAuth();
+  return (
+    <div>
+      <h1 className="text-3xl font-bold text-white mb-1">Dashboard</h1>
+      <p className="text-gray-400 mb-6">Resumen general de tu negocio</p>
+      <div className="bg-ink-card border border-line rounded-2xl p-8">
+        <h2 className="text-xl text-white mb-2">
+          ¡Bienvenido, {usuario?.nombre_usuario}!
+        </h2>
+        <p className="text-gray-400">
+          Barbería: {usuario?.barberia} · Rol: {usuario?.rol}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+
+        <Route
+          element={
+            <RutaProtegida>
+              <Layout />
+            </RutaProtegida>
+          }
+        >
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/turnos" element={<EnConstruccion nombre="Turnos" />} />
+          <Route path="/clientes" element={<Clientes />} />
+          <Route path="/clientes/nuevo" element={<ClienteForm />} />
+          <Route path="/clientes/editar/:id" element={<ClienteForm />} />
+          <Route path="/barberos" element={<Barberos />} />
+          <Route path="/barberos/nuevo" element={<BarberoForm />} />
+          <Route path="/barberos/editar/:id" element={<BarberoForm />} />
+          <Route path="/servicios" element={<Servicios />} />
+          <Route path="/servicios/nuevo" element={<ServicioForm />} />
+          <Route path="/servicios/editar/:id" element={<ServicioForm />} />
+          <Route path="/horarios" element={<EnConstruccion nombre="Horarios" />} />
+          <Route path="/usuarios" element={<Usuarios />} />
+          <Route path="/usuarios/nuevo" element={<UsuarioForm />} />
+          <Route path="/usuarios/editar/:id" element={<UsuarioForm />} />
+          <Route path="/valoraciones" element={<EnConstruccion nombre="Valoraciones" />} />
+          <Route path="/acontecimientos" element={<EnConstruccion nombre="Acontecimientos" />} />
+          <Route path="/notificaciones" element={<EnConstruccion nombre="Notificaciones" />} />
+          <Route path="/productos" element={<Productos />} />
+          <Route path="/productos/nuevo" element={<ProductoForm />} />
+          <Route path="/productos/editar/:id" element={<ProductoForm />} />
+          <Route path="/proveedores" element={<Proveedores />} />
+          <Route path="/proveedores/nuevo" element={<ProveedorForm />} />
+          <Route path="/proveedores/editar/:id" element={<ProveedorForm />} />
+          <Route path="/categorias" element={<Categorias />} />
+          <Route path="/categorias/nuevo" element={<CategoriaForm />} />
+          <Route path="/categorias/editar/:id" element={<CategoriaForm />} />
+          <Route path="/compras" element={<EnConstruccion nombre="Compras" />} />
+          <Route path="/ventas" element={<EnConstruccion nombre="Ventas" />} />
+          <Route path="/caja" element={<EnConstruccion nombre="Caja" />} />
+          <Route path="/configuracion" element={<EnConstruccion nombre="Configuración" />} />
+          <Route path="/qr" element={<EnConstruccion nombre="Códigos QR" />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;

@@ -17,15 +17,12 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS: permitir que el frontend (React/Vite) consuma la API
-origenes_permitidos = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-
+# CORS: permitir que el frontend (React/Vite) consuma la API.
+# Usamos un patrón (regex) que acepta localhost y 127.0.0.1 en cualquier puerto,
+# así no importa si Vite cambia de 5173 a 5174, etc.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origenes_permitidos,
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
