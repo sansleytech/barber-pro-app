@@ -16,6 +16,8 @@ import Proveedores from "./pages/Proveedores";
 import ProveedorForm from "./pages/ProveedorForm";
 import Usuarios from "./pages/Usuarios";
 import UsuarioForm from "./pages/UsuarioForm";
+import Turnos from "./pages/Turnos";
+import TurnoForm from "./pages/TurnoForm";
 
 
 function RutaProtegida({ children }) {
@@ -65,7 +67,9 @@ function App() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/turnos" element={<EnConstruccion nombre="Turnos" />} />
+          <Route path="/turnos" element={<Turnos />} />
+          <Route path="/turnos/nuevo" element={<TurnoForm />} />
+          <Route path="/turnos/editar/:id" element={<TurnoForm />} />
           <Route path="/clientes" element={<Clientes />} />
           <Route path="/clientes/nuevo" element={<ClienteForm />} />
           <Route path="/clientes/editar/:id" element={<ClienteForm />} />

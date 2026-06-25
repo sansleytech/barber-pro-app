@@ -4,7 +4,6 @@ from datetime import date, time, datetime
 from decimal import Decimal
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
-
 from app.models.turno import EstadoTurnoEnum
 class TurnoCrear(BaseModel):
     id_cliente: int
@@ -42,3 +41,11 @@ class TurnoRegistrarPago(BaseModel):
     metodo_pago: str
     propina: Optional[Decimal] = 0
     id_barbero_propina: Optional[int] = None
+
+class TurnoActualizar(BaseModel):
+    id_cliente: Optional[int] = None
+    id_barbero: Optional[int] = None
+    fecha: Optional[date] = None
+    hora_inicio: Optional[time] = None
+    ids_servicios: Optional[list[int]] = None
+    observaciones: Optional[str] = None
