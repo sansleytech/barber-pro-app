@@ -18,6 +18,8 @@ import Usuarios from "./pages/Usuarios";
 import UsuarioForm from "./pages/UsuarioForm";
 import Turnos from "./pages/Turnos";
 import TurnoForm from "./pages/TurnoForm";
+import VentaNueva from "./pages/VentaNueva";
+import Ventas from "./pages/Ventas";
 
 
 function RutaProtegida({ children }) {
@@ -96,7 +98,8 @@ function App() {
           <Route path="/categorias/nuevo" element={<CategoriaForm />} />
           <Route path="/categorias/editar/:id" element={<CategoriaForm />} />
           <Route path="/compras" element={<EnConstruccion nombre="Compras" />} />
-          <Route path="/ventas" element={<EnConstruccion nombre="Ventas" />} />
+          <Route path="/ventas" element={<Ventas />} />
+          <Route path="/ventas/nueva" element={<VentaNueva />} />
           <Route path="/caja" element={<EnConstruccion nombre="Caja" />} />
           <Route path="/configuracion" element={<EnConstruccion nombre="Configuración" />} />
           <Route path="/qr" element={<EnConstruccion nombre="Códigos QR" />} />

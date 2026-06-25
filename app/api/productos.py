@@ -1,4 +1,4 @@
-"""Endpoints de productos."""
+"""Endpoints de productos — multi-tenant."""
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -17,8 +17,11 @@ def listar_productos(
     db: Session = Depends(get_db),
     usuario_actual: Usuario = Depends(requiere_rol(RolEnum.administrador, RolEnum.recepcionista)),
 ):
-    """Lista productos activos. Admin y recepcionista."""
-    return db.query(Producto).filter(Producto.activo == True).all()
+    """Lista productos activos de la barbería. Admin y recepcionista."""
+    return db.query(Producto).filter(
+        Producto.activo == True,
+        Producto.id_barberia == usuario_actual.id_barberia,
+    ).all()
 
 
 @router.get("/stock-bajo", response_model=list[ProductoRespuesta])
@@ -29,6 +32,7 @@ def productos_stock_bajo(
     """Lista productos con stock en o bajo el mínimo (alertas)."""
     return db.query(Producto).filter(
         Producto.activo == True,
+        Producto.id_barberia == usuario_actual.id_barberia,
         Producto.stock_actual <= Producto.stock_minimo,
     ).all()
 
@@ -39,8 +43,11 @@ def obtener_producto(
     db: Session = Depends(get_db),
     usuario_actual: Usuario = Depends(requiere_rol(RolEnum.administrador, RolEnum.recepcionista)),
 ):
-    """Devuelve un producto por su id."""
-    prod = db.query(Producto).filter(Producto.id_producto == id_producto).first()
+    """Devuelve un producto por su id (solo de la barbería del usuario)."""
+    prod = db.query(Producto).filter(
+        Producto.id_producto == id_producto,
+        Producto.id_barberia == usuario_actual.id_barberia,
+    ).first()
     if prod is None:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return prod
@@ -53,7 +60,7 @@ def crear_producto(
     usuario_actual: Usuario = Depends(requiere_rol(RolEnum.administrador)),
 ):
     """Crea un producto. Solo administradores."""
-    nuevo = Producto(**datos.model_dump())
+    nuevo = Producto(**datos.model_dump(), id_barberia=usuario_actual.id_barberia)
     db.add(nuevo)
     db.commit()
     db.refresh(nuevo)
@@ -68,7 +75,10 @@ def actualizar_producto(
     usuario_actual: Usuario = Depends(requiere_rol(RolEnum.administrador)),
 ):
     """Actualiza un producto. Solo administradores."""
-    prod = db.query(Producto).filter(Producto.id_producto == id_producto).first()
+    prod = db.query(Producto).filter(
+        Producto.id_producto == id_producto,
+        Producto.id_barberia == usuario_actual.id_barberia,
+    ).first()
     if prod is None:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     for campo, valor in datos.model_dump(exclude_unset=True).items():
@@ -85,7 +95,10 @@ def desactivar_producto(
     usuario_actual: Usuario = Depends(requiere_rol(RolEnum.administrador)),
 ):
     """Desactiva un producto. Solo administradores."""
-    prod = db.query(Producto).filter(Producto.id_producto == id_producto).first()
+    prod = db.query(Producto).filter(
+        Producto.id_producto == id_producto,
+        Producto.id_barberia == usuario_actual.id_barberia,
+    ).first()
     if prod is None:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     prod.activo = False
