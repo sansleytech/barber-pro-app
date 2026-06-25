@@ -20,6 +20,7 @@ import Turnos from "./pages/Turnos";
 import TurnoForm from "./pages/TurnoForm";
 import VentaNueva from "./pages/VentaNueva";
 import Ventas from "./pages/Ventas";
+import Horarios from "./pages/Horarios";
 
 
 function RutaProtegida({ children }) {
@@ -81,7 +82,7 @@ function App() {
           <Route path="/servicios" element={<Servicios />} />
           <Route path="/servicios/nuevo" element={<ServicioForm />} />
           <Route path="/servicios/editar/:id" element={<ServicioForm />} />
-          <Route path="/horarios" element={<EnConstruccion nombre="Horarios" />} />
+          <Route path="/horarios" element={<Horarios />}></Route>
           <Route path="/usuarios" element={<Usuarios />} />
           <Route path="/usuarios/nuevo" element={<UsuarioForm />} />
           <Route path="/usuarios/editar/:id" element={<UsuarioForm />} />

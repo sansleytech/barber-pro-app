@@ -24,6 +24,11 @@ function TurnoForm() {
     const [cargando, setCargando] = useState(false);
     const [error, setError] = useState("");
 
+    // Disponibilidad
+    const [disponibles, setDisponibles] = useState([]);
+    const [cargandoDisp, setCargandoDisp] = useState(false);
+    const [mensajeDisp, setMensajeDisp] = useState("");
+
     useEffect(() => {
         const cargar = async () => {
             try {
@@ -82,7 +87,6 @@ function TurnoForm() {
     const formatoPrecio = (valor) =>
         new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(valor || 0);
 
-    // Convierte "14:30" a "2:30 p.m."
     const a12h = (hora24) => {
         if (!hora24) return "";
         const [h, m] = hora24.split(":").map(Number);
@@ -91,12 +95,44 @@ function TurnoForm() {
         return `${h12}:${String(m).padStart(2, "0")} ${sufijo}`;
     };
 
+    // Consultar disponibilidad cuando hay barbero + fecha + duración
+    useEffect(() => {
+        if (!form.id_barbero || !form.fecha || duracionTotal === 0) {
+            setDisponibles([]);
+            setMensajeDisp("");
+            return;
+        }
+        const consultar = async () => {
+            setCargandoDisp(true);
+            setMensajeDisp("");
+            try {
+                const res = await api.get(`/horarios/disponibilidad/${form.id_barbero}`, {
+                    params: { fecha: form.fecha, duracion_minutos: duracionTotal },
+                });
+                setDisponibles(res.data.disponibles || []);
+                if (res.data.mensaje) setMensajeDisp(res.data.mensaje);
+                else if ((res.data.disponibles || []).length === 0)
+                    setMensajeDisp("No hay horarios libres ese día");
+            } catch {
+                setDisponibles([]);
+                setMensajeDisp("No se pudo consultar la disponibilidad");
+            } finally {
+                setCargandoDisp(false);
+            }
+        };
+        consultar();
+    }, [form.id_barbero, form.fecha, duracionTotal]);
+
     const enviar = async (e) => {
         e.preventDefault();
         setError("");
 
         if (form.ids_servicios.length === 0) {
             setError("Elegí al menos un servicio");
+            return;
+        }
+        if (!form.hora_inicio) {
+            setError("Elegí un horario disponible");
             return;
         }
 
@@ -177,7 +213,10 @@ function TurnoForm() {
                         <label className="block text-sm text-gray-300 mb-1.5">Barbero *</label>
                         <select
                             value={form.id_barbero}
-                            onChange={(e) => cambiar("id_barbero", e.target.value)}
+                            onChange={(e) => {
+                                cambiar("id_barbero", e.target.value);
+                                cambiar("hora_inicio", ""); // resetea hora al cambiar barbero
+                            }}
                             className={inputClase}
                             required
                         >
@@ -195,24 +234,13 @@ function TurnoForm() {
                         <input
                             type="date"
                             value={form.fecha}
-                            onChange={(e) => cambiar("fecha", e.target.value)}
+                            onChange={(e) => {
+                                cambiar("fecha", e.target.value);
+                                cambiar("hora_inicio", ""); // resetea hora al cambiar fecha
+                            }}
                             className={inputClase}
                             required
                         />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm text-gray-300 mb-1.5">Hora de inicio *</label>
-                        <input
-                            type="time"
-                            value={form.hora_inicio}
-                            onChange={(e) => cambiar("hora_inicio", e.target.value)}
-                            className={inputClase}
-                            required
-                        />
-                        {form.hora_inicio && (
-                            <p className="text-xs text-gold mt-1">{a12h(form.hora_inicio)}</p>
-                        )}
                     </div>
                 </div>
 
@@ -289,6 +317,39 @@ function TurnoForm() {
                                     </button>
                                 ))
                             )}
+                        </div>
+                    )}
+                </div>
+
+                {/* Horarios disponibles */}
+                <div>
+                    <label className="block text-sm text-gray-300 mb-2">Horario disponible *</label>
+                    {duracionTotal === 0 ? (
+                        <p className="text-sm text-gray-500">Elegí servicios para ver los horarios libres</p>
+                    ) : !form.id_barbero || !form.fecha ? (
+                        <p className="text-sm text-gray-500">Elegí barbero y fecha para ver los horarios libres</p>
+                    ) : cargandoDisp ? (
+                        <p className="text-sm text-gray-500">Buscando horarios disponibles...</p>
+                    ) : disponibles.length === 0 ? (
+                        <p className="text-sm text-amber-400">{mensajeDisp || "No hay horarios disponibles"}</p>
+                    ) : (
+                        <div className="flex flex-wrap gap-2">
+                            {disponibles.map((hora) => {
+                                const elegido = form.hora_inicio === hora;
+                                return (
+                                    <button
+                                        key={hora}
+                                        type="button"
+                                        onClick={() => cambiar("hora_inicio", hora)}
+                                        className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${elegido
+                                                ? "bg-gold text-ink border-gold"
+                                                : "bg-ink border-line text-gray-300 hover:border-gold/50"
+                                            }`}
+                                    >
+                                        {a12h(hora)}
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
