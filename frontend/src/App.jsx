@@ -23,6 +23,7 @@ import Ventas from "./pages/Ventas";
 import Horarios from "./pages/Horarios";
 import Compras from "./pages/Compras"
 import Caja from "./pages/Caja"
+import Valoraciones from "./pages/Valoraciones";
 
 
 function RutaProtegida({ children }) {
@@ -88,7 +89,7 @@ function App() {
           <Route path="/usuarios" element={<Usuarios />} />
           <Route path="/usuarios/nuevo" element={<UsuarioForm />} />
           <Route path="/usuarios/editar/:id" element={<UsuarioForm />} />
-          <Route path="/valoraciones" element={<EnConstruccion nombre="Valoraciones" />} />
+          <Route path="/valoraciones" element={<Valoraciones />} />
           <Route path="/acontecimientos" element={<EnConstruccion nombre="Acontecimientos" />} />
           <Route path="/notificaciones" element={<EnConstruccion nombre="Notificaciones" />} />
           <Route path="/productos" element={<Productos />} />
