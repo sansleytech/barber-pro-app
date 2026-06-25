@@ -22,6 +22,7 @@ import VentaNueva from "./pages/VentaNueva";
 import Ventas from "./pages/Ventas";
 import Horarios from "./pages/Horarios";
 import Compras from "./pages/Compras"
+import Caja from "./pages/Caja"
 
 
 function RutaProtegida({ children }) {
@@ -102,7 +103,7 @@ function App() {
           <Route path="/compras" element={<Compras />} />
           <Route path="/ventas" element={<Ventas />} />
           <Route path="/ventas/nueva" element={<VentaNueva />} />
-          <Route path="/caja" element={<EnConstruccion nombre="Caja" />} />
+          <Route path="/caja" element={<Caja />} />
           <Route path="/configuracion" element={<EnConstruccion nombre="Configuración" />} />
           <Route path="/qr" element={<EnConstruccion nombre="Códigos QR" />} />
         </Route>

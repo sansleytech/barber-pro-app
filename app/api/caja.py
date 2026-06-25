@@ -13,6 +13,7 @@ from app.schemas.caja import (
     CierreCrear, CierreRespuesta,
 )
 from app.core.dependencies import requiere_rol
+from datetime import date
 
 router = APIRouter(prefix="/caja", tags=["Caja"])
 
@@ -53,7 +54,6 @@ def crear_descuento(datos: DescuentoCrear, db: Session = Depends(get_db),
                          id_barberia=usuario.id_barberia)
     db.add(desc); db.commit(); db.refresh(desc)
     return desc
-
 
 # ---------- CIERRE ----------
 @router.get("/cierres", response_model=list[CierreRespuesta])
@@ -122,3 +122,17 @@ def crear_cierre(datos: CierreCrear, db: Session = Depends(get_db),
     )
     db.add(cierre); db.commit(); db.refresh(cierre)
     return cierre
+
+@router.delete("/cierres/{fecha}", status_code=200)
+def reabrir_cierre(fecha: date, db: Session = Depends(get_db),
+                   usuario: Usuario = Depends(requiere_rol(RolEnum.administrador))):
+    """Reabre la caja de una fecha: elimina su cierre. Solo admin."""
+    cierre = db.query(CierreCaja).filter(
+        CierreCaja.fecha == fecha,
+        CierreCaja.id_barberia == usuario.id_barberia,
+    ).first()
+    if cierre is None:
+        raise HTTPException(status_code=404, detail="No hay un cierre para esa fecha")
+    db.delete(cierre)
+    db.commit()
+    return {"mensaje": f"Caja del {fecha} reabierta"}
