@@ -24,6 +24,7 @@ import Horarios from "./pages/Horarios";
 import Compras from "./pages/Compras"
 import Caja from "./pages/Caja"
 import Valoraciones from "./pages/Valoraciones";
+import Acontecimientos from "./pages/Acontecimientos";
 
 
 function RutaProtegida({ children }) {
@@ -90,8 +91,7 @@ function App() {
           <Route path="/usuarios/nuevo" element={<UsuarioForm />} />
           <Route path="/usuarios/editar/:id" element={<UsuarioForm />} />
           <Route path="/valoraciones" element={<Valoraciones />} />
-          <Route path="/acontecimientos" element={<EnConstruccion nombre="Acontecimientos" />} />
-          <Route path="/notificaciones" element={<EnConstruccion nombre="Notificaciones" />} />
+          <Route path="/acontecimientos" element={<Acontecimientos />} />
           <Route path="/productos" element={<Productos />} />
           <Route path="/productos/nuevo" element={<ProductoForm />} />
           <Route path="/productos/editar/:id" element={<ProductoForm />} />
