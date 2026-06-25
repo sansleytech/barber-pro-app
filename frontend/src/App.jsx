@@ -26,7 +26,18 @@ import Caja from "./pages/Caja"
 import Valoraciones from "./pages/Valoraciones";
 import Acontecimientos from "./pages/Acontecimientos";
 import Notificaciones from "./pages/Notificaciones";
+import { puedeAcceder } from "./config/permiso";
 
+
+// Protege una ruta según el rol. Si no tiene permiso, lo manda al dashboard.
+function RutaPorRol({ ruta, children }) {
+  const { usuario } = useAuth();
+  if (!usuario) return <Navigate to="/login" replace />;
+  if (!puedeAcceder(ruta, usuario.rol)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return children;
+}
 
 function RutaProtegida({ children }) {
   const { usuario } = useAuth();
@@ -75,40 +86,40 @@ function App() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/turnos" element={<Turnos />} />
-          <Route path="/turnos/nuevo" element={<TurnoForm />} />
-          <Route path="/turnos/editar/:id" element={<TurnoForm />} />
-          <Route path="/clientes" element={<Clientes />} />
-          <Route path="/clientes/nuevo" element={<ClienteForm />} />
-          <Route path="/clientes/editar/:id" element={<ClienteForm />} />
-          <Route path="/barberos" element={<Barberos />} />
-          <Route path="/barberos/nuevo" element={<BarberoForm />} />
-          <Route path="/barberos/editar/:id" element={<BarberoForm />} />
-          <Route path="/servicios" element={<Servicios />} />
-          <Route path="/servicios/nuevo" element={<ServicioForm />} />
-          <Route path="/servicios/editar/:id" element={<ServicioForm />} />
-          <Route path="/horarios" element={<Horarios />}></Route>
-          <Route path="/usuarios" element={<Usuarios />} />
-          <Route path="/usuarios/nuevo" element={<UsuarioForm />} />
-          <Route path="/usuarios/editar/:id" element={<UsuarioForm />} />
-          <Route path="/valoraciones" element={<Valoraciones />} />
-          <Route path="/acontecimientos" element={<Acontecimientos />} />
-          <Route path="/productos" element={<Productos />} />
-          <Route path="/productos/nuevo" element={<ProductoForm />} />
-          <Route path="/productos/editar/:id" element={<ProductoForm />} />
-          <Route path="/proveedores" element={<Proveedores />} />
-          <Route path="/proveedores/nuevo" element={<ProveedorForm />} />
-          <Route path="/proveedores/editar/:id" element={<ProveedorForm />} />
-          <Route path="/categorias" element={<Categorias />} />
-          <Route path="/categorias/nuevo" element={<CategoriaForm />} />
-          <Route path="/categorias/editar/:id" element={<CategoriaForm />} />
-          <Route path="/notificaciones" element={<Notificaciones />} />
-          <Route path="/compras" element={<Compras />} />
-          <Route path="/ventas" element={<Ventas />} />
-          <Route path="/ventas/nueva" element={<VentaNueva />} />
-          <Route path="/caja" element={<Caja />} />
-          <Route path="/configuracion" element={<EnConstruccion nombre="Configuración" />} />
-          <Route path="/qr" element={<EnConstruccion nombre="Códigos QR" />} />
+          <Route path="/turnos" element={<RutaPorRol ruta="/turnos"><Turnos /></RutaPorRol>} />
+          <Route path="/turnos/nuevo" element={<RutaPorRol ruta="/turnos"><TurnoForm /></RutaPorRol>} />
+          <Route path="/turnos/editar/:id" element={<RutaPorRol ruta="/turnos"><TurnoForm /></RutaPorRol>} />
+          <Route path="/clientes" element={<RutaPorRol ruta="/clientes"><Clientes /></RutaPorRol>} />
+          <Route path="/clientes/nuevo" element={<RutaPorRol ruta="/clientes"><ClienteForm /></RutaPorRol>} />
+          <Route path="/clientes/editar/:id" element={<RutaPorRol ruta="/clientes"><ClienteForm /></RutaPorRol>} />
+          <Route path="/barberos" element={<RutaPorRol ruta="/barberos"><Barberos /></RutaPorRol>} />
+          <Route path="/barberos/nuevo" element={<RutaPorRol ruta="/barberos"><BarberoForm /></RutaPorRol>} />
+          <Route path="/barberos/editar/:id" element={<RutaPorRol ruta="/barberos"><BarberoForm /></RutaPorRol>} />
+          <Route path="/servicios" element={<RutaPorRol ruta="/servicios"><Servicios /></RutaPorRol>} />
+          <Route path="/servicios/nuevo" element={<RutaPorRol ruta="/servicios"><ServicioForm /></RutaPorRol>} />
+          <Route path="/servicios/editar/:id" element={<RutaPorRol ruta="/servicios"><ServicioForm /></RutaPorRol>} />
+          <Route path="/horarios" element={<RutaPorRol ruta="/horarios"><Horarios /></RutaPorRol>} />
+          <Route path="/usuarios" element={<RutaPorRol ruta="/usuarios"><Usuarios /></RutaPorRol>} />
+          <Route path="/usuarios/nuevo" element={<RutaPorRol ruta="/usuarios"><UsuarioForm /></RutaPorRol>} />
+          <Route path="/usuarios/editar/:id" element={<RutaPorRol ruta="/usuarios"><UsuarioForm /></RutaPorRol>} />
+          <Route path="/valoraciones" element={<RutaPorRol ruta="/valoraciones"><Valoraciones /></RutaPorRol>} />
+          <Route path="/acontecimientos" element={<RutaPorRol ruta="/acontecimientos"><Acontecimientos /></RutaPorRol>} />
+          <Route path="/notificaciones" element={<RutaPorRol ruta="/notificaciones"><Notificaciones /></RutaPorRol>} />
+          <Route path="/productos" element={<RutaPorRol ruta="/productos"><Productos /></RutaPorRol>} />
+          <Route path="/productos/nuevo" element={<RutaPorRol ruta="/productos"><ProductoForm /></RutaPorRol>} />
+          <Route path="/productos/editar/:id" element={<RutaPorRol ruta="/productos"><ProductoForm /></RutaPorRol>} />
+          <Route path="/proveedores" element={<RutaPorRol ruta="/proveedores"><Proveedores /></RutaPorRol>} />
+          <Route path="/proveedores/nuevo" element={<RutaPorRol ruta="/proveedores"><ProveedorForm /></RutaPorRol>} />
+          <Route path="/proveedores/editar/:id" element={<RutaPorRol ruta="/proveedores"><ProveedorForm /></RutaPorRol>} />
+          <Route path="/categorias" element={<RutaPorRol ruta="/categorias"><Categorias /></RutaPorRol>} />
+          <Route path="/categorias/nuevo" element={<RutaPorRol ruta="/categorias"><CategoriaForm /></RutaPorRol>} />
+          <Route path="/categorias/editar/:id" element={<RutaPorRol ruta="/categorias"><CategoriaForm /></RutaPorRol>} />
+          <Route path="/compras" element={<RutaPorRol ruta="/compras"><Compras /></RutaPorRol>} />
+          <Route path="/ventas" element={<RutaPorRol ruta="/ventas"><Ventas /></RutaPorRol>} />
+          <Route path="/ventas/nueva" element={<RutaPorRol ruta="/ventas"><VentaNueva /></RutaPorRol>} />
+          <Route path="/caja" element={<RutaPorRol ruta="/caja"><Caja /></RutaPorRol>} />
+          <Route path="/configuracion" element={<RutaPorRol ruta="/configuracion"><EnConstruccion nombre="Configuración" /></RutaPorRol>} />
+          <Route path="/qr" element={<RutaPorRol ruta="/qr"><EnConstruccion nombre="Códigos QR" /></RutaPorRol>} />
         </Route>
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
