@@ -25,6 +25,7 @@ import Compras from "./pages/Compras"
 import Caja from "./pages/Caja"
 import Valoraciones from "./pages/Valoraciones";
 import Acontecimientos from "./pages/Acontecimientos";
+import Notificaciones from "./pages/Notificaciones";
 
 
 function RutaProtegida({ children }) {
@@ -101,6 +102,7 @@ function App() {
           <Route path="/categorias" element={<Categorias />} />
           <Route path="/categorias/nuevo" element={<CategoriaForm />} />
           <Route path="/categorias/editar/:id" element={<CategoriaForm />} />
+          <Route path="/notificaciones" element={<Notificaciones />} />
           <Route path="/compras" element={<Compras />} />
           <Route path="/ventas" element={<Ventas />} />
           <Route path="/ventas/nueva" element={<VentaNueva />} />
