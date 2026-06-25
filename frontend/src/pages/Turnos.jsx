@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, Calendar, Clock, User, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Calendar, Clock, User, Pencil, Trash2, MessageCircle } from "lucide-react";
 import api from "../api/cliente";
 import Tabla from "../components/Tabla";
-
 function Turnos() {
     const [turnos, setTurnos] = useState([]);
     const [clientes, setClientes] = useState([]);
@@ -75,6 +74,31 @@ function Turnos() {
         } catch (err) {
             alert(err.response?.data?.detail || "No se pudo cancelar el turno");
         }
+    };
+
+    // Arma el link de WhatsApp con la confirmación del turno
+    const enviarWhatsApp = (t) => {
+        const cliente = clientes.find((x) => x.id_cliente === t.id_cliente);
+        if (!cliente || !cliente.telefono) {
+            alert("Este cliente no tiene teléfono cargado");
+            return;
+        }
+        let tel = String(cliente.telefono).replace(/\D/g, "");
+        if (tel.length === 10) tel = "57" + tel; // celular colombiano sin código
+
+        const barbero = nombreBarbero(t.id_barbero);
+        const serviciosTxt = nombresServicios(t.servicios);
+        const mensaje =
+            `Hola ${cliente.primer_nombre}, le confirmamos su turno en Barber Pro:\n\n` +
+            `📅 Fecha: ${t.fecha}\n` +
+            `🕐 Hora: ${formatoHora(t.hora_inicio)}\n` +
+            `💈 Barbero: ${barbero}\n` +
+            `✂️ Servicio: ${serviciosTxt}\n` +
+            `💵 Total: ${formatoPrecio(t.precio_total)}\n\n` +
+            `Lo esperamos. ¡Muchas gracias!`;
+
+        const url = `https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`;
+        window.open(url, "_blank");
     };
 
     const estiloEstado = (estado) => {
@@ -191,6 +215,13 @@ function Turnos() {
             alinear: "right",
             render: (t) => (
                 <div className="flex items-center justify-end gap-1.5">
+                    <button
+                        onClick={() => enviarWhatsApp(t)}
+                        className="p-2 text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                        title="Confirmar por WhatsApp"
+                    >
+                        <MessageCircle className="w-4 h-4" />
+                    </button>
                     <button
                         onClick={() => navigate(`/turnos/editar/${t.id_turno}`)}
                         className="p-2 text-gray-400 hover:text-gold hover:bg-gold/10 rounded-lg transition-colors"
