@@ -236,8 +236,8 @@ function VentaNueva() {
                                         onClick={() => agregar(p)}
                                         disabled={agotado || sinMas}
                                         className={`text-left bg-ink-card border rounded-xl p-3 transition-colors ${agotado || sinMas
-                                                ? "border-line opacity-40 cursor-not-allowed"
-                                                : "border-line hover:border-gold/50"
+                                            ? "border-line opacity-40 cursor-not-allowed"
+                                            : "border-line hover:border-gold/50"
                                             }`}
                                     >
                                         <div className="h-16 flex items-center justify-center mb-2 bg-ink rounded-lg">

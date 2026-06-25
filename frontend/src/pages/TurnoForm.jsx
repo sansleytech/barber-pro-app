@@ -342,8 +342,8 @@ function TurnoForm() {
                                         type="button"
                                         onClick={() => cambiar("hora_inicio", hora)}
                                         className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${elegido
-                                                ? "bg-gold text-ink border-gold"
-                                                : "bg-ink border-line text-gray-300 hover:border-gold/50"
+                                            ? "bg-gold text-ink border-gold"
+                                            : "bg-ink border-line text-gray-300 hover:border-gold/50"
                                             }`}
                                     >
                                         {a12h(hora)}

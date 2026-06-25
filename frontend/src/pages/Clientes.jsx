@@ -46,7 +46,7 @@ function Clientes() {
 
   // Definición de columnas para la tabla reutilizable
   const columnas = [
-   
+
     {
       campo: "documento",
       titulo: "Documento",
@@ -86,7 +86,7 @@ function Clientes() {
       oculta: "hidden lg:table-cell",
       render: (c) => c.genero || "—",
     },
-    
+
     {
       campo: "notas",
       titulo: "Notas",

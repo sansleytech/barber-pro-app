@@ -229,11 +229,10 @@ function Horarios() {
                                                 <button
                                                     onClick={() => guardarDia(h, dia.num)}
                                                     disabled={ocupado}
-                                                    className={`inline-flex items-center gap-1.5 text-sm font-semibold rounded-lg px-3 py-2 transition-colors disabled:opacity-50 ${
-                                                        recienGuardado
+                                                    className={`inline-flex items-center gap-1.5 text-sm font-semibold rounded-lg px-3 py-2 transition-colors disabled:opacity-50 ${recienGuardado
                                                             ? "bg-emerald-500/20 text-emerald-400"
                                                             : "bg-gold text-ink hover:bg-gold-soft"
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {recienGuardado ? (
                                                         <>

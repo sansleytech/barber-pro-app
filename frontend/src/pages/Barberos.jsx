@@ -17,10 +17,10 @@ const Barberos = () => {
         try {
             const respuesta = await api.get("/barberos");
             setBarberos(respuesta.data);
-        } 
+        }
         catch (err) {
             setError("No se pudieron cargar los barberos");
-        } 
+        }
         finally {
             setCargando(false);
         }

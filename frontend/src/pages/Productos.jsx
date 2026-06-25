@@ -320,8 +320,8 @@ function Productos() {
                 <button
                     onClick={() => setCatFiltro("todos")}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${catFiltro === "todos"
-                            ? "bg-gold text-ink"
-                            : "bg-ink-card border border-line text-gray-300 hover:text-white"
+                        ? "bg-gold text-ink"
+                        : "bg-ink-card border border-line text-gray-300 hover:text-white"
                         }`}
                 >
                     Todos
@@ -331,8 +331,8 @@ function Productos() {
                         key={c.id_categoria}
                         onClick={() => setCatFiltro(String(c.id_categoria))}
                         className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${catFiltro === String(c.id_categoria)
-                                ? "bg-gold text-ink"
-                                : "bg-ink-card border border-line text-gray-300 hover:text-white"
+                            ? "bg-gold text-ink"
+                            : "bg-ink-card border border-line text-gray-300 hover:text-white"
                             }`}
                     >
                         {c.nombre}
@@ -356,8 +356,8 @@ function Productos() {
                     <button
                         onClick={() => setVista("tabla")}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${vista === "tabla"
-                                ? "bg-gold text-ink"
-                                : "text-gray-400 hover:text-white"
+                            ? "bg-gold text-ink"
+                            : "text-gray-400 hover:text-white"
                             }`}
                     >
                         <List className="w-4 h-4" /> Lista
@@ -365,8 +365,8 @@ function Productos() {
                     <button
                         onClick={() => setVista("cards")}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${vista === "cards"
-                                ? "bg-gold text-ink"
-                                : "text-gray-400 hover:text-white"
+                            ? "bg-gold text-ink"
+                            : "text-gray-400 hover:text-white"
                             }`}
                     >
                         <LayoutGrid className="w-4 h-4" /> Cards
