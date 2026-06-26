@@ -28,6 +28,7 @@ import Acontecimientos from "./pages/Acontecimientos";
 import Notificaciones from "./pages/Notificaciones";
 import Dashboard from "./pages/Dashboard";
 import { puedeAcceder } from "./config/permiso";
+import Configuracion from "./pages/Configuracion";
 
 
 // Protege una ruta según el rol. Si no tiene permiso, lo manda al dashboard.
@@ -101,7 +102,7 @@ function App() {
           <Route path="/ventas" element={<RutaPorRol ruta="/ventas"><Ventas /></RutaPorRol>} />
           <Route path="/ventas/nueva" element={<RutaPorRol ruta="/ventas"><VentaNueva /></RutaPorRol>} />
           <Route path="/caja" element={<RutaPorRol ruta="/caja"><Caja /></RutaPorRol>} />
-          <Route path="/configuracion" element={<RutaPorRol ruta="/configuracion"><EnConstruccion nombre="Configuración" /></RutaPorRol>} />
+          <Route path="/configuracion" element={<RutaPorRol ruta="/configuracion"><Configuracion /></RutaPorRol>} />
           <Route path="/qr" element={<RutaPorRol ruta="/qr"><EnConstruccion nombre="Códigos QR" /></RutaPorRol>} />
         </Route>
 
