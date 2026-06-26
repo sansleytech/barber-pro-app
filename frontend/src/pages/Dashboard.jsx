@@ -22,8 +22,15 @@ import {
   XCircle,
   Award,
   Star,
+  Users,
+  Package,
+  Tags,
+  Truck,
+  ShieldCheck,
+  Briefcase,
 } from "lucide-react";
 import api from "../api/cliente";
+import { useAuth } from "../context/AuthContext";
 
 const COLORES_ESTADO = {
   pendiente: "#f59e0b",
@@ -45,11 +52,14 @@ const TEXTO_ESTADO = {
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
+  const esAdmin = usuario?.rol === "administrador" || usuario?.super_admin;
 
   const [resumen, setResumen] = useState(null);
   const [ingresosMes, setIngresosMes] = useState([]);
   const [barberos, setBarberos] = useState([]);
   const [estados, setEstados] = useState([]);
+  const [conteos, setConteos] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
@@ -58,16 +68,41 @@ function Dashboard() {
       setCargando(true);
       setError("");
       try {
-        const [resR, resI, resB, resE] = await Promise.all([
+        const [
+          resR,
+          resI,
+          resB,
+          resE,
+          resCl,
+          resPr,
+          resCa,
+          resPv,
+          resSv,
+          resUs,
+        ] = await Promise.all([
           api.get("/estadisticas/resumen"),
           api.get("/estadisticas/ingresos-mensuales?meses=6"),
           api.get("/estadisticas/barberos"),
           api.get("/estadisticas/turnos-estado"),
+          api.get("/clientes"),
+          api.get("/productos"),
+          api.get("/categorias"),
+          api.get("/proveedores"),
+          api.get("/servicios"),
+          api.get("/usuarios"),
         ]);
         setResumen(resR.data);
         setIngresosMes(resI.data);
         setBarberos(resB.data);
         setEstados(resE.data);
+        setConteos({
+          clientes: resCl.data.length,
+          productos: resPr.data.length,
+          categorias: resCa.data.length,
+          proveedores: resPv.data.length,
+          servicios: resSv.data.length,
+          usuarios: resUs.data.length,
+        });
       } catch (err) {
         setError("No se pudieron cargar las estadísticas");
       } finally {
@@ -139,6 +174,24 @@ function Dashboard() {
     );
   };
 
+  // Tarjeta chica de conteo (clickeable)
+  const ConteoCard = ({ icono: Icono, label, valor, irA, color }) => (
+    <div
+      onClick={() => navigate(irA)}
+      className="bg-ink-card border border-line rounded-xl p-4 cursor-pointer hover:border-gold/40 transition-colors flex items-center gap-3"
+    >
+      <div
+        className={`w-9 h-9 rounded-lg flex items-center justify-center ${color}`}
+      >
+        <Icono className="w-4 h-4" />
+      </div>
+      <div>
+        <div className="text-lg font-bold text-white leading-none">{valor}</div>
+        <div className="text-xs text-gray-400 mt-1">{label}</div>
+      </div>
+    </div>
+  );
+
   if (cargando) {
     return (
       <div className="text-center py-20 text-gray-500">
@@ -180,14 +233,16 @@ function Dashboard() {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KpiCard
-          icono={DollarSign}
-          label="Ingresos totales"
-          valor={formatoPrecio(a.ingresos_totales)}
-          variacion={v.ingresos_totales}
-          colorIcono="bg-emerald-500/10 text-emerald-400"
-          irA="/caja"
-        />
+        {esAdmin && (
+          <KpiCard
+            icono={DollarSign}
+            label="Ingresos totales"
+            valor={formatoPrecio(a.ingresos_totales)}
+            variacion={v.ingresos_totales}
+            colorIcono="bg-emerald-500/10 text-emerald-400"
+            irA="/caja"
+          />
+        )}
         <KpiCard
           icono={Calendar}
           label="Turnos totales"
@@ -196,14 +251,16 @@ function Dashboard() {
           colorIcono="bg-gold/10 text-gold"
           irA="/turnos"
         />
-        <KpiCard
-          icono={Receipt}
-          label="Ticket promedio"
-          valor={formatoPrecio(a.ticket_promedio)}
-          variacion={v.ticket_promedio}
-          colorIcono="bg-purple-500/10 text-purple-400"
-          irA="/ventas"
-        />
+        {esAdmin && (
+          <KpiCard
+            icono={Receipt}
+            label="Ticket promedio"
+            valor={formatoPrecio(a.ticket_promedio)}
+            variacion={v.ticket_promedio}
+            colorIcono="bg-purple-500/10 text-purple-400"
+            irA="/ventas"
+          />
+        )}
         <KpiCard
           icono={XCircle}
           label="Tasa de cancelación"
@@ -215,53 +272,119 @@ function Dashboard() {
         />
       </div>
 
+      {/* Resumen del negocio: cantidad de registros */}
+      {conteos && (
+        <div className="mb-6">
+          <h2 className="text-white font-semibold mb-3">Resumen del negocio</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+            <ConteoCard
+              icono={Users}
+              label="Clientes"
+              valor={conteos.clientes}
+              irA="/clientes"
+              color="bg-blue-500/10 text-blue-400"
+            />
+            <ConteoCard
+              icono={Award}
+              label="Barberos"
+              valor={barberos.length}
+              irA="/barberos"
+              color="bg-gold/10 text-gold"
+            />
+            <ConteoCard
+              icono={Briefcase}
+              label="Servicios"
+              valor={conteos.servicios}
+              irA="/servicios"
+              color="bg-pink-500/10 text-pink-400"
+            />
+            <ConteoCard
+              icono={Package}
+              label="Productos"
+              valor={conteos.productos}
+              irA="/productos"
+              color="bg-emerald-500/10 text-emerald-400"
+            />
+            <ConteoCard
+              icono={Tags}
+              label="Categorías"
+              valor={conteos.categorias}
+              irA="/categorias"
+              color="bg-amber-500/10 text-amber-400"
+            />
+            <ConteoCard
+              icono={Truck}
+              label="Proveedores"
+              valor={conteos.proveedores}
+              irA="/proveedores"
+              color="bg-purple-500/10 text-purple-400"
+            />
+            {esAdmin && (
+              <ConteoCard
+                icono={ShieldCheck}
+                label="Usuarios"
+                valor={conteos.usuarios}
+                irA="/usuarios"
+                color="bg-cyan-500/10 text-cyan-400"
+              />
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="lg:col-span-2 bg-ink-card border border-line rounded-2xl p-6">
-          <h2 className="text-white font-semibold mb-1">Ingresos mensuales</h2>
-          <p className="text-xs text-gray-500 mb-4">
-            Evolución de los últimos 6 meses
-          </p>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart
-              data={ingresosMes}
-              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-            >
-              <XAxis
-                dataKey="etiqueta"
-                stroke="#6b7280"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                stroke="#6b7280"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={formatoCorto}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: "#1a1a1f",
-                  border: "1px solid #26262d",
-                  borderRadius: "12px",
-                  color: "#fff",
-                }}
-                formatter={(valor) => [formatoPrecio(valor), "Ingresos"]}
-              />
-              <Line
-                type="monotone"
-                dataKey="total"
-                stroke="#d4af37"
-                strokeWidth={2.5}
-                dot={{ fill: "#d4af37", r: 4 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        {esAdmin && (
+          <div className="lg:col-span-2 bg-ink-card border border-line rounded-2xl p-6">
+            <h2 className="text-white font-semibold mb-1">
+              Ingresos mensuales
+            </h2>
+            <p className="text-xs text-gray-500 mb-4">
+              Evolución de los últimos 6 meses
+            </p>
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart
+                data={ingresosMes}
+                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              >
+                <XAxis
+                  dataKey="etiqueta"
+                  stroke="#6b7280"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="#6b7280"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={formatoCorto}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "#1a1a1f",
+                    border: "1px solid #26262d",
+                    borderRadius: "12px",
+                    color: "#fff",
+                  }}
+                  formatter={(valor) => [formatoPrecio(valor), "Ingresos"]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="total"
+                  stroke="#d4af37"
+                  strokeWidth={2.5}
+                  dot={{ fill: "#d4af37", r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
 
-        <div className="bg-ink-card border border-line rounded-2xl p-6">
+        <div
+          className={`bg-ink-card border border-line rounded-2xl p-6 ${esAdmin ? "" : "lg:col-span-3"}`}
+        >
           <h2 className="text-white font-semibold mb-1">Turnos por estado</h2>
           <p className="text-xs text-gray-500 mb-4">Distribución del período</p>
           {datosDona.length === 0 ? (
@@ -315,51 +438,61 @@ function Dashboard() {
 
       {/* Ranking de barberos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-ink-card border border-line rounded-2xl p-6">
-          <div className="flex items-center gap-2 mb-1">
-            <Award className="w-5 h-5 text-gold" />
-            <h2 className="text-white font-semibold">Ingresos por barbero</h2>
+        {esAdmin && (
+          <div className="bg-ink-card border border-line rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <Award className="w-5 h-5 text-gold" />
+              <h2 className="text-white font-semibold">Ingresos por barbero</h2>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">Top 5 del período</p>
+            {topBarberos.length === 0 ? (
+              <p className="text-gray-500 text-sm text-center py-16">
+                Sin datos
+              </p>
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart
+                  data={topBarberos}
+                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                >
+                  <XAxis
+                    dataKey="nombre"
+                    stroke="#6b7280"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="#6b7280"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={formatoCorto}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "#1a1a1f",
+                      border: "1px solid #26262d",
+                      borderRadius: "12px",
+                      color: "#fff",
+                    }}
+                    formatter={(valor) => [formatoPrecio(valor), "Ingresos"]}
+                    cursor={{ fill: "rgba(212,175,55,0.1)" }}
+                  />
+                  <Bar
+                    dataKey="ingresos"
+                    fill="#d4af37"
+                    radius={[6, 6, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
-          <p className="text-xs text-gray-500 mb-4">Top 5 del período</p>
-          {topBarberos.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center py-16">Sin datos</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart
-                data={topBarberos}
-                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-              >
-                <XAxis
-                  dataKey="nombre"
-                  stroke="#6b7280"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="#6b7280"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={formatoCorto}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "#1a1a1f",
-                    border: "1px solid #26262d",
-                    borderRadius: "12px",
-                    color: "#fff",
-                  }}
-                  formatter={(valor) => [formatoPrecio(valor), "Ingresos"]}
-                  cursor={{ fill: "rgba(212,175,55,0.1)" }}
-                />
-                <Bar dataKey="ingresos" fill="#d4af37" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+        )}
 
-        <div className="bg-ink-card border border-line rounded-2xl p-6">
+        <div
+          className={`bg-ink-card border border-line rounded-2xl p-6 ${esAdmin ? "" : "lg:col-span-2"}`}
+        >
           <h2 className="text-white font-semibold mb-4">Ranking detallado</h2>
           {barberos.length === 0 ? (
             <p className="text-gray-500 text-sm text-center py-16">
@@ -388,15 +521,17 @@ function Dashboard() {
                       {b.turnos} turnos · {b.clientes_unicos} clientes
                     </div>
                   </div>
-                  {b.rating != null && (
+                  {esAdmin && b.rating != null && (
                     <span className="inline-flex items-center gap-1 text-xs text-gold">
                       <Star className="w-3 h-3 fill-gold" />
                       {b.rating}
                     </span>
                   )}
-                  <span className="text-gold font-semibold text-sm w-20 text-right">
-                    {formatoPrecio(b.ingresos)}
-                  </span>
+                  {esAdmin && (
+                    <span className="text-gold font-semibold text-sm w-20 text-right">
+                      {formatoPrecio(b.ingresos)}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

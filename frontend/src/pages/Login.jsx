@@ -45,9 +45,10 @@ const Login = () => {
   };
 
   const claseInput = (valor, campo) =>
-    `w-full bg-ink-card border rounded-xl pl-12 pr-4 py-4 text-white text-base placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all ${tocado[campo] && !valor
-      ? "border-red-500/50"
-      : "border-line focus:border-gold"
+    `w-full bg-ink-card border rounded-xl pl-12 pr-4 py-4 text-white text-base placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all ${
+      tocado[campo] && !valor
+        ? "border-red-500/50"
+        : "border-line focus:border-gold"
     }`;
 
   return (
@@ -206,6 +207,6 @@ const Login = () => {
       </div>
     </div>
   );
-}
+};
 
 export default Login;

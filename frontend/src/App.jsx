@@ -21,11 +21,12 @@ import TurnoForm from "./pages/TurnoForm";
 import VentaNueva from "./pages/VentaNueva";
 import Ventas from "./pages/Ventas";
 import Horarios from "./pages/Horarios";
-import Compras from "./pages/Compras"
-import Caja from "./pages/Caja"
+import Compras from "./pages/Compras";
+import Caja from "./pages/Caja";
 import Valoraciones from "./pages/Valoraciones";
 import Acontecimientos from "./pages/Acontecimientos";
 import Notificaciones from "./pages/Notificaciones";
+import Dashboard from "./pages/Dashboard";
 import { puedeAcceder } from "./config/permiso";
 
 
@@ -50,24 +51,6 @@ function EnConstruccion({ nombre }) {
     <div>
       <h1 className="text-2xl font-bold text-white mb-2">{nombre}</h1>
       <p className="text-gray-400">Esta sección está en construcción.</p>
-    </div>
-  );
-}
-
-function Dashboard() {
-  const { usuario } = useAuth();
-  return (
-    <div>
-      <h1 className="text-3xl font-bold text-white mb-1">Dashboard</h1>
-      <p className="text-gray-400 mb-6">Resumen general de tu negocio</p>
-      <div className="bg-ink-card border border-line rounded-2xl p-8">
-        <h2 className="text-xl text-white mb-2">
-          ¡Bienvenido, {usuario?.nombre_usuario}!
-        </h2>
-        <p className="text-gray-400">
-          Barbería: {usuario?.barberia} · Rol: {usuario?.rol}
-        </p>
-      </div>
     </div>
   );
 }
