@@ -46,7 +46,6 @@ function Clientes() {
 
   // Definición de columnas para la tabla reutilizable
   const columnas = [
-
     {
       campo: "documento",
       titulo: "Documento",
