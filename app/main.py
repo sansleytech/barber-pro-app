@@ -5,10 +5,27 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import (
     registro,
-    barberos, servicios, clientes, turnos, usuarios,
-    auth, horarios, configuracion, categorias, proveedores,
-    productos, compras, ventas, caja, valoraciones,
-    notificaciones, contenido, acontecimientos, codigos_qr, estadisticas,
+    barberos,
+    servicios,
+    clientes,
+    turnos,
+    usuarios,
+    auth,
+    horarios,
+    configuracion,
+    categorias,
+    proveedores,
+    productos,
+    compras,
+    ventas,
+    caja,
+    valoraciones,
+    notificaciones,
+    contenido,
+    acontecimientos,
+    codigos_qr,
+    estadisticas,
+    solicitudes,
 )
 
 app = FastAPI(
@@ -49,6 +66,7 @@ app.include_router(contenido.router)
 app.include_router(acontecimientos.router)
 app.include_router(codigos_qr.router)
 app.include_router(estadisticas.router)
+app.include_router(solicitudes.router)
 
 
 @app.get("/")
