@@ -1,4 +1,5 @@
 """Entorno de Alembic, conectado con la config y los modelos del proyecto."""
+
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
