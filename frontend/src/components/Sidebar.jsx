@@ -146,6 +146,12 @@ const secciones = [
         icono: QrCode,
         roles: ["administrador"],
       },
+      {
+        a: "/solicitudes",
+        texto: "Solicitudes",
+        icono: Calendar,
+        roles: ["administrador", "recepcionista"],
+      },
     ],
   },
 ];

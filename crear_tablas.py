@@ -1,4 +1,5 @@
 """Script para crear las tablas en la base de datos."""
+
 from app.db.session import Base, engine
 
 from app.models.barberia import Barberia
@@ -10,4 +11,4 @@ from app.models.solicitud_turno import SolicitudTurno
 
 print("Creando tablas...")
 Base.metadata.create_all(bind=engine)
-print("✅ Tablas creadas correctamente.")
+print("✅ Tablas creadas correctamente")

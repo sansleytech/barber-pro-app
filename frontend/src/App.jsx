@@ -31,6 +31,7 @@ import { puedeAcceder } from "./config/permiso";
 import Configuracion from "./pages/Configuracion";
 import CodigosQR from "./pages/CodigoQR";
 import Portal from "./pages/Portal";
+import Solicitudes from "./pages/Solicitudes";
 
 // Protege una ruta según el rol. Si no tiene permiso, lo manda al dashboard.
 function RutaPorRol({ ruta, children }) {
@@ -72,6 +73,7 @@ function App() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/solicitudes" element={<RutaPorRol ruta="/solicitudes"><Solicitudes /></RutaPorRol>} />
           <Route
             path="/turnos"
             element={

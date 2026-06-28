@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Save,
@@ -16,6 +16,8 @@ function TurnoForm() {
   const { id } = useParams();
   const editando = Boolean(id);
   const navigate = useNavigate();
+  const location = useLocation();
+  const desdeSolicitud = location.state?.desdeSolicitud || null;
 
   const [clientes, setClientes] = useState([]);
   const [barberos, setBarberos] = useState([]);
@@ -49,6 +51,17 @@ function TurnoForm() {
         setClientes(resC.data);
         setBarberos(resB.data);
         setServicios(resS.data);
+
+        // Si venimos de una solicitud, precargar cliente (por documento) y barbero
+        if (desdeSolicitud) {
+          const cli = resC.data.find((x) => x.documento === desdeSolicitud.documento);
+          setForm((f) => ({
+            ...f,
+            id_cliente: cli ? String(cli.id_cliente) : "",
+            id_barbero: desdeSolicitud.id_barbero ? String(desdeSolicitud.id_barbero) : "",
+            fecha: desdeSolicitud.fecha_preferida || "",
+          }));
+        }
 
         if (editando) {
           const resT = await api.get(`/turnos/${id}`);
@@ -175,6 +188,12 @@ function TurnoForm() {
         await api.put(`/turnos/${id}`, datos);
       } else {
         await api.post("/turnos", datos);
+        // Si veníamos de una solicitud, marcarla como atendida
+        if (desdeSolicitud?.id_solicitud) {
+          try {
+            await api.patch(`/solicitudes/${desdeSolicitud.id_solicitud}/estado`, { estado: "atendida" });
+          } catch { /* si falla, igual el turno se creó */ }
+        }
       }
       navigate("/turnos");
     } catch (err) {
