@@ -26,6 +26,7 @@ from app.api import (
     codigos_qr,
     estadisticas,
     solicitudes,
+    portal,
 )
 
 app = FastAPI(
@@ -67,6 +68,7 @@ app.include_router(acontecimientos.router)
 app.include_router(codigos_qr.router)
 app.include_router(estadisticas.router)
 app.include_router(solicitudes.router)
+app.include_router(portal.router)
 
 
 @app.get("/")
