@@ -10,7 +10,12 @@ from app.models.cliente import Cliente
 from app.models.barbero import Barbero
 from app.models.servicio import Servicio
 from app.models.usuario import Usuario, RolEnum
-from app.schemas.turno import TurnoCrear, TurnoRespuesta, TurnoCambiarEstado, TurnoActualizar
+from app.schemas.turno import (
+    TurnoCrear,
+    TurnoRespuesta,
+    TurnoCambiarEstado,
+    TurnoActualizar,
+)
 from app.core.dependencies import get_barberia_actual, requiere_rol
 
 router = APIRouter(prefix="/turnos", tags=["Turnos"])

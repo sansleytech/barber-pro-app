@@ -18,10 +18,14 @@ def listar_servicios(
     id_barberia: int = Depends(get_barberia_actual),
 ):
     """Devuelve los servicios activos de la barbería."""
-    return db.query(Servicio).filter(
-        Servicio.activo == True,
-        Servicio.id_barberia == id_barberia,
-    ).all()
+    return (
+        db.query(Servicio)
+        .filter(
+            Servicio.activo == True,
+            Servicio.id_barberia == id_barberia,
+        )
+        .all()
+    )
 
 
 @router.get("/{id_servicio}", response_model=ServicioRespuesta)
@@ -31,10 +35,14 @@ def obtener_servicio(
     id_barberia: int = Depends(get_barberia_actual),
 ):
     """Devuelve un servicio por su id (solo de la barbería del usuario)."""
-    servicio = db.query(Servicio).filter(
-        Servicio.id_servicio == id_servicio,
-        Servicio.id_barberia == id_barberia,
-    ).first()
+    servicio = (
+        db.query(Servicio)
+        .filter(
+            Servicio.id_servicio == id_servicio,
+            Servicio.id_barberia == id_barberia,
+        )
+        .first()
+    )
     if servicio is None:
         raise HTTPException(status_code=404, detail="Servicio no encontrado")
     return servicio
@@ -62,10 +70,14 @@ def actualizar_servicio(
     usuario: Usuario = Depends(requiere_rol(RolEnum.administrador)),
 ):
     """Actualiza un servicio. Solo administradores."""
-    servicio = db.query(Servicio).filter(
-        Servicio.id_servicio == id_servicio,
-        Servicio.id_barberia == usuario.id_barberia,
-    ).first()
+    servicio = (
+        db.query(Servicio)
+        .filter(
+            Servicio.id_servicio == id_servicio,
+            Servicio.id_barberia == usuario.id_barberia,
+        )
+        .first()
+    )
     if servicio is None:
         raise HTTPException(status_code=404, detail="Servicio no encontrado")
 
@@ -85,10 +97,14 @@ def desactivar_servicio(
     usuario: Usuario = Depends(requiere_rol(RolEnum.administrador)),
 ):
     """Desactiva un servicio. Solo administradores."""
-    servicio = db.query(Servicio).filter(
-        Servicio.id_servicio == id_servicio,
-        Servicio.id_barberia == usuario.id_barberia,
-    ).first()
+    servicio = (
+        db.query(Servicio)
+        .filter(
+            Servicio.id_servicio == id_servicio,
+            Servicio.id_barberia == usuario.id_barberia,
+        )
+        .first()
+    )
     if servicio is None:
         raise HTTPException(status_code=404, detail="Servicio no encontrado")
 

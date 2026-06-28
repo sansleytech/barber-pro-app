@@ -23,7 +23,9 @@ def registrar_barberia(datos: RegistroBarberia, db: Session = Depends(get_db)):
     # 1. Verificar que el subdominio no esté tomado
     existe = db.query(Barberia).filter(Barberia.subdominio == datos.subdominio).first()
     if existe:
-        raise HTTPException(status_code=409, detail="Ese subdominio ya está en uso, elegí otro")
+        raise HTTPException(
+            status_code=409, detail="Ese subdominio ya está en uso, elegí otro"
+        )
 
     # 2. Buscar el plan Trial
     plan_trial = db.query(Plan).filter(Plan.nombre == "Trial").first()

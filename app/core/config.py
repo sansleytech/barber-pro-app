@@ -2,6 +2,7 @@
 Configuración central de la aplicación.
 Lee las variables de entorno desde el archivo .env.
 """
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 

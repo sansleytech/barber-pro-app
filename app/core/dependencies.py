@@ -61,6 +61,7 @@ def get_barberia_actual(
 
 def requiere_rol(*roles_permitidos: RolEnum):
     """Crea una dependencia que exige que el usuario tenga uno de los roles dados."""
+
     def verificador(usuario: Usuario = Depends(get_usuario_actual)) -> Usuario:
         if usuario.super_admin:
             return usuario
@@ -70,4 +71,5 @@ def requiere_rol(*roles_permitidos: RolEnum):
                 detail="No tenés permiso para esta acción",
             )
         return usuario
+
     return verificador

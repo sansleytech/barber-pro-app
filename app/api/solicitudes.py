@@ -1,4 +1,5 @@
 """Endpoints internos de solicitudes de turno (bandeja del admin) — multi-tenant."""
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -15,7 +16,9 @@ router = APIRouter(prefix="/solicitudes", tags=["Solicitudes de turno"])
 def listar(
     estado: Optional[EstadoSolicitudEnum] = None,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(requiere_rol(RolEnum.administrador, RolEnum.recepcionista)),
+    usuario: Usuario = Depends(
+        requiere_rol(RolEnum.administrador, RolEnum.recepcionista)
+    ),
 ):
     """Lista las solicitudes de la barbería. Filtro opcional por estado."""
     query = db.query(SolicitudTurno).filter(
@@ -30,13 +33,19 @@ def listar(
 def obtener(
     id_solicitud: int,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(requiere_rol(RolEnum.administrador, RolEnum.recepcionista)),
+    usuario: Usuario = Depends(
+        requiere_rol(RolEnum.administrador, RolEnum.recepcionista)
+    ),
 ):
     """Devuelve una solicitud puntual."""
-    solicitud = db.query(SolicitudTurno).filter(
-        SolicitudTurno.id_solicitud == id_solicitud,
-        SolicitudTurno.id_barberia == usuario.id_barberia,
-    ).first()
+    solicitud = (
+        db.query(SolicitudTurno)
+        .filter(
+            SolicitudTurno.id_solicitud == id_solicitud,
+            SolicitudTurno.id_barberia == usuario.id_barberia,
+        )
+        .first()
+    )
     if solicitud is None:
         raise HTTPException(status_code=404, detail="Solicitud no encontrada")
     return solicitud
@@ -47,13 +56,19 @@ def actualizar_estado(
     id_solicitud: int,
     datos: SolicitudActualizarEstado,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(requiere_rol(RolEnum.administrador, RolEnum.recepcionista)),
+    usuario: Usuario = Depends(
+        requiere_rol(RolEnum.administrador, RolEnum.recepcionista)
+    ),
 ):
     """Marca una solicitud como atendida o descartada."""
-    solicitud = db.query(SolicitudTurno).filter(
-        SolicitudTurno.id_solicitud == id_solicitud,
-        SolicitudTurno.id_barberia == usuario.id_barberia,
-    ).first()
+    solicitud = (
+        db.query(SolicitudTurno)
+        .filter(
+            SolicitudTurno.id_solicitud == id_solicitud,
+            SolicitudTurno.id_barberia == usuario.id_barberia,
+        )
+        .first()
+    )
     if solicitud is None:
         raise HTTPException(status_code=404, detail="Solicitud no encontrada")
     solicitud.estado = datos.estado
