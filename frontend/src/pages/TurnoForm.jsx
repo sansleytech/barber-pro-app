@@ -54,11 +54,15 @@ function TurnoForm() {
 
         // Si venimos de una solicitud, precargar cliente (por documento) y barbero
         if (desdeSolicitud) {
-          const cli = resC.data.find((x) => x.documento === desdeSolicitud.documento);
+          const cli = resC.data.find(
+            (x) => x.documento === desdeSolicitud.documento,
+          );
           setForm((f) => ({
             ...f,
             id_cliente: cli ? String(cli.id_cliente) : "",
-            id_barbero: desdeSolicitud.id_barbero ? String(desdeSolicitud.id_barbero) : "",
+            id_barbero: desdeSolicitud.id_barbero
+              ? String(desdeSolicitud.id_barbero)
+              : "",
             fecha: desdeSolicitud.fecha_preferida || "",
           }));
         }
@@ -191,8 +195,13 @@ function TurnoForm() {
         // Si veníamos de una solicitud, marcarla como atendida
         if (desdeSolicitud?.id_solicitud) {
           try {
-            await api.patch(`/solicitudes/${desdeSolicitud.id_solicitud}/estado`, { estado: "atendida" });
-          } catch { /* si falla, igual el turno se creó */ }
+            await api.patch(
+              `/solicitudes/${desdeSolicitud.id_solicitud}/estado`,
+              { estado: "atendida" },
+            );
+          } catch {
+            /* si falla, igual el turno se creó */
+          }
         }
       }
       navigate("/turnos");

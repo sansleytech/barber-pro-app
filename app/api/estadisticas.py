@@ -2,7 +2,7 @@
 
 from datetime import date, timedelta
 from decimal import Decimal
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from app.db.session import get_db
@@ -351,3 +351,155 @@ def distribucion_genero(
         ],
     }
     return resultado
+
+@router.get("/horas-pico")
+def horas_pico(
+    desde: date | None = Query(None),
+    hasta: date | None = Query(None),
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(requiere_rol(*_ROL)),
+):
+    """Cantidad de turnos agrupados por hora del día en el período."""
+    bid = usuario.id_barberia
+    desde, hasta = _rango_default(desde, hasta)
+
+    filas = db.query(
+        extract("hour", Turno.hora_inicio).label("hora"),
+        func.count(Turno.id_turno).label("cantidad"),
+    ).filter(
+        Turno.id_barberia == bid,
+        Turno.fecha >= desde,
+        Turno.fecha <= hasta,
+    ).group_by("hora").all()
+
+    # Armar un diccionario hora -> cantidad
+    por_hora = {int(f.hora): int(f.cantidad) for f in filas}
+
+    # Rellenar de 6am a 10pm (rango típico de una barbería)
+    resultado = []
+    for h in range(6, 23):
+        resultado.append({
+            "hora": h,
+            "etiqueta": f"{h}:00",
+            "cantidad": por_hora.get(h, 0),
+        })
+    return resultado
+
+
+@router.get("/clientes-frecuentes")
+def clientes_frecuentes(
+    desde: date | None = Query(None),
+    hasta: date | None = Query(None),
+    limite: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(requiere_rol(*_ROL)),
+):
+    """Top de clientes por cantidad de visitas (turnos) en el período."""
+    bid = usuario.id_barberia
+    desde, hasta = _rango_default(desde, hasta)
+
+    filas = db.query(
+        Turno.id_cliente.label("id_cliente"),
+        func.count(Turno.id_turno).label("visitas"),
+        func.coalesce(func.sum(Turno.precio_total), 0).label("total_gastado"),
+    ).filter(
+        Turno.id_barberia == bid,
+        Turno.fecha >= desde,
+        Turno.fecha <= hasta,
+    ).group_by(Turno.id_cliente).all()
+
+    clientes = db.query(Cliente).filter(Cliente.id_barberia == bid).all()
+    info = {c.id_cliente: f"{c.primer_nombre} {c.apellidos}" for c in clientes}
+
+    resultado = [
+        {
+            "id_cliente": f.id_cliente,
+            "nombre": info.get(f.id_cliente, "Cliente"),
+            "visitas": int(f.visitas),
+            "total_gastado": float(f.total_gastado),
+        }
+        for f in filas
+    ]
+    resultado.sort(key=lambda x: x["visitas"], reverse=True)
+    return resultado[:limite]
+
+
+def _metricas_barbero(db, bid, id_barbero, desde, hasta):
+    """Calcula las métricas de un barbero en un rango."""
+    f = db.query(
+        func.coalesce(func.sum(Turno.precio_total), 0).label("ingresos"),
+        func.count(Turno.id_turno).label("turnos"),
+        func.coalesce(func.sum(Turno.propina), 0).label("propinas"),
+        func.count(func.distinct(Turno.id_cliente)).label("clientes"),
+    ).filter(
+        Turno.id_barberia == bid,
+        Turno.id_barbero == id_barbero,
+        Turno.estado == EstadoTurnoEnum.completado,
+        Turno.fecha >= desde,
+        Turno.fecha <= hasta,
+    ).first()
+    turnos = f.turnos or 0
+    ingresos = float(f.ingresos)
+    return {
+        "ingresos": ingresos,
+        "turnos": turnos,
+        "propinas": float(f.propinas),
+        "clientes_unicos": f.clientes or 0,
+        "ticket_promedio": round(ingresos / turnos, 2) if turnos > 0 else 0,
+    }
+
+
+@router.get("/rendimiento-barbero/{id_barbero}")
+def rendimiento_barbero(
+    id_barbero: int,
+    desde: date | None = Query(None),
+    hasta: date | None = Query(None),
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(requiere_rol(*_ROL)),
+):
+    """Métricas detalladas de un barbero con comparativo del período anterior."""
+    bid = usuario.id_barberia
+    desde, hasta = _rango_default(desde, hasta)
+
+    barbero = db.query(Barbero).filter(
+        Barbero.id_barbero == id_barbero, Barbero.id_barberia == bid
+    ).first()
+    if barbero is None:
+        raise HTTPException(status_code=404, detail="Barbero no encontrado")
+
+    actual = _metricas_barbero(db, bid, id_barbero, desde, hasta)
+
+    dias = (hasta - desde).days + 1
+    hasta_prev = desde - timedelta(days=1)
+    desde_prev = hasta_prev - timedelta(days=dias - 1)
+    anterior = _metricas_barbero(db, bid, id_barbero, desde_prev, hasta_prev)
+
+    def variacion(act, ant):
+        if ant == 0:
+            return 100.0 if act > 0 else 0.0
+        return round((act - ant) / ant * 100, 1)
+
+    rating = db.query(
+        func.avg(Valoracion.estrellas).label("rating"),
+        func.count(Valoracion.id_valoracion).label("cant"),
+    ).filter(
+        Valoracion.id_barberia == bid,
+        Valoracion.id_barbero == id_barbero,
+    ).first()
+
+    return {
+        "id_barbero": id_barbero,
+        "nombre": f"{barbero.nombre} {barbero.apellido}",
+        "actual": actual,
+        "anterior": anterior,
+        "variacion": {
+            "ingresos": variacion(actual["ingresos"], anterior["ingresos"]),
+            "turnos": variacion(actual["turnos"], anterior["turnos"]),
+            "propinas": variacion(actual["propinas"], anterior["propinas"]),
+            "clientes_unicos": variacion(actual["clientes_unicos"], anterior["clientes_unicos"]),
+            "ticket_promedio": variacion(actual["ticket_promedio"], anterior["ticket_promedio"]),
+        },
+        "rating": round(float(rating.rating), 2) if rating.rating else None,
+        "cant_valoraciones": rating.cant or 0,
+    }
+

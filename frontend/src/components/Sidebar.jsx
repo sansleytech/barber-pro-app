@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import logoSidebar from "../assets/img/logo1.png";
 import {
+  BarChart3,
   LayoutDashboard,
   Calendar,
   Users,
@@ -59,6 +60,12 @@ const secciones = [
         roles: ["administrador", "recepcionista"],
       },
       {
+        a: "/solicitudes",
+        texto: "Solicitudes",
+        icono: Calendar,
+        roles: ["administrador", "recepcionista"],
+      },
+      {
         a: "/horarios",
         texto: "Horarios",
         icono: Clock,
@@ -76,6 +83,14 @@ const secciones = [
         icono: Star,
         roles: "todos",
       },
+
+      {
+        a: "/reportes",
+        texto: "Reportes",
+        icono: BarChart3,
+        roles: ["administrador"],
+      },
+
       {
         a: "/acontecimientos",
         texto: "Acontecimientos",
@@ -146,12 +161,6 @@ const secciones = [
         icono: QrCode,
         roles: ["administrador"],
       },
-      {
-        a: "/solicitudes",
-        texto: "Solicitudes",
-        icono: Calendar,
-        roles: ["administrador", "recepcionista"],
-      },
     ],
   },
 ];
@@ -179,7 +188,11 @@ function Sidebar({ abierta, cerrar, rol }) {
         {/* Logo */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-line shrink-0">
           <div className="flex items-center gap-2">
-            <img src={logoSidebar} alt="Logo" className="w-9 h-9 rounded-full object-cover" />
+            <img
+              src={logoSidebar}
+              alt="Logo"
+              className="w-9 h-9 rounded-full object-cover"
+            />
             <span className="text-lg font-bold text-white">
               Barber <span className="text-gold">Pro</span>
             </span>
