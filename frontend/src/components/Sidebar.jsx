@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import logoSidebar from "../assets/img/logo1.png";
 import {
+  ImagePlus,
   BarChart3,
   LayoutDashboard,
   Calendar,
@@ -88,6 +89,12 @@ const secciones = [
         a: "/reportes",
         texto: "Reportes",
         icono: BarChart3,
+        roles: ["administrador"],
+      },
+      {
+        a: "/galeria",
+        texto: "Galería",
+        icono: ImagePlus,
         roles: ["administrador"],
       },
 

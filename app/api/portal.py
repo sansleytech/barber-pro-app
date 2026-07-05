@@ -150,3 +150,23 @@ def registrar_cliente(subdominio: str, datos: ClienteRegistro, db: Session = Dep
     db.commit()
     db.refresh(cliente)
     return {"mensaje": "Cliente registrado", "id_cliente": cliente.id_cliente, "primer_nombre": cliente.primer_nombre}
+
+
+@router.get("/{subdominio}/galeria")
+def galeria_publica(subdominio: str, db: Session = Depends(get_db)):
+    """Lista pública de fotos de la galería (para el portal). Solo las activas."""
+    from app.models.galeria import FotoGaleria
+    barberia = _barberia_por_subdominio(subdominio, db)
+    fotos = db.query(FotoGaleria).filter(
+        FotoGaleria.id_barberia == barberia.id_barberia,
+        FotoGaleria.activo == True,
+    ).order_by(FotoGaleria.orden, FotoGaleria.id_foto).all()
+    return [
+        {
+            "id_foto": f.id_foto,
+            "url": f.url,
+            "titulo": f.titulo,
+            "descripcion": f.descripcion,
+        }
+        for f in fotos
+    ]

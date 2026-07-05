@@ -19,6 +19,8 @@ function Portal() {
   const [documento, setDocumento] = useState("");
   const [cliente, setCliente] = useState(null);
   const [barberos, setBarberos] = useState([]);
+  const [galeria, setGaleria] = useState([]);
+  const [vista, setVista] = useState("inicio"); // inicio | turno
   const [registro, setRegistro] = useState({
     primer_nombre: "",
     apellidos: "",
@@ -38,6 +40,12 @@ function Portal() {
       .get(`/portal/${subdominio}/barberos`)
       .then((res) => {
         setBarberos(res.data);
+      })
+      .catch(() => {});
+    portalApi
+      .get(`/portal/${subdominio}/galeria`)
+      .then((res) => {
+        setGaleria(res.data);
       })
       .catch(() => {});
   }, [subdominio]);
@@ -134,6 +142,38 @@ function Portal() {
           </h1>
           <p className="text-white/50 text-sm">Solicitá tu turno</p>
         </div>
+
+        {vista === "inicio" && (
+          <div className="space-y-6">
+            {galeria.length > 0 && (
+              <div>
+                <h2 className="text-white/70 text-sm mb-3">
+                  Nuestros trabajos
+                </h2>
+                <div className="grid grid-cols-2 gap-3">
+                  {galeria.map((foto) => (
+                    <div
+                      key={foto.id_foto}
+                      className="rounded-2xl overflow-hidden border border-white/10"
+                    >
+                      <img
+                        src={foto.url}
+                        alt={foto.titulo || "Corte"}
+                        className="w-full h-32 object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <button
+              onClick={() => setVista("turno")}
+              className="w-full bg-yellow-400 text-black font-semibold rounded-xl py-4 hover:bg-yellow-300 transition-colors"
+            >
+              Pedir turno
+            </button>
+          </div>
+        )}
 
         <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
           {error && (

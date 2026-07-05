@@ -19,6 +19,7 @@ export const PERMISOS = {
   "/qr": ["administrador"],
   "/solicitudes": ["administrador", "recepcionista"],
   "/reportes": ["administrador"],
+  "/galeria": ["administrador"],
 };
 
 // ¿El rol puede acceder a esta ruta base?

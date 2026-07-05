@@ -18,6 +18,7 @@ from app.api import (
     configuracion,
     categorias,
     proveedores,
+    galeria,
     productos,
     compras,
     ventas,
@@ -61,6 +62,7 @@ app.include_router(horarios.router)
 app.include_router(configuracion.router)
 app.include_router(categorias.router)
 app.include_router(proveedores.router)
+app.include_router(galeria.router)
 app.include_router(productos.router)
 app.include_router(compras.router)
 app.include_router(ventas.router)
