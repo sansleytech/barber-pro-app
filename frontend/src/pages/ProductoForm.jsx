@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save } from "lucide-react";
 import api from "../api/cliente";
+import SubirImagen from "../components/SubirImagen";
 
 function ProductoForm() {
   const { id } = useParams();
@@ -269,15 +270,10 @@ function ProductoForm() {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-300 mb-1.5">
-              Foto (URL)
-            </label>
-            <input
-              type="text"
-              value={form.foto}
-              onChange={(e) => cambiar("foto", e.target.value)}
-              className={inputClase}
-              placeholder="https://..."
+            <SubirImagen
+              valor={form.foto}
+              onCambio={(url) => cambiar("foto", url)}
+              etiqueta="Foto del producto"
             />
           </div>
         </div>

@@ -164,12 +164,21 @@ function Productos() {
       campo: "nombre",
       titulo: "Producto",
       render: (p) => (
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-white font-medium">{p.nombre}</span>
-            {p.stock_bajo && <AlertTriangle className="w-4 h-4 text-red-400" />}
+        <div className="flex items-center gap-3">
+          {p.foto ? (
+            <img src={p.foto} alt={p.nombre} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-ink border border-line flex items-center justify-center text-gray-600 text-xs shrink-0">
+              {p.nombre?.slice(0, 2).toUpperCase()}
+            </div>
+          )}
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-white font-medium">{p.nombre}</span>
+              {p.stock_bajo && <AlertTriangle className="w-4 h-4 text-red-400" />}
+            </div>
+            {p.marca && <span className="text-xs text-gray-500">{p.marca}</span>}
           </div>
-          {p.marca && <span className="text-xs text-gray-500">{p.marca}</span>}
         </div>
       ),
     },
