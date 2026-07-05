@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Pencil, Trash2, Users, Search, Star } from "lucide-react";
 import api from "../api/cliente";
+import { useUI } from "../context/UIContext";
 import Tabla from "../components/Tabla";
 
 function Clientes() {
+  const { confirmar, avisar } = useUI();
   const [clientes, setClientes] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -28,14 +30,21 @@ function Clientes() {
     cargarClientes();
   }, []);
 
-  const eliminarCliente = async (id, nombre) => {
-    if (!confirm(`¿Seguro que querés desactivar a ${nombre}?`)) return;
-    try {
-      await api.delete(`/clientes/${id}`);
-      cargarClientes();
-    } catch (err) {
-      alert("No se pudo desactivar el cliente");
-    }
+  const eliminarCliente = (id, nombre) => {
+    confirmar({
+      titulo: "Confirmar",
+      mensaje: `¿Seguro que querés desactivar a${nombre}?`,
+      textoConfirmar: "Desactivar",
+      onConfirmar: async () => {
+        try {
+          await api.delete(`/clientes/${id}`);
+          cargarClientes();
+          avisar("Se desactivó correctamente", "exito");
+        } catch {
+          avisar("No se pudo desactivar el cliente", "error");
+        }
+      },
+    });
   };
 
   const filtrados = clientes.filter((c) => {

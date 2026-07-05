@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Pencil, Trash2, Search, Truck } from "lucide-react";
 import api from "../api/cliente";
+import { useUI } from "../context/UIContext";
 import Tabla from "../components/Tabla";
 
 function Proveedores() {
+  const { confirmar, avisar } = useUI();
   const [proveedores, setProveedores] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -28,14 +30,21 @@ function Proveedores() {
     cargarProveedores();
   }, []);
 
-  const eliminarProveedor = async (id, nombre) => {
-    if (!confirm(`¿Seguro que querés desactivar a "${nombre}"?`)) return;
-    try {
-      await api.delete(`/proveedores/${id}`);
-      cargarProveedores();
-    } catch {
-      alert("No se pudo desactivar el proveedor");
-    }
+  const eliminarProveedor = (id, nombre) => {
+    confirmar({
+      titulo: "Confirmar",
+      mensaje: `¿Seguro que querés desactivar a${nombre}?`,
+      textoConfirmar: "Desactivar",
+      onConfirmar: async () => {
+        try {
+          await api.delete(`/proveedores/${id}`);
+          cargarProveedores();
+          avisar("Se desactivó correctamente", "exito");
+        } catch {
+          avisar("No se pudo desactivar el proveedor", "error");
+        }
+      },
+    });
   };
 
   const filtrados = proveedores.filter((p) =>

@@ -11,8 +11,10 @@ import {
   MessageCircle,
 } from "lucide-react";
 import api from "../api/cliente";
+import { useUI } from "../context/UIContext";
 import Tabla from "../components/Tabla";
 function Turnos() {
+  const { confirmar, avisar } = useUI();
   const [turnos, setTurnos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [barberos, setBarberos] = useState([]);
@@ -71,25 +73,32 @@ function Turnos() {
       await api.patch(`/turnos/${idTurno}/estado`, { estado: nuevoEstado });
       cargarDatos();
     } catch (err) {
-      alert(err.response?.data?.detail || "No se pudo cambiar el estado");
+      avisar(err.response?.data?.detail || "No se pudo cambiar el estado", "error");
     }
   };
 
-  const eliminarTurno = async (idTurno) => {
-    if (!confirm("¿Seguro que querés cancelar este turno?")) return;
-    try {
-      await api.delete(`/turnos/${idTurno}`);
-      cargarDatos();
-    } catch (err) {
-      alert(err.response?.data?.detail || "No se pudo cancelar el turno");
-    }
+  const eliminarTurno = (idTurno) => {
+    confirmar({
+      titulo: "Cancelar turno",
+      mensaje: "¿Seguro que querés cancelar este turno?",
+      textoConfirmar: "Cancelar turno",
+      onConfirmar: async () => {
+        try {
+          await api.delete(`/turnos/${idTurno}`);
+          cargarDatos();
+          avisar("Turno cancelado correctamente", "exito");
+        } catch (err) {
+          avisar(err.response?.data?.detail || "No se pudo cancelar el turno", "error");
+        }
+      },
+    });
   };
 
   // Arma el link de WhatsApp con la confirmación del turno
   const enviarWhatsApp = (t) => {
     const cliente = clientes.find((x) => x.id_cliente === t.id_cliente);
     if (!cliente || !cliente.telefono) {
-      alert("Este cliente no tiene teléfono cargado");
+      avisar("Este cliente no tiene teléfono cargado", "error");
       return;
     }
     let tel = String(cliente.telefono).replace(/\D/g, "");

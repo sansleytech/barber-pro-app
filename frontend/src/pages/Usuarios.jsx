@@ -10,10 +10,12 @@ import {
   Link2,
 } from "lucide-react";
 import api from "../api/cliente";
+import { useUI } from "../context/UIContext";
 import Tabla from "../components/Tabla";
 import { useAuth } from "../context/AuthContext";
 
 function Usuarios() {
+  const { confirmar, avisar } = useUI();
   const [usuarios, setUsuarios] = useState([]);
   const [barberos, setBarberos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -48,27 +50,39 @@ function Usuarios() {
     return b ? `${b.nombre} ${b.apellido}` : null;
   };
 
-  const cambiarEstado = async (u) => {
+  const cambiarEstado = (u) => {
     const accion = u.activo ? "desactivar" : "activar";
-    if (!confirm(`¿Seguro que querés ${accion} a "${u.nombre_usuario}"?`))
-      return;
-    try {
-      await api.patch(`/usuarios/${u.id_usuario}/estado`);
-      cargarDatos();
-    } catch (err) {
-      alert(err.response?.data?.detail || "No se pudo cambiar el estado");
-    }
+    confirmar({
+      titulo: accion === "activar" ? "Activar usuario" : "Desactivar usuario",
+      mensaje: `¿Seguro que querés ${accion} a "${u.nombre_usuario}"?`,
+      textoConfirmar: accion === "activar" ? "Activar" : "Desactivar",
+      onConfirmar: async () => {
+        try {
+          await api.patch(`/usuarios/${u.id_usuario}/estado`);
+          cargarDatos();
+          avisar("Estado actualizado correctamente", "exito");
+        } catch (err) {
+          avisar(err.response?.data?.detail || "No se pudo cambiar el estado", "error");
+        }
+      },
+    });
   };
 
-  const eliminarUsuario = async (u) => {
-    if (!confirm(`¿Seguro que querés eliminar a "${u.nombre_usuario}"?`))
-      return;
-    try {
-      await api.delete(`/usuarios/${u.id_usuario}`);
-      cargarDatos();
-    } catch (err) {
-      alert(err.response?.data?.detail || "No se pudo eliminar el usuario");
-    }
+  const eliminarUsuario = (u) => {
+    confirmar({
+      titulo: "Eliminar usuario",
+      mensaje: `¿Seguro que querés eliminar a "${u.nombre_usuario}"?`,
+      textoConfirmar: "Eliminar",
+      onConfirmar: async () => {
+        try {
+          await api.delete(`/usuarios/${u.id_usuario}`);
+          cargarDatos();
+          avisar("Usuario eliminado correctamente", "exito");
+        } catch (err) {
+          avisar(err.response?.data?.detail || "No se pudo eliminar el usuario", "error");
+        }
+      },
+    });
   };
 
   const filtrados = usuarios.filter((u) =>

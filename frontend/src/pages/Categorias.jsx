@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Pencil, Trash2, Search, Tags } from "lucide-react";
 import api from "../api/cliente";
+import { useUI } from "../context/UIContext";
 import Tabla from "../components/Tabla";
 
 function Categorias() {
+  const { confirmar, avisar } = useUI();
   const [categorias, setCategorias] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -28,14 +30,21 @@ function Categorias() {
     cargarCategorias();
   }, []);
 
-  const eliminarCategoria = async (id, nombre) => {
-    if (!confirm(`¿Seguro que querés desactivar "${nombre}"?`)) return;
-    try {
-      await api.delete(`/categorias/${id}`);
-      cargarCategorias();
-    } catch (err) {
-      alert("No se pudo desactivar la categoría");
-    }
+  const eliminarCategoria = (id, nombre) => {
+    confirmar({
+      titulo: "Confirmar",
+      mensaje: `¿Seguro que querés desactivar "${nombre}"?`,
+      textoConfirmar: "Desactivar",
+      onConfirmar: async () => {
+        try {
+          await api.delete(`/categorias/${id}`);
+          cargarCategorias();
+          avisar("Se desactivó correctamente", "exito");
+        } catch {
+          avisar("No se pudo desactivar la categoría", "error");
+        }
+      },
+    });
   };
 
   const filtrados = categorias.filter((c) =>

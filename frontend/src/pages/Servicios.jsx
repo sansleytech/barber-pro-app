@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import api from "../api/cliente";
+import { useUI } from "../context/UIContext";
 import Tabla from "../components/Tabla";
 
 function Servicios() {
+  const { confirmar, avisar } = useUI();
   const [servicios, setServicios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -28,14 +30,21 @@ function Servicios() {
     cargarServicios();
   }, []);
 
-  const eliminarServicio = async (id, nombre) => {
-    if (!confirm(`¿Seguro que querés desactivar "${nombre}"?`)) return;
-    try {
-      await api.delete(`/servicios/${id}`);
-      cargarServicios();
-    } catch (err) {
-      alert("No se pudo desactivar el servicio");
-    }
+  const eliminarServicio = (id, nombre) => {
+    confirmar({
+      titulo: "Confirmar",
+      mensaje: `¿Seguro que querés desactivar "${nombre}"?`,
+      textoConfirmar: "Desactivar",
+      onConfirmar: async () => {
+        try {
+          await api.delete(`/servicios/${id}`);
+          cargarServicios();
+          avisar("Se desactivó correctamente", "exito");
+        } catch {
+          avisar("No se pudo desactivar el servicio", "error");
+        }
+      },
+    });
   };
 
   const filtrados = servicios.filter((s) =>

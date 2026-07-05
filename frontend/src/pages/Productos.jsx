@@ -16,9 +16,11 @@ import {
   Minus,
 } from "lucide-react";
 import api from "../api/cliente";
+import { useUI } from "../context/UIContext";
 import Tabla from "../components/Tabla";
 
 function Productos() {
+  const { confirmar, avisar } = useUI();
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -54,14 +56,21 @@ function Productos() {
     return cat ? cat.nombre : "Sin categoría";
   };
 
-  const eliminarProducto = async (id, nombre) => {
-    if (!confirm(`¿Seguro que querés desactivar "${nombre}"?`)) return;
-    try {
-      await api.delete(`/productos/${id}`);
-      cargarDatos();
-    } catch {
-      alert("No se pudo desactivar el producto");
-    }
+  const eliminarProducto = (id, nombre) => {
+    confirmar({
+      titulo: "Desactivar producto",
+      mensaje: `¿Seguro que querés desactivar "${nombre}"?`,
+      textoConfirmar: "Desactivar",
+      onConfirmar: async () => {
+        try {
+          await api.delete(`/productos/${id}`);
+          cargarDatos();
+          avisar("Producto desactivado correctamente", "exito");
+        } catch {
+          avisar("No se pudo desactivar el producto", "error");
+        }
+      },
+    });
   };
 
   // Ajuste rápido de stock (+1 / -1) usando el PUT existente
@@ -84,7 +93,7 @@ function Productos() {
         ),
       );
     } catch {
-      alert("No se pudo ajustar el stock");
+      avisar("No se pudo ajustar el stock", "error");
     }
   };
 

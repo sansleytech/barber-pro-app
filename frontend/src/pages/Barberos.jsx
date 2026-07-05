@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import api from "../api/cliente";
+import { useUI } from "../context/UIContext";
 import Tabla from "../components/Tabla";
 
 const Barberos = () => {
+  const { confirmar, avisar } = useUI();
   const [barberos, setBarberos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -28,14 +30,21 @@ const Barberos = () => {
     cargarBarberos();
   }, []);
 
-  const eliminarBarbero = async (id, nombre) => {
-    if (!confirm(`¿Seguro que querés desactivar a ${nombre}?`)) return;
-    try {
-      await api.delete(`/barberos/${id}`);
-      cargarBarberos();
-    } catch (err) {
-      alert("No se pudo desactivar el barbero");
-    }
+  const eliminarBarbero = (id, nombre) => {
+    confirmar({
+      titulo: "Desactivar barbero",
+      mensaje: `¿Seguro que querés desactivar a ${nombre}?`,
+      textoConfirmar: "Desactivar",
+      onConfirmar: async () => {
+        try {
+          await api.delete(`/barberos/${id}`);
+          cargarBarberos();
+          avisar("Barbero desactivado correctamente", "exito");
+        } catch (err) {
+          avisar("No se pudo desactivar el barbero", "error");
+        }
+      },
+    });
   };
 
   const filtrados = barberos.filter((b) => {
