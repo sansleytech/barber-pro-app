@@ -15,5 +15,6 @@ class Barbero(Base, TenantMixin):
     telefono = Column(String(20), nullable=False)
     email = Column(String(100), nullable=False, unique=True)
     especialidad = Column(String(100), nullable=True)
+    foto = Column(String(255), nullable=True)
     fecha_ingreso = Column(Date, nullable=False)
     activo = Column(Boolean, default=True)

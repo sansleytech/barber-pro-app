@@ -13,6 +13,7 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import api from "../api/cliente";
+import SubirImagen from "../components/SubirImagen";
 
 const MONEDAS = [
   { codigo: "COP", nombre: "Peso colombiano (COP)" },
@@ -201,6 +202,11 @@ function Configuracion() {
         {/* NEGOCIO */}
         {tab === "negocio" && (
           <div className="space-y-4">
+            <SubirImagen
+              valor={valores.logo_url ?? ""}
+              onCambio={(url) => cambiar("logo_url", url)}
+              etiqueta="Logo de la barbería"
+            />
             <div>
               <label className="block text-sm text-gray-300 mb-1.5">
                 Nombre de la barbería

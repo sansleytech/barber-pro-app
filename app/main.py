@@ -2,6 +2,9 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
+import os
 
 from app.api import (
     registro,
@@ -26,6 +29,7 @@ from app.api import (
     codigos_qr,
     estadisticas,
     solicitudes,
+    uploads,
     portal,
 )
 
@@ -68,6 +72,11 @@ app.include_router(acontecimientos.router)
 app.include_router(codigos_qr.router)
 app.include_router(estadisticas.router)
 app.include_router(solicitudes.router)
+app.include_router(uploads.router)
+
+# Servir las imágenes subidas como archivos estáticos
+os.makedirs("app/uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="app/uploads"), name="uploads")
 app.include_router(portal.router)
 
 

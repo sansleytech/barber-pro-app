@@ -49,9 +49,16 @@ const Barberos = () => {
       campo: "nombre",
       titulo: "Nombre completo",
       render: (b) => (
-        <span className="text-white font-medium">
-          {b.nombre} {b.apellido}
-        </span>
+        <div className="flex items-center gap-3">
+          {b.foto ? (
+            <img src={b.foto} alt={b.nombre} className="w-9 h-9 rounded-full object-cover" />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-gold/10 flex items-center justify-center text-gold text-sm font-bold">
+              {b.nombre?.[0]}{b.apellido?.[0]}
+            </div>
+          )}
+          <span className="text-white font-medium">{b.nombre} {b.apellido}</span>
+        </div>
       ),
     },
     {

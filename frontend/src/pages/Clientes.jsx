@@ -56,7 +56,14 @@ function Clientes() {
       campo: "primer_nombre",
       titulo: "Nombre completo",
       render: (c) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {c.foto ? (
+            <img src={c.foto} alt={c.primer_nombre} className="w-9 h-9 rounded-full object-cover" />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-gold/10 flex items-center justify-center text-gold text-sm font-bold">
+              {c.primer_nombre?.[0]}{c.apellidos?.[0]}
+            </div>
+          )}
           <span className="text-white font-medium">
             {[c.primer_nombre, c.segundo_nombre, c.apellidos]
               .filter(Boolean)

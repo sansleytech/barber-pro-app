@@ -98,7 +98,11 @@ function Reportes() {
       doc.setFontSize(10);
       doc.setTextColor(120, 120, 120);
       const etq = PERIODOS.find((p) => p.dias === periodo)?.label || "";
-      doc.text(`Periodo: ultimos ${etq}  |  Generado: ${new Date().toLocaleDateString("es-CO")}`, 14, y);
+      doc.text(
+        `Periodo: ultimos ${etq}  |  Generado: ${new Date().toLocaleDateString("es-CO")}`,
+        14,
+        y,
+      );
       y += 8;
 
       // KPIs
@@ -106,10 +110,30 @@ function Reportes() {
         startY: y,
         head: [["Metrica", "Actual", "Anterior", "Variacion"]],
         body: [
-          ["Ingresos totales", money(a.ingresos_totales), money(ant?.ingresos_totales), `${v?.ingresos_totales}%`],
-          ["Turnos totales", String(a.total_turnos), String(ant?.total_turnos), `${v?.total_turnos}%`],
-          ["Ticket promedio", money(a.ticket_promedio), money(ant?.ticket_promedio), `${v?.ticket_promedio}%`],
-          ["Tasa cancelacion", `${a.tasa_cancelacion}%`, `${ant?.tasa_cancelacion}%`, `${v?.tasa_cancelacion}%`],
+          [
+            "Ingresos totales",
+            money(a.ingresos_totales),
+            money(ant?.ingresos_totales),
+            `${v?.ingresos_totales}%`,
+          ],
+          [
+            "Turnos totales",
+            String(a.total_turnos),
+            String(ant?.total_turnos),
+            `${v?.total_turnos}%`,
+          ],
+          [
+            "Ticket promedio",
+            money(a.ticket_promedio),
+            money(ant?.ticket_promedio),
+            `${v?.ticket_promedio}%`,
+          ],
+          [
+            "Tasa cancelacion",
+            `${a.tasa_cancelacion}%`,
+            `${ant?.tasa_cancelacion}%`,
+            `${v?.tasa_cancelacion}%`,
+          ],
         ],
         theme: "striped",
         headStyles: { fillColor: [212, 175, 55], textColor: [20, 20, 20] },
@@ -118,12 +142,20 @@ function Reportes() {
 
       // Ranking de barberos
       if (barberos.length > 0) {
-        doc.setFontSize(13); doc.setTextColor(20, 20, 20);
-        doc.text("Ranking de barberos", 14, y); y += 2;
+        doc.setFontSize(13);
+        doc.setTextColor(20, 20, 20);
+        doc.text("Ranking de barberos", 14, y);
+        y += 2;
         autoTable(doc, {
           startY: y + 2,
           head: [["#", "Barbero", "Ingresos", "Turnos", "Clientes"]],
-          body: barberos.map((b, i) => [String(i + 1), b.nombre, money(b.ingresos), String(b.turnos), String(b.clientes_unicos)]),
+          body: barberos.map((b, i) => [
+            String(i + 1),
+            b.nombre,
+            money(b.ingresos),
+            String(b.turnos),
+            String(b.clientes_unicos),
+          ]),
           theme: "striped",
           headStyles: { fillColor: [212, 175, 55], textColor: [20, 20, 20] },
         });
@@ -132,8 +164,10 @@ function Reportes() {
 
       // Servicios top
       if (serviciosTop.length > 0) {
-        doc.setFontSize(13); doc.setTextColor(20, 20, 20);
-        doc.text("Servicios mas vendidos", 14, y); y += 2;
+        doc.setFontSize(13);
+        doc.setTextColor(20, 20, 20);
+        doc.text("Servicios mas vendidos", 14, y);
+        y += 2;
         autoTable(doc, {
           startY: y + 2,
           head: [["Servicio", "Cantidad"]],
@@ -146,12 +180,18 @@ function Reportes() {
 
       // Clientes frecuentes
       if (clientesFrec.length > 0) {
-        doc.setFontSize(13); doc.setTextColor(20, 20, 20);
-        doc.text("Clientes frecuentes", 14, y); y += 2;
+        doc.setFontSize(13);
+        doc.setTextColor(20, 20, 20);
+        doc.text("Clientes frecuentes", 14, y);
+        y += 2;
         autoTable(doc, {
           startY: y + 2,
           head: [["Cliente", "Visitas", "Total gastado"]],
-          body: clientesFrec.map((cl) => [cl.nombre, String(cl.visitas), money(cl.total_gastado)]),
+          body: clientesFrec.map((cl) => [
+            cl.nombre,
+            String(cl.visitas),
+            money(cl.total_gastado),
+          ]),
           theme: "striped",
           headStyles: { fillColor: [16, 185, 129], textColor: [20, 20, 20] },
         });

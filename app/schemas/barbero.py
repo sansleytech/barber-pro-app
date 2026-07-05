@@ -13,6 +13,7 @@ class BarberoBase(BaseModel):
     email: str
     especialidad: Optional[str] = None
     fecha_ingreso: date
+    foto: Optional[str] = None
 
 
 class BarberoCrear(BarberoBase):
@@ -33,3 +34,4 @@ class BarberoActualizar(BaseModel):
     email: Optional[str] = None
     especialidad: Optional[str] = None
     fecha_ingreso: Optional[date] = None
+    foto: Optional[str] = None

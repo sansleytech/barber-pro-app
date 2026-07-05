@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save } from "lucide-react";
 import api from "../api/cliente";
+import SubirImagen from "../components/SubirImagen";
 
 const BarberoForm = () => {
   const { id } = useParams();
@@ -16,6 +17,7 @@ const BarberoForm = () => {
     email: "",
     especialidad: "",
     fecha_ingreso: "",
+    foto: "",
   });
 
   const [cargando, setCargando] = useState(false);
@@ -35,6 +37,7 @@ const BarberoForm = () => {
           email: b.email || "",
           especialidad: b.especialidad || "",
           fecha_ingreso: b.fecha_ingreso || "",
+          foto: b.foto || "",
         });
       } catch {
         setError("No se pudo cargar el barbero");
@@ -119,6 +122,14 @@ const BarberoForm = () => {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="sm:col-span-2">
+            <SubirImagen
+              valor={form.foto}
+              onCambio={(url) => cambiar("foto", url)}
+              etiqueta="Foto del barbero"
+              redondo
+            />
+          </div>
           <div>
             <label className="block text-sm text-gray-300 mb-1.5">
               Nombre *
