@@ -304,6 +304,19 @@ def cambiar_estado_turno(
         raise HTTPException(status_code=404, detail="Turno no encontrado")
 
     turno.estado = datos.estado
+
+    if datos.estado == EstadoTurnoEnum.completado:
+        cliente = (
+            db.query(Cliente)
+            .filter(Cliente.id_cliente == turno.id_cliente)
+            .first()
+        )
+        if cliente and (
+            cliente.fecha_ultima_visita is None
+            or turno.fecha > cliente.fecha_ultima_visita
+        ):
+            cliente.fecha_ultima_visita = turno.fecha
+
     db.commit()
     db.refresh(turno)
     return turno

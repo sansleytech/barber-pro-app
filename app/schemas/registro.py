@@ -1,6 +1,8 @@
 """Esquema para el registro autoservicio de una barbería."""
 
 from pydantic import BaseModel, ConfigDict, field_validator
+from datetime import datetime, timedelta
+
 
 
 class RegistroBarberia(BaseModel):

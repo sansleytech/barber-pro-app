@@ -402,6 +402,7 @@ def clientes_frecuentes(
         Turno.id_cliente.label("id_cliente"),
         func.count(Turno.id_turno).label("visitas"),
         func.coalesce(func.sum(Turno.precio_total), 0).label("total_gastado"),
+        func.max(Turno.fecha).label("ultima_visita"),
     ).filter(
         Turno.id_barberia == bid,
         Turno.fecha >= desde,
@@ -417,6 +418,7 @@ def clientes_frecuentes(
             "nombre": info.get(f.id_cliente, "Cliente"),
             "visitas": int(f.visitas),
             "total_gastado": float(f.total_gastado),
+            "ultima_visita": f.ultima_visita,
         }
         for f in filas
     ]

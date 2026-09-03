@@ -53,6 +53,44 @@ function Clientes() {
     return texto.includes(busqueda.toLowerCase());
   });
 
+  const formatFechaRegistro = (fecha) => {
+    if (!fecha) return "—";
+    return new Date(fecha).toLocaleDateString("es-CO", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const calcularAntiguedad = (fecha) => {
+    if (!fecha) return null;
+    const inicio = new Date(fecha);
+    const hoy = new Date();
+
+    let anios = hoy.getFullYear() - inicio.getFullYear();
+    let meses = hoy.getMonth() - inicio.getMonth();
+    let dias = hoy.getDate() - inicio.getDate();
+
+    if (dias < 0) {
+      meses -= 1;
+      const diasMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth(), 0).getDate();
+      dias += diasMesAnterior;
+    }
+    if (meses < 0) {
+      anios -= 1;
+      meses += 12;
+    }
+
+    const partes = [];
+    if (anios > 0) partes.push(`${anios} ${anios === 1 ? "año" : "años"}`);
+    if (meses > 0) partes.push(`${meses} ${meses === 1 ? "mes" : "meses"}`);
+    if (partes.length === 0) {
+      partes.push(dias <= 0 ? "Hoy" : `${dias} ${dias === 1 ? "día" : "días"}`);
+    }
+
+    return { texto: partes.join(" y "), esAntiguo: anios >= 1 };
+  };
+
   // Definición de columnas para la tabla reutilizable
   const columnas = [
     {
@@ -100,6 +138,46 @@ function Clientes() {
       titulo: "Género",
       oculta: "hidden lg:table-cell",
       render: (c) => c.genero || "—",
+    },
+
+    {
+      campo: "fecha_registro",
+      titulo: "Tiempo como cliente",
+      oculta: "hidden md:table-cell",
+      render: (c) => {
+        const antiguedad = calcularAntiguedad(c.fecha_registro);
+        return (
+          <div>
+            <span className="text-gray-300 text-sm block">
+              {formatFechaRegistro(c.fecha_registro)}
+            </span>
+            {antiguedad && (
+              <span
+                className={`text-xs ${
+                  antiguedad.esAntiguo ? "text-gold font-semibold" : "text-gray-500"
+                }`}
+              >
+                {antiguedad.esAntiguo ? "★ " : ""}
+                {antiguedad.texto}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+
+    {
+      campo: "fecha_ultima_visita",
+      titulo: "Última visita",
+      oculta: "hidden md:table-cell",
+      render: (c) =>
+        c.fecha_ultima_visita ? (
+          <span className="text-gray-300 text-sm">
+            {formatFechaRegistro(c.fecha_ultima_visita)}
+          </span>
+        ) : (
+          <span className="text-gray-600 text-sm">Sin visitas</span>
+        ),
     },
 
     {

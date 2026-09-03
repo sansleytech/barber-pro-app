@@ -10,7 +10,7 @@ from app.models.cliente import Cliente
 from app.models.configuracion import Configuracion
 from app.models.usuario import Usuario, RolEnum
 from app.schemas.venta import VentaCrear, VentaRespuesta
-from app.core.dependencies import requiere_rol
+from app.core.dependencies import requiere_rol, requiere_plan
 
 router = APIRouter(prefix="/ventas", tags=["Ventas"])
 
@@ -21,6 +21,7 @@ def listar_ventas(
     usuario: Usuario = Depends(
         requiere_rol(RolEnum.administrador, RolEnum.recepcionista)
     ),
+    _: Usuario = Depends(requiere_plan("permite_inventario")),
 ):
     """Lista las ventas de la barbería. Admin y recepcionista."""
     return (
@@ -38,6 +39,7 @@ def obtener_venta(
     usuario: Usuario = Depends(
         requiere_rol(RolEnum.administrador, RolEnum.recepcionista)
     ),
+    _: Usuario = Depends(requiere_plan("permite_inventario")),
 ):
     venta = (
         db.query(VentaProducto)
@@ -59,6 +61,7 @@ def crear_venta(
     usuario: Usuario = Depends(
         requiere_rol(RolEnum.administrador, RolEnum.recepcionista)
     ),
+    _: Usuario = Depends(requiere_plan("permite_inventario")),
 ):
     """Registra una venta, valida y descuenta stock, calcula IVA. Multi-tenant."""
     bid = usuario.id_barberia
@@ -68,7 +71,6 @@ def crear_venta(
             status_code=400, detail="La venta debe tener al menos un producto"
         )
 
-    # Validar cliente EN ESTA BARBERÍA (si se indicó)
     if datos.id_cliente is not None:
         cliente = (
             db.query(Cliente)
@@ -78,7 +80,6 @@ def crear_venta(
         if cliente is None:
             raise HTTPException(status_code=404, detail="Cliente no encontrado")
 
-    # 1. Validar productos y stock (todos de esta barbería)
     productos_venta = []
     for item in datos.items:
         if item.cantidad <= 0:
@@ -103,12 +104,10 @@ def crear_venta(
             )
         productos_venta.append((producto, item.cantidad))
 
-    # 2. Subtotal
     subtotal = Decimal(0)
     for producto, cantidad in productos_venta:
         subtotal += producto.precio_venta * cantidad
 
-    # 3. IVA según config DE ESTA BARBERÍA
     cfg_aplica = (
         db.query(Configuracion)
         .filter(Configuracion.clave == "aplica_iva", Configuracion.id_barberia == bid)
@@ -130,7 +129,6 @@ def crear_venta(
 
     total = subtotal + iva
 
-    # 4. Crear venta
     venta = VentaProducto(
         id_cliente=datos.id_cliente,
         id_usuario_vendedor=usuario.id_usuario,
@@ -144,7 +142,6 @@ def crear_venta(
     db.add(venta)
     db.flush()
 
-    # 5. Items y descontar stock
     for producto, cantidad in productos_venta:
         sub = producto.precio_venta * cantidad
         db.add(

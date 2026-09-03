@@ -12,6 +12,8 @@ class FotoGaleria(Base, TenantMixin):
     url = Column(String(255), nullable=False)
     titulo = Column(String(100), nullable=True)
     descripcion = Column(Text, nullable=True)
+    id_categoria_galeria = Column(Integer, nullable=True)
+    destacado = Column(Boolean, default=False)
     orden = Column(Integer, default=0)
     activo = Column(Boolean, default=True)
     fecha_creacion = Column(DateTime, server_default=func.now())

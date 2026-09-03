@@ -203,10 +203,22 @@ function Configuracion() {
         {tab === "negocio" && (
           <div className="space-y-4">
             <SubirImagen
-              valor={valores.logo_url ?? ""}
-              onCambio={(url) => cambiar("logo_url", url)}
-              etiqueta="Logo de la barbería"
+              valor={valores.hero_url ?? ""}
+              onCambio={(url) => cambiar("hero_url", url)}
+              etiqueta="Imagen de portada (hero del portal)"
             />
+            <div>
+              <label className="block text-sm text-gray-300 mb-1.5">
+                Slogan del portal
+              </label>
+              <input
+                type="text"
+                value={valores.portal_slogan ?? ""}
+                onChange={(e) => cambiar("portal_slogan", e.target.value)}
+                placeholder="Ej: Los mejores cortes de la ciudad"
+                className={inputClase}
+              />
+            </div>
             <div>
               <label className="block text-sm text-gray-300 mb-1.5">
                 Nombre de la barbería

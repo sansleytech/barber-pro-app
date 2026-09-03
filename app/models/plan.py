@@ -15,6 +15,7 @@ class Plan(Base):
     precio_mensual = Column(DECIMAL(10, 2), nullable=False)
     max_barberos = Column(Integer, nullable=True)        # límite de barberos (NULL = ilimitado)
     max_turnos_mes = Column(Integer, nullable=True)      # límite de turnos/mes (NULL = ilimitado)
+    
     # Funcionalidades habilitadas (banderas)
     permite_whatsapp = Column(Boolean, default=False)
     permite_pagos_online = Column(Boolean, default=False)
@@ -23,6 +24,12 @@ class Plan(Base):
     activo = Column(Boolean, default=True)
     fecha_creacion = Column(DateTime, server_default=func.now())
 
+    # Funcionalidades habilitadas (banderas)
+    permite_whatsapp = Column(Boolean, default=False)
+    permite_pagos_online = Column(Boolean, default=False)
+    permite_reportes = Column(Boolean, default=True)
+    permite_inventario = Column(Boolean, default=False)   # ← nuevo: inventario y ventas
+    permite_qr = Column(Boolean, default=False)           # ← nuevo: códigos QR
 
 class EstadoSuscripcionEnum(str, enum.Enum):
     trial = "trial"

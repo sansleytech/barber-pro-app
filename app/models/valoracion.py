@@ -10,7 +10,7 @@ class Valoracion(Base, TenantMixin):
     __tablename__ = "valoraciones_turnos"
 
     id_valoracion = Column(Integer, primary_key=True, autoincrement=True)
-    id_turno = Column(Integer, ForeignKey("turnos.id_turno", ondelete="CASCADE"), nullable=False)
+    id_turno = Column(Integer, ForeignKey("turnos.id_turno", ondelete="CASCADE"), nullable=True)
     id_barbero = Column(Integer, ForeignKey("barberos.id_barbero"), nullable=True)
     id_cliente = Column(Integer, ForeignKey("clientes.id_cliente"), nullable=True)
     estrellas = Column(Integer, nullable=False)

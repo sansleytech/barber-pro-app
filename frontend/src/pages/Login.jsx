@@ -45,10 +45,9 @@ const Login = () => {
   };
 
   const claseInput = (valor, campo) =>
-    `w-full bg-ink-card border rounded-xl pl-12 pr-4 py-4 text-white text-base placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all ${
-      tocado[campo] && !valor
-        ? "border-red-500/50"
-        : "border-line focus:border-gold"
+    `w-full bg-ink-card border rounded-xl pl-12 pr-4 py-4 text-white text-base placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all ${tocado[campo] && !valor
+      ? "border-red-500/50"
+      : "border-line focus:border-gold"
     }`;
 
   return (
@@ -122,7 +121,7 @@ const Login = () => {
                   value={subdominio}
                   onChange={(e) => setSubdominio(e.target.value)}
                   onBlur={() => marcarTocado("subdominio")}
-                  placeholder="barberkobe"
+                  placeholder="Subdominio o nombre de barbería"
                   className={claseInput(subdominio, "subdominio")}
                 />
               </div>
@@ -199,10 +198,15 @@ const Login = () => {
 
           <p className="text-center text-gray-500 text-sm mt-10">
             ¿No tenés cuenta?{" "}
-            <span className="text-gold cursor-pointer hover:underline font-medium">
+            <button
+              type="button"
+              onClick={() => navigate("/register")}
+              className="text-gold font-medium hover:underline cursor-pointer"
+            >
               Registrá tu barbería
-            </span>
+            </button>
           </p>
+
         </div>
       </div>
     </div>

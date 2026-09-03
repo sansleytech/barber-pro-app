@@ -17,6 +17,8 @@ class PlanCrear(BaseModel):
     permite_whatsapp: bool = False
     permite_pagos_online: bool = False
     permite_reportes: bool = True
+    permite_inventario: bool = False
+    permite_qr: bool = False
     orden: int = 0
 
 
@@ -30,6 +32,8 @@ class PlanRespuesta(BaseModel):
     permite_whatsapp: bool
     permite_pagos_online: bool
     permite_reportes: bool
+    permite_inventario: bool
+    permite_qr: bool
     orden: int
     activo: bool
     model_config = ConfigDict(from_attributes=True)

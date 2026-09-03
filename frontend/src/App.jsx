@@ -34,6 +34,9 @@ import Portal from "./pages/Portal";
 import Solicitudes from "./pages/Solicitudes";
 import Reportes from "./pages/Reportes";
 import Galeria from "./pages/Galeria";
+import Registro from "./pages/Registro";
+import Planes from "./pages/Planes";
+import Directorio from "./pages/Directorio";
 
 // Protege una ruta según el rol. Si no tiene permiso, lo manda al dashboard.
 function RutaPorRol({ ruta, children }) {
@@ -66,6 +69,8 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/portal/:subdominio" element={<Portal />} />
+        <Route path="/registro" element={<Registro />} />
+        <Route path="/register" element={<Registro />} />
 
         <Route
           element={
@@ -351,6 +356,9 @@ function App() {
             }
           />
         </Route>
+
+        <Route path="/planes" element={<Planes />} />
+        <Route path="/directorio" element={<Directorio />} />
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

@@ -3,6 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from app.api import caja, gastos
 import os
 import os
 
@@ -19,6 +20,7 @@ from app.api import (
     categorias,
     proveedores,
     galeria,
+    categorias_galeria,
     productos,
     compras,
     ventas,
@@ -32,6 +34,8 @@ from app.api import (
     solicitudes,
     uploads,
     portal,
+    pagos,
+    directorio
 )
 
 app = FastAPI(
@@ -63,10 +67,12 @@ app.include_router(configuracion.router)
 app.include_router(categorias.router)
 app.include_router(proveedores.router)
 app.include_router(galeria.router)
+app.include_router(categorias_galeria.router)
 app.include_router(productos.router)
 app.include_router(compras.router)
 app.include_router(ventas.router)
 app.include_router(caja.router)
+app.include_router(gastos.router)
 app.include_router(valoraciones.router)
 app.include_router(notificaciones.router)
 app.include_router(contenido.router)
@@ -75,13 +81,16 @@ app.include_router(codigos_qr.router)
 app.include_router(estadisticas.router)
 app.include_router(solicitudes.router)
 app.include_router(uploads.router)
-
+app.include_router(pagos.router)
 # Servir las imágenes subidas como archivos estáticos
 os.makedirs("app/uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="app/uploads"), name="uploads")
 app.include_router(portal.router)
-
-
+app.include_router(caja.router)
+app.include_router(gastos.router)
+app.include_router(caja.router)
+app.include_router(gastos.router)
+app.include_router(directorio.router)
 @app.get("/")
 def inicio():
     return {"mensaje": "Barber Pro App funcionando 💈"}

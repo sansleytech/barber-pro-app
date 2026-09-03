@@ -167,6 +167,117 @@ def galeria_publica(subdominio: str, db: Session = Depends(get_db)):
             "url": f.url,
             "titulo": f.titulo,
             "descripcion": f.descripcion,
+            "id_categoria_galeria": f.id_categoria_galeria,
+            "destacado": f.destacado,
         }
         for f in fotos
+    ]
+
+
+@router.get("/{subdominio}/info")
+def info_barberia(subdominio: str, db: Session = Depends(get_db)):
+    """Info pública de la barbería (para el hero y el pie del portal)."""
+    from app.models.configuracion import Configuracion
+    barberia = _barberia_por_subdominio(subdominio, db)
+
+    # Leer todas las claves de configuración de esta barbería
+    filas = db.query(Configuracion).filter(
+        Configuracion.id_barberia == barberia.id_barberia
+    ).all()
+    config = {f.clave: f.valor for f in filas}
+
+    return {
+        "nombre": config.get("negocio_nombre") or barberia.nombre,
+        "logo_url": config.get("logo_url"),
+        "hero_url": config.get("hero_url"),
+        "slogan": config.get("portal_slogan"),
+        "direccion": config.get("negocio_direccion"),
+        "telefono": config.get("negocio_telefono"),
+        "email": config.get("negocio_email"),
+        "ciudad": config.get("negocio_ciudad"),
+        "redes_sociales": config.get("redes_sociales") or "[]",
+        "latitud": barberia.latitud,
+        "longitud": barberia.longitud,
+    }
+
+
+class ComentarioCrear(BaseModel):
+    documento: str
+    id_barbero: Optional[int] = None
+    estrellas: int
+    comentario: Optional[str] = None
+
+
+@router.get("/{subdominio}/comentarios")
+def listar_comentarios(subdominio: str, db: Session = Depends(get_db)):
+    """Lista pública de comentarios/reseñas de la barbería."""
+    from app.models.valoracion import Valoracion
+    barberia = _barberia_por_subdominio(subdominio, db)
+    valoraciones = db.query(Valoracion).filter(
+        Valoracion.id_barberia == barberia.id_barberia,
+    ).order_by(Valoracion.fecha_creacion.desc()).limit(50).all()
+
+    # Traer nombres de clientes y barberos
+    clientes = {c.id_cliente: f"{c.primer_nombre} {c.apellidos}" for c in db.query(Cliente).filter(Cliente.id_barberia == barberia.id_barberia).all()}
+    barberos = {b.id_barbero: f"{b.nombre} {b.apellido}" for b in db.query(Barbero).filter(Barbero.id_barberia == barberia.id_barberia).all()}
+
+    return [
+        {
+            "id_valoracion": v.id_valoracion,
+            "nombre_cliente": clientes.get(v.id_cliente, "Cliente"),
+            "nombre_barbero": barberos.get(v.id_barbero),
+            "estrellas": v.estrellas,
+            "comentario": v.comentario,
+            "fecha": v.fecha_creacion.isoformat() if v.fecha_creacion else None,
+        }
+        for v in valoraciones
+    ]
+
+
+@router.post("/{subdominio}/comentarios", status_code=201)
+def crear_comentario(subdominio: str, datos: ComentarioCrear, db: Session = Depends(get_db)):
+    """Crea un comentario/reseña. El cliente se identifica por documento (cédula)."""
+    from app.models.valoracion import Valoracion
+    barberia = _barberia_por_subdominio(subdominio, db)
+
+    # Validar estrellas
+    if datos.estrellas < 1 or datos.estrellas > 5:
+        raise HTTPException(status_code=400, detail="Las estrellas deben ser entre 1 y 5")
+
+    # Buscar el cliente por documento
+    cliente = db.query(Cliente).filter(
+        Cliente.documento == datos.documento.strip(),
+        Cliente.id_barberia == barberia.id_barberia,
+    ).first()
+    if cliente is None:
+        raise HTTPException(status_code=404, detail="No encontramos un cliente con ese documento. Registrate primero pidiendo un turno.")
+
+    valoracion = Valoracion(
+        id_barberia=barberia.id_barberia,
+        id_turno=None,
+        id_barbero=datos.id_barbero,
+        id_cliente=cliente.id_cliente,
+        estrellas=datos.estrellas,
+        comentario=datos.comentario,
+    )
+    db.add(valoracion)
+    db.commit()
+    db.refresh(valoracion)
+    return {
+        "mensaje": "Comentario publicado",
+        "nombre_cliente": f"{cliente.primer_nombre} {cliente.apellidos}",
+    }
+
+
+@router.get("/{subdominio}/categorias-galeria")
+def categorias_galeria_publica(subdominio: str, db: Session = Depends(get_db)):
+    """Lista pública de categorías de galería (para los filtros del portal)."""
+    from app.models.categoria_galeria import CategoriaGaleria
+    barberia = _barberia_por_subdominio(subdominio, db)
+    cats = db.query(CategoriaGaleria).filter(
+        CategoriaGaleria.id_barberia == barberia.id_barberia
+    ).order_by(CategoriaGaleria.orden, CategoriaGaleria.id_categoria_galeria).all()
+    return [
+        {"id_categoria_galeria": c.id_categoria_galeria, "nombre": c.nombre}
+        for c in cats
     ]

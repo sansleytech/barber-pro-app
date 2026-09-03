@@ -67,8 +67,14 @@ function rangoDesdeDias(dias) {
   return { desde: fmt(desde), hasta: fmt(hasta) };
 }
 
+const fechaCorta = (f) =>
+  f ? new Date(f + "T00:00:00").toLocaleDateString("es-CO") : "—";
+
 function Reportes() {
   const [periodo, setPeriodo] = useState(90);
+  const [rangoPersonalizado, setRangoPersonalizado] = useState(false);
+  const [desdeCustom, setDesdeCustom] = useState("");
+  const [hastaCustom, setHastaCustom] = useState("");
   const [resumen, setResumen] = useState(null);
   const [ingresosMes, setIngresosMes] = useState([]);
   const [barberos, setBarberos] = useState([]);
@@ -97,9 +103,12 @@ function Reportes() {
       y += 7;
       doc.setFontSize(10);
       doc.setTextColor(120, 120, 120);
-      const etq = PERIODOS.find((p) => p.dias === periodo)?.label || "";
+      const { desde: desdeRango, hasta: hastaRango } = rangoActivo();
+      const etqPeriodo = rangoPersonalizado
+        ? `${fechaCorta(desdeRango)} al ${fechaCorta(hastaRango)}`
+        : `ultimos ${PERIODOS.find((p) => p.dias === periodo)?.label || ""}`;
       doc.text(
-        `Periodo: ultimos ${etq}  |  Generado: ${new Date().toLocaleDateString("es-CO")}`,
+        `Periodo: ${etqPeriodo}  |  Generado: ${new Date().toLocaleDateString("es-CO")}`,
         14,
         y,
       );
@@ -186,11 +195,12 @@ function Reportes() {
         y += 2;
         autoTable(doc, {
           startY: y + 2,
-          head: [["Cliente", "Visitas", "Total gastado"]],
+          head: [["Cliente", "Visitas", "Total gastado", "Última visita"]],
           body: clientesFrec.map((cl) => [
             cl.nombre,
             String(cl.visitas),
             money(cl.total_gastado),
+            fechaCorta(cl.ultima_visita),
           ]),
           theme: "striped",
           headStyles: { fillColor: [16, 185, 129], textColor: [20, 20, 20] },
@@ -205,12 +215,23 @@ function Reportes() {
     }
   };
 
+  const rangoActivo = () => {
+    if (rangoPersonalizado && desdeCustom && hastaCustom) {
+      return { desde: desdeCustom, hasta: hastaCustom };
+    }
+    return rangoDesdeDias(periodo);
+  };
+
   const cargar = async () => {
+    if (rangoPersonalizado && (!desdeCustom || !hastaCustom)) return;
     setCargando(true);
     setError("");
     try {
-      const { desde, hasta } = rangoDesdeDias(periodo);
-      const meses = Math.max(1, Math.round(periodo / 30));
+      const { desde, hasta } = rangoActivo();
+      const dias = Math.round(
+        (new Date(hasta) - new Date(desde)) / 86400000,
+      ) + 1;
+      const meses = Math.max(1, Math.round(dias / 30));
       const [resR, resI, resB, resE, resS, resG, resH, resCF] =
         await Promise.all([
           api.get("/estadisticas/resumen", {
@@ -245,16 +266,17 @@ function Reportes() {
 
   useEffect(() => {
     cargar();
-  }, [periodo]);
+  }, [periodo, rangoPersonalizado, desdeCustom, hastaCustom]);
 
   useEffect(() => {
     if (!barberoSel) {
       setRendBarbero(null);
       return;
     }
+    if (rangoPersonalizado && (!desdeCustom || !hastaCustom)) return;
     const cargarRend = async () => {
       try {
-        const { desde, hasta } = rangoDesdeDias(periodo);
+        const { desde, hasta } = rangoActivo();
         const res = await api.get(
           `/estadisticas/rendimiento-barbero/${barberoSel}`,
           { params: { desde, hasta } },
@@ -265,7 +287,7 @@ function Reportes() {
       }
     };
     cargarRend();
-  }, [barberoSel, periodo]);
+  }, [barberoSel, periodo, rangoPersonalizado, desdeCustom, hastaCustom]);
 
   const KpiCard = ({
     icono: Icono,
@@ -410,9 +432,12 @@ function Reportes() {
           {PERIODOS.map((p) => (
             <button
               key={p.dias}
-              onClick={() => setPeriodo(p.dias)}
+              onClick={() => {
+                setRangoPersonalizado(false);
+                setPeriodo(p.dias);
+              }}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                periodo === p.dias
+                !rangoPersonalizado && periodo === p.dias
                   ? "bg-gold text-ink"
                   : "text-gray-400 hover:text-white"
               }`}
@@ -420,7 +445,38 @@ function Reportes() {
               {p.label}
             </button>
           ))}
+          <button
+            onClick={() => setRangoPersonalizado(true)}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              rangoPersonalizado
+                ? "bg-gold text-ink"
+                : "text-gray-400 hover:text-white"
+            }`}
+          >
+            Personalizado
+          </button>
         </div>
+
+        {rangoPersonalizado && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              type="date"
+              value={desdeCustom}
+              max={hastaCustom || undefined}
+              onChange={(e) => setDesdeCustom(e.target.value)}
+              className="bg-ink-card border border-line text-white text-sm rounded-full px-3.5 py-2 focus:outline-none focus:border-gold [color-scheme:dark]"
+            />
+            <span className="text-gray-500 text-sm">hasta</span>
+            <input
+              type="date"
+              value={hastaCustom}
+              min={desdeCustom || undefined}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setHastaCustom(e.target.value)}
+              className="bg-ink-card border border-line text-white text-sm rounded-full px-3.5 py-2 focus:outline-none focus:border-gold [color-scheme:dark]"
+            />
+          </div>
+        )}
       </div>
 
       {cargando ? (
@@ -792,7 +848,8 @@ function Reportes() {
                         {cl.nombre}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {cl.visitas} visitas
+                        {cl.visitas} visitas · última:{" "}
+                        {fechaCorta(cl.ultima_visita)}
                       </div>
                     </div>
                     <div className="text-emerald-400 font-semibold">

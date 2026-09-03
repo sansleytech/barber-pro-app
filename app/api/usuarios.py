@@ -6,7 +6,7 @@ from app.db.session import get_db
 from app.models.usuario import Usuario, RolEnum
 from app.schemas.usuario import UsuarioCrear, UsuarioRespuesta, UsuarioActualizar
 from app.core.security import hashear_password
-from app.core.dependencies import get_usuario_actual, requiere_rol
+from app.core.dependencies import get_usuario_actual, requiere_rol, verificar_barberia_activa
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 
@@ -66,8 +66,8 @@ def crear_usuario(
 
 
 @router.get("/yo", response_model=UsuarioRespuesta)
-def mi_perfil(usuario: Usuario = Depends(get_usuario_actual)):
-    """Devuelve los datos del usuario logueado."""
+def mi_perfil(usuario: Usuario = Depends(verificar_barberia_activa)):
+    """Devuelve los datos del usuario logueado. Bloquea si el trial venció."""
     return usuario
 
 

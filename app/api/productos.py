@@ -7,7 +7,7 @@ from app.db.session import get_db
 from app.models.producto import Producto
 from app.models.usuario import Usuario, RolEnum
 from app.schemas.producto import ProductoCrear, ProductoRespuesta, ProductoActualizar
-from app.core.dependencies import requiere_rol
+from app.core.dependencies import requiere_rol, requiere_plan
 
 router = APIRouter(prefix="/productos", tags=["Productos"])
 
@@ -18,6 +18,7 @@ def listar_productos(
     usuario_actual: Usuario = Depends(
         requiere_rol(RolEnum.administrador, RolEnum.recepcionista)
     ),
+    _: Usuario = Depends(requiere_plan("permite_inventario")),
 ):
     """Lista productos activos de la barbería. Admin y recepcionista."""
     return (
@@ -36,6 +37,7 @@ def productos_stock_bajo(
     usuario_actual: Usuario = Depends(
         requiere_rol(RolEnum.administrador, RolEnum.recepcionista)
     ),
+    _: Usuario = Depends(requiere_plan("permite_inventario")),
 ):
     """Lista productos con stock en o bajo el mínimo (alertas)."""
     return (
@@ -56,6 +58,7 @@ def obtener_producto(
     usuario_actual: Usuario = Depends(
         requiere_rol(RolEnum.administrador, RolEnum.recepcionista)
     ),
+    _: Usuario = Depends(requiere_plan("permite_inventario")),
 ):
     """Devuelve un producto por su id (solo de la barbería del usuario)."""
     prod = (
@@ -76,6 +79,7 @@ def crear_producto(
     datos: ProductoCrear,
     db: Session = Depends(get_db),
     usuario_actual: Usuario = Depends(requiere_rol(RolEnum.administrador)),
+    _: Usuario = Depends(requiere_plan("permite_inventario")),
 ):
     """Crea un producto. Solo administradores."""
     nuevo = Producto(**datos.model_dump(), id_barberia=usuario_actual.id_barberia)
@@ -91,6 +95,7 @@ def actualizar_producto(
     datos: ProductoActualizar,
     db: Session = Depends(get_db),
     usuario_actual: Usuario = Depends(requiere_rol(RolEnum.administrador)),
+    _: Usuario = Depends(requiere_plan("permite_inventario")),
 ):
     """Actualiza un producto. Solo administradores."""
     prod = (
@@ -115,6 +120,7 @@ def desactivar_producto(
     id_producto: int,
     db: Session = Depends(get_db),
     usuario_actual: Usuario = Depends(requiere_rol(RolEnum.administrador)),
+    _: Usuario = Depends(requiere_plan("permite_inventario")),
 ):
     """Desactiva un producto. Solo administradores."""
     prod = (
