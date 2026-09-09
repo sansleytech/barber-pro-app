@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.usuario import Usuario
 from app.models.barberia import Barberia
+from app.models.plan import Suscripcion
 from app.core.security import verificar_password, crear_token
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
@@ -65,6 +66,15 @@ def login(
         "subdominio": barberia.subdominio,
     })
 
+    # 5. Buscamos la suscripción más reciente, para informar al frontend
+    # cuántos días le quedan (trial o plan pago).
+    suscripcion = (
+        db.query(Suscripcion)
+        .filter(Suscripcion.id_barberia == barberia.id_barberia)
+        .order_by(Suscripcion.fecha_creacion.desc())
+        .first()
+    )
+
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -79,5 +89,10 @@ def login(
             "barberia_direccion": barberia.direccion,
             "barberia_telefono": barberia.telefono,
             "barberia_logo": barberia.logo,
+            "barberia_estado": barberia.estado.value,
+            "trial_hasta": barberia.trial_hasta.isoformat() if barberia.trial_hasta else None,
+            "suscripcion_estado": suscripcion.estado.value if suscripcion else None,
+            "suscripcion_fin": suscripcion.fecha_fin.isoformat() if suscripcion and suscripcion.fecha_fin else None,
+            "id_plan_actual": suscripcion.id_plan if suscripcion else None,
         },
     }

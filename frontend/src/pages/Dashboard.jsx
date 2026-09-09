@@ -50,10 +50,24 @@ const TEXTO_ESTADO = {
   no_asistio: "No asistió",
 };
 
+function calcularDiasRestantes(fechaISO) {
+  if (!fechaISO) return null;
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const limite = new Date(fechaISO);
+  limite.setHours(0, 0, 0, 0);
+  const dias = Math.ceil((limite - hoy) / (1000 * 60 * 60 * 24));
+  return dias;
+}
+
 function Dashboard() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
   const esAdmin = usuario?.rol === "administrador" || usuario?.super_admin;
+
+  const fechaLimite = usuario?.suscripcion_fin || usuario?.trial_hasta;
+  const diasRestantes = calcularDiasRestantes(fechaLimite);
+  const esTrial = usuario?.barberia_estado === "trial";
 
   const [resumen, setResumen] = useState(null);
   const [ingresosMes, setIngresosMes] = useState([]);
@@ -70,8 +84,7 @@ function Dashboard() {
 
       // Cada petición se resuelve por separado: si una falla (por ejemplo,
       // /productos con 403 porque el plan no incluye inventario), el resto
-      // del dashboard igual se muestra. Antes esto usaba Promise.all, que
-      // tumbaba TODO el dashboard si una sola petición fallaba.
+      // del dashboard igual se muestra.
       const [
         resR, resI, resB, resE,
         resCl, resPr, resCa, resPv, resSv, resUs,
@@ -103,8 +116,6 @@ function Dashboard() {
         usuarios: valor(resUs, []).length,
       });
 
-      // Solo mostramos el error general si fallaron las estadísticas
-      // principales (lo demás son datos secundarios, no bloquean la vista).
       if (resR.status === "rejected") {
         setError("No se pudieron cargar las estadísticas");
       }
@@ -127,7 +138,6 @@ function Dashboard() {
     return `$${valor}`;
   };
 
-  // Tarjeta de KPI con tendencia (clickeable si recibe irA)
   const KpiCard = ({
     icono: Icono,
     label,
@@ -174,7 +184,6 @@ function Dashboard() {
     );
   };
 
-  // Tarjeta chica de conteo (clickeable)
   const ConteoCard = ({ icono: Icono, label, valor, irA, color }) => (
     <div
       onClick={() => navigate(irA)}
@@ -230,6 +239,25 @@ function Dashboard() {
         <h1 className="text-3xl font-bold text-white mb-1">Dashboard</h1>
         <p className="text-gray-400">Resumen de los últimos 30 días</p>
       </div>
+
+      {esAdmin && diasRestantes !== null && diasRestantes <= 30 && (
+        <div className={`mb-6 flex items-center justify-between gap-4 rounded-2xl px-5 py-4 border ${diasRestantes <= 3 ? "bg-red-500/5 border-red-500/25" : "bg-gold/5 border-gold/20"
+          }`}>
+          <p className="text-sm text-gray-200">
+            {esTrial ? "Tu prueba gratuita" : "Tu plan actual"} vence en{" "}
+            <strong className={diasRestantes <= 3 ? "text-red-400" : "text-gold"}>
+              {diasRestantes <= 0 ? "hoy" : `${diasRestantes} día${diasRestantes !== 1 ? "s" : ""}`}
+            </strong>
+            {diasRestantes <= 0 && " — actualizá tu plan para seguir usando el sistema"}
+          </p>
+          <button
+            onClick={() => navigate("/planes")}
+            className="bg-gold text-ink font-semibold text-sm rounded-lg px-4 py-2.5 hover:bg-gold-soft transition-colors whitespace-nowrap"
+          >
+            {esTrial ? "Elegir un plan" : "Renovar"}
+          </button>
+        </div>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
