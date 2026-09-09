@@ -49,7 +49,7 @@ app = FastAPI(
 # así no importa si Vite cambia de 5173 a 5174, etc.
 app.add_middleware(
     CORSMiddleware,
-  allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+|https://.*\.up\.railway\.app",
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+|https://.*\.up\.railway\.app|https://(www\.)?barberproapp\.online",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
