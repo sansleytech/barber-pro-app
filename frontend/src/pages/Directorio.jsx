@@ -4,7 +4,7 @@ import axios from "axios";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 
-const api = axios.create({ baseURL: "http://localhost:8000" });
+const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000" });
 
 // Ícono personalizado en dorado, en vez del pin azul por defecto de Leaflet.
 const iconoBarberia = new L.DivIcon({
