@@ -42,6 +42,7 @@ import Recordatorios from "./pages/Recordatorios";
 import Calendario from "./pages/Calendario";
 import PagarPlan from "./pages/PagarPlan";
 import PagoResultado from "./pages/PagoResultado";
+import Home from "./pages/Home";
 
 // Protege una ruta según el rol. Si no tiene permiso, lo manda al dashboard.
 function RutaPorRol({ ruta, children }) {
@@ -382,6 +383,7 @@ function App() {
         
           <Route path="/pagar" element={<PagarPlan />} />
           <Route path="/pago/resultado" element={<PagoResultado />} />
+          <Route path="/" element={<Home />} />
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
