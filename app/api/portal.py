@@ -105,10 +105,15 @@ def listar_barberos_publico(subdominio: str, db: Session = Depends(get_db)):
     ).all()
     # Solo devolvemos lo necesario (nada sensible)
     return [
-        {"id_barbero": b.id_barbero, "nombre": b.nombre, "apellido": b.apellido}
+        {
+            "id_barbero": b.id_barbero,
+            "nombre": b.nombre,
+            "apellido": b.apellido,
+            "foto": b.foto,
+            "especialidad": b.especialidad,
+        }
         for b in barberos
     ]
-
 
 class ClienteRegistro(BaseModel):
     documento: str
@@ -198,6 +203,9 @@ def info_barberia(subdominio: str, db: Session = Depends(get_db)):
         "redes_sociales": config.get("redes_sociales") or "[]",
         "latitud": barberia.latitud,
         "longitud": barberia.longitud,
+        "mision": config.get("portal_mision"),
+        "vision": config.get("portal_vision"),
+        "historia": config.get("portal_historia"),
     }
 
 

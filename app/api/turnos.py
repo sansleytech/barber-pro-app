@@ -343,3 +343,48 @@ def cancelar_turno(
     turno.estado = EstadoTurnoEnum.cancelado
     db.commit()
     return {"mensaje": f"Turno {id_turno} cancelado correctamente"}
+
+@router.patch("/{id_turno}/estado", response_model=TurnoRespuesta)
+def cambiar_estado_turno(
+    id_turno: int,
+    datos: TurnoCambiarEstado,
+    db: Session = Depends(get_db),
+    id_barberia: int = Depends(get_barberia_actual),
+):
+    """Cambia el estado de un turno (de la barbería del usuario)."""
+    turno = (
+        db.query(Turno)
+        .filter(
+            Turno.id_turno == id_turno,
+            Turno.id_barberia == id_barberia,
+        )
+        .first()
+    )
+    if turno is None:
+        raise HTTPException(status_code=404, detail="Turno no encontrado")
+
+    # Un turno completado queda bloqueado: no se puede volver a cambiar de estado,
+    # sin importar si el pedido viene de la interfaz o directo a la API.
+    if turno.estado == EstadoTurnoEnum.completado:
+        raise HTTPException(
+            status_code=409,
+            detail="Este turno ya fue completado y no se puede modificar",
+        )
+
+    turno.estado = datos.estado
+
+    if datos.estado == EstadoTurnoEnum.completado:
+        cliente = (
+            db.query(Cliente)
+            .filter(Cliente.id_cliente == turno.id_cliente)
+            .first()
+        )
+        if cliente and (
+            cliente.fecha_ultima_visita is None
+            or turno.fecha > cliente.fecha_ultima_visita
+        ):
+            cliente.fecha_ultima_visita = turno.fecha
+
+    db.commit()
+    db.refresh(turno)
+    return turno

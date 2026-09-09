@@ -14,6 +14,7 @@ class PagoIniciar(BaseModel):
 class PagoRespuesta(BaseModel):
     id_pago: int
     id_barberia: int
+    id_plan: Optional[int] = None
     id_suscripcion: Optional[int] = None
     referencia: str
     id_transaccion_wompi: Optional[str] = None

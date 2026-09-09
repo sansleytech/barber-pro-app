@@ -8,11 +8,17 @@ import {
   X,
   Save,
   Calendar,
+  Printer,
+  FileSpreadsheet,
 } from "lucide-react";
 import api from "../api/cliente";
+import { useAuth } from "../context/AuthContext";
 import Tabla from "../components/Tabla";
+import PapelReporte from "../components/PapelReporte";
+import { exportarExcel } from "../utils/exportarExcel";
 
 function Compras() {
+  const { usuario } = useAuth();
   const [compras, setCompras] = useState([]);
   const [productos, setProductos] = useState([]);
   const [proveedores, setProveedores] = useState([]);
@@ -20,6 +26,7 @@ function Compras() {
   const [error, setError] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [panelAbierto, setPanelAbierto] = useState(false);
+  const [reporteAbierto, setReporteAbierto] = useState(false);
 
   const hoyStr = new Date().toISOString().slice(0, 10);
 
@@ -257,6 +264,23 @@ function Compras() {
     },
   ];
 
+  const exportarComprasExcel = () => {
+    exportarExcel(
+      compras.map((c) => ({
+        Fecha: formatoFecha(c.fecha_compra),
+        Producto: nombreProducto(c.id_producto),
+        Proveedor: nombreProveedor(c.id_proveedor),
+        Cantidad: c.cantidad,
+        "Costo unitario": Number(c.costo_unitario),
+        "Costo total": Number(c.costo_total),
+        Factura: c.factura || "",
+        Observaciones: c.observaciones || "",
+      })),
+      "compras-barberpro",
+      "Compras"
+    );
+  };
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -264,13 +288,29 @@ function Compras() {
           <h1 className="text-3xl font-bold text-white mb-1">Compras</h1>
           <p className="text-gray-400">Reposición de inventario</p>
         </div>
-        <button
-          onClick={abrirPanel}
-          className="inline-flex items-center gap-2 bg-gold text-ink font-semibold rounded-lg px-4 py-2.5 hover:bg-gold-soft transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Nueva compra
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={exportarComprasExcel}
+            className="inline-flex items-center gap-2 border border-line text-gray-300 font-semibold rounded-lg px-4 py-2.5 hover:text-white hover:border-gold/40 transition-colors"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Exportar Excel
+          </button>
+          <button
+            onClick={() => setReporteAbierto(true)}
+            className="inline-flex items-center gap-2 border border-line text-gray-300 font-semibold rounded-lg px-4 py-2.5 hover:text-white hover:border-gold/40 transition-colors"
+          >
+            <Printer className="w-4 h-4" />
+            Ver como reporte
+          </button>
+          <button
+            onClick={abrirPanel}
+            className="inline-flex items-center gap-2 bg-gold text-ink font-semibold rounded-lg px-4 py-2.5 hover:bg-gold-soft transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            Nueva compra
+          </button>
+        </div>
       </div>
 
       {/* Métricas */}
@@ -491,6 +531,67 @@ function Compras() {
           </div>
         </>
       )}
+
+      {/* Reporte imprimible */}
+      <PapelReporte
+        abierto={reporteAbierto}
+        onCerrar={() => setReporteAbierto(false)}
+        titulo="Reporte de compras"
+        subtitulo={`Histórico completo — ${compras.length} compra${compras.length !== 1 ? "s" : ""}`}
+        barberia={{
+          nombre: usuario?.barberia,
+          nit: usuario?.barberia_nit,
+          direccion: usuario?.barberia_direccion,
+          telefono: usuario?.barberia_telefono,
+          logo_url: usuario?.barberia_logo,
+        }}
+      >
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="border border-neutral-300 rounded-lg p-3">
+            <p className="text-[10px] uppercase text-neutral-500 mb-1">Compras del mes</p>
+            <p className="font-bold text-lg">{comprasMes.length}</p>
+          </div>
+          <div className="border border-neutral-300 rounded-lg p-3">
+            <p className="text-[10px] uppercase text-neutral-500 mb-1">Invertido este mes</p>
+            <p className="font-bold text-lg">{formatoPrecio(totalMes)}</p>
+          </div>
+          <div className="border border-neutral-300 rounded-lg p-3">
+            <p className="text-[10px] uppercase text-neutral-500 mb-1">Unidades del mes</p>
+            <p className="font-bold text-lg">{unidadesMes}</p>
+          </div>
+          <div className="border border-neutral-300 rounded-lg p-3">
+            <p className="text-[10px] uppercase text-neutral-500 mb-1">Total histórico</p>
+            <p className="font-bold text-lg">{formatoPrecio(totalHistorico)}</p>
+          </div>
+        </div>
+
+        <table className="w-full text-xs">
+          <thead>
+            <tr>
+              {["Fecha", "Producto", "Proveedor", "Cant.", "Total"].map((h) => (
+                <th key={h} className="text-left text-[11px] uppercase text-neutral-500 font-semibold border-b border-neutral-300 py-2">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {compras.map((c) => (
+              <tr key={c.id_compra} className="border-b border-neutral-200">
+                <td className="py-2">{formatoFecha(c.fecha_compra)}</td>
+                <td className="py-2">{nombreProducto(c.id_producto)}</td>
+                <td className="py-2">{nombreProveedor(c.id_proveedor)}</td>
+                <td className="py-2">{c.cantidad} u.</td>
+                <td className="py-2 text-right font-semibold">{formatoPrecio(c.costo_total)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="flex justify-between pt-3 mt-2 border-t border-neutral-300 font-bold text-base">
+          <span>TOTAL INVERTIDO</span>
+          <span>{formatoPrecio(totalHistorico)}</span>
+        </div>
+      </PapelReporte>
     </div>
   );
 }

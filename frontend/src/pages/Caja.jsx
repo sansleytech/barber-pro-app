@@ -11,8 +11,9 @@ import {
   Gem,
   ShoppingCart,
 } from "lucide-react";
-import api from "../api/cliente";
 import { useAuth } from "../context/AuthContext";
+import api from "../api/cliente";
+import PapelReporte from "../components/PapelReporte";
 
 // ============================================================
 // AJUSTA ESTAS RUTAS si tus endpoints reales tienen otro nombre
@@ -24,7 +25,7 @@ const ENDPOINTS = {
   cerrar: "/caja/cerrar",
   reabrir: "/caja/reabrir",
   historial: "/caja/historial",
-  ventasResumenDia: "/ventas-productos/resumen-dia",
+  ventasResumenDia: "/ventas/resumen-dia",
   gastos: "/gastos",
 };
 
@@ -79,9 +80,8 @@ function Toast({ mensaje, tipo }) {
   };
   return (
     <div
-      className={`fixed bottom-6 right-6 z-[1000] px-5 py-3.5 rounded-2xl bg-ink-card/95 backdrop-blur border ${
-        colores[tipo] || colores.success
-      } text-sm shadow-xl animate-fade-in`}
+      className={`fixed bottom-6 right-6 z-[1000] px-5 py-3.5 rounded-2xl bg-ink-card/95 backdrop-blur border ${colores[tipo] || colores.success
+        } text-sm shadow-xl animate-fade-in`}
     >
       {mensaje}
     </div>
@@ -103,6 +103,7 @@ export default function CajaDiaria() {
   const [modalCerrarAbierto, setModalCerrarAbierto] = useState(false);
   const [observacionesCierre, setObservacionesCierre] = useState("");
   const [modalHistorialAbierto, setModalHistorialAbierto] = useState(false);
+  const [modalReporteAbierto, setModalReporteAbierto] = useState(false);
   const [historial, setHistorial] = useState([]);
   const [histDesde, setHistDesde] = useState("");
   const [histHasta, setHistHasta] = useState("");
@@ -336,11 +337,10 @@ export default function CajaDiaria() {
 
         <div className="flex items-center gap-2 flex-wrap">
           <span
-            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold ${
-              cerrada
+            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold ${cerrada
                 ? "bg-red-500/10 text-red-400 border border-red-500/25"
                 : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25"
-            }`}
+              }`}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-current" />
             {cerrada ? "Caja cerrada" : "Caja abierta"}
@@ -408,9 +408,8 @@ export default function CajaDiaria() {
           <div className="flex justify-between items-center py-2.5">
             <span className="text-sm text-gray-400">Egresos en el día</span>
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 bg-ink border border-red-500/25 rounded-xl max-w-[180px] ${
-                cerrada ? "opacity-50" : ""
-              }`}
+              className={`flex items-center gap-2 px-3 py-1.5 bg-ink border border-red-500/25 rounded-xl max-w-[180px] ${cerrada ? "opacity-50" : ""
+                }`}
             >
               <span className="text-gray-500 text-sm">$</span>
               <input
@@ -514,9 +513,8 @@ export default function CajaDiaria() {
                 {["Hora", "Cliente", "Barbero", "Servicio", "Método", "Total"].map((h) => (
                   <th
                     key={h}
-                    className={`px-6 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500 border-b border-line ${
-                      h === "Total" ? "text-right" : "text-left"
-                    }`}
+                    className={`px-6 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500 border-b border-line ${h === "Total" ? "text-right" : "text-left"
+                      }`}
                   >
                     {h}
                   </th>
@@ -541,9 +539,8 @@ export default function CajaDiaria() {
                       !cerrada &&
                       setModalPago({ idTurno: t.id_turno, cliente: t.cliente, precio: t.precio })
                     }
-                    className={`border-b border-line last:border-0 ${
-                      cerrada ? "opacity-70 cursor-not-allowed" : "cursor-pointer hover:bg-gold/[0.03]"
-                    }`}
+                    className={`border-b border-line last:border-0 ${cerrada ? "opacity-70 cursor-not-allowed" : "cursor-pointer hover:bg-gold/[0.03]"
+                      }`}
                   >
                     <td className="px-6 py-3.5 text-gold font-mono text-xs font-bold">
                       {formatHora12(t.hora_inicio)}
@@ -703,9 +700,17 @@ export default function CajaDiaria() {
           >
             <div className="flex items-center justify-between px-6 py-5 border-b border-line">
               <h3 className="text-white font-semibold">Historial de cierres</h3>
-              <button onClick={() => setModalHistorialAbierto(false)} className="text-gray-500 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setModalReporteAbierto(true)}
+                  className="text-xs font-semibold text-gold hover:text-gold-soft transition-colors"
+                >
+                  Ver como reporte
+                </button>
+                <button onClick={() => setModalHistorialAbierto(false)} className="text-gray-500 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             <div className="px-6 pt-4 flex items-center gap-2 flex-wrap">
               <input
@@ -882,6 +887,46 @@ export default function CajaDiaria() {
           </div>
         </div>
       )}
+
+      <PapelReporte
+        abierto={modalReporteAbierto}
+        onCerrar={() => setModalReporteAbierto(false)}
+        titulo="Historial de cierres de caja"
+        subtitulo={histDesde || histHasta ? `${histDesde || "..."} al ${histHasta || "..."}` : "Todos los cierres"}
+        barberia={{
+          nombre: usuario?.barberia,
+          nit: usuario?.barberia_nit,
+          direccion: usuario?.barberia_direccion,
+          telefono: usuario?.barberia_telefono,
+          logo_url: usuario?.barberia_logo,
+        }}
+      >
+        <table className="w-full text-xs">
+          <thead>
+            <tr>
+              {["Fecha", "Servicios", "Cerrado por", "Total"].map((h) => (
+                <th key={h} className="text-left text-[11px] uppercase text-neutral-500 font-semibold border-b border-neutral-300 py-2">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {historial.map((c, i) => (
+              <tr key={i} className="border-b border-neutral-200">
+                <td className="py-2">{new Date(c.fecha).toLocaleDateString("es-CO")}</td>
+                <td className="py-2">{c.total_turnos}</td>
+                <td className="py-2">{c.nombre_usuario}</td>
+                <td className="py-2 text-right font-semibold">{formatCOP(c.total_ingresos)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="flex justify-between pt-3 mt-2 border-t border-neutral-300 font-bold text-base">
+          <span>TOTAL DEL PERÍODO</span>
+          <span>{formatCOP(historial.reduce((acc, c) => acc + parseFloat(c.total_ingresos || 0), 0))}</span>
+        </div>
+      </PapelReporte>
 
       <Toast mensaje={toast.mensaje} tipo={toast.tipo} />
     </div>

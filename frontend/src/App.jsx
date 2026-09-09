@@ -37,6 +37,10 @@ import Galeria from "./pages/Galeria";
 import Registro from "./pages/Registro";
 import Planes from "./pages/Planes";
 import Directorio from "./pages/Directorio";
+import Recordatorios from "./pages/Recordatorios";
+import Calendario from "./pages/Calendario";
+import PagarPlan from "./pages/PagarPlan";
+import PagoResultado from "./pages/PagoResultado";
 
 // Protege una ruta según el rol. Si no tiene permiso, lo manda al dashboard.
 function RutaPorRol({ ruta, children }) {
@@ -71,6 +75,8 @@ function App() {
         <Route path="/portal/:subdominio" element={<Portal />} />
         <Route path="/registro" element={<Registro />} />
         <Route path="/register" element={<Registro />} />
+        <Route path="/planes" element={<Planes />} />
+        <Route path="/directorio" element={<Directorio />} />
 
         <Route
           element={
@@ -355,10 +361,26 @@ function App() {
               </RutaPorRol>
             }
           />
+          <Route
+            path="/recordatorios"
+            element={
+              <RutaPorRol ruta="/recordatorios">
+                <Recordatorios />
+              </RutaPorRol>
+            }
+          />
+          <Route
+            path="/calendario"
+            element={
+              <RutaPorRol ruta="/calendario">
+                <Calendario />
+              </RutaPorRol>
+            }
+          />
         </Route>
-
-        <Route path="/planes" element={<Planes />} />
-        <Route path="/directorio" element={<Directorio />} />
+        
+          <Route path="/pagar" element={<PagarPlan />} />
+          <Route path="/pago/resultado" element={<PagoResultado />} />
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

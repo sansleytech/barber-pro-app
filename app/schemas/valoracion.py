@@ -28,3 +28,13 @@ class ValoracionRespuesta(BaseModel):
     fecha_creacion: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class ValoracionRespuesta(BaseModel):
+    id_valoracion: int
+    id_turno: Optional[int] = None
+    id_barbero: Optional[int] = None
+    id_cliente: Optional[int] = None
+    estrellas: int
+    comentario: Optional[str] = None
+    fecha_creacion: datetime
+    model_config = ConfigDict(from_attributes=True)

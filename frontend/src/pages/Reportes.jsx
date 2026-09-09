@@ -6,6 +6,7 @@ import {
   XCircle,
   TrendingUp,
   TrendingDown,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   LineChart,
@@ -24,6 +25,7 @@ import {
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import api from "../api/cliente";
+import { exportarExcelMultiHoja } from "../utils/exportarExcel";
 
 const PERIODOS = [
   { dias: 30, label: "1 mes" },
@@ -94,6 +96,7 @@ function Reportes() {
     setExportando(true);
     try {
       const doc = new jsPDF("p", "mm", "a4");
+      doc.setFont("courier");
       const W = doc.internal.pageSize.getWidth();
       let y = 15;
 
@@ -145,7 +148,7 @@ function Reportes() {
           ],
         ],
         theme: "striped",
-        headStyles: { fillColor: [212, 175, 55], textColor: [20, 20, 20] },
+        headStyles: { fillColor: [230, 230, 230], textColor: [20, 20, 20] },
       });
       y = doc.lastAutoTable.finalY + 8;
 
@@ -166,7 +169,7 @@ function Reportes() {
             String(b.clientes_unicos),
           ]),
           theme: "striped",
-          headStyles: { fillColor: [212, 175, 55], textColor: [20, 20, 20] },
+          headStyles: { fillColor: [230, 230, 230], textColor: [20, 20, 20] },
         });
         y = doc.lastAutoTable.finalY + 8;
       }
@@ -182,7 +185,7 @@ function Reportes() {
           head: [["Servicio", "Cantidad"]],
           body: serviciosTop.map((s) => [s.nombre, String(s.cantidad)]),
           theme: "striped",
-          headStyles: { fillColor: [167, 139, 250], textColor: [20, 20, 20] },
+          headStyles: { fillColor: [230, 230, 230], textColor: [20, 20, 20] },
         });
         y = doc.lastAutoTable.finalY + 8;
       }
@@ -203,7 +206,7 @@ function Reportes() {
             fechaCorta(cl.ultima_visita),
           ]),
           theme: "striped",
-          headStyles: { fillColor: [16, 185, 129], textColor: [20, 20, 20] },
+          headStyles: { fillColor: [230, 230, 230], textColor: [20, 20, 20] },
         });
       }
 
@@ -213,6 +216,68 @@ function Reportes() {
     } finally {
       setExportando(false);
     }
+  };
+
+  const exportarExcelReporte = () => {
+    exportarExcelMultiHoja(
+      [
+        {
+          nombreHoja: "Resumen",
+          filas: [
+            {
+              Métrica: "Ingresos totales",
+              Actual: a.ingresos_totales,
+              Anterior: ant?.ingresos_totales ?? "",
+              "Variación %": v?.ingresos_totales ?? "",
+            },
+            {
+              Métrica: "Turnos totales",
+              Actual: a.total_turnos,
+              Anterior: ant?.total_turnos ?? "",
+              "Variación %": v?.total_turnos ?? "",
+            },
+            {
+              Métrica: "Ticket promedio",
+              Actual: a.ticket_promedio,
+              Anterior: ant?.ticket_promedio ?? "",
+              "Variación %": v?.ticket_promedio ?? "",
+            },
+            {
+              Métrica: "Tasa de cancelación %",
+              Actual: a.tasa_cancelacion,
+              Anterior: ant?.tasa_cancelacion ?? "",
+              "Variación %": v?.tasa_cancelacion ?? "",
+            },
+          ],
+        },
+        {
+          nombreHoja: "Ranking barberos",
+          filas: barberos.map((b) => ({
+            Barbero: b.nombre,
+            Ingresos: b.ingresos,
+            Turnos: b.turnos,
+            "Clientes únicos": b.clientes_unicos,
+          })),
+        },
+        {
+          nombreHoja: "Servicios top",
+          filas: serviciosTop.map((s) => ({
+            Servicio: s.nombre,
+            Cantidad: s.cantidad,
+          })),
+        },
+        {
+          nombreHoja: "Clientes frecuentes",
+          filas: clientesFrec.map((cl) => ({
+            Cliente: cl.nombre,
+            Visitas: cl.visitas,
+            "Total gastado": cl.total_gastado,
+            "Última visita": fechaCorta(cl.ultima_visita),
+          })),
+        },
+      ],
+      "reportes-barberpro"
+    );
   };
 
   const rangoActivo = () => {
@@ -404,18 +469,27 @@ function Reportes() {
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-6 gap-4">
+      <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold text-white mb-1">Reportes</h1>
           <p className="text-gray-400">Analítica y métricas del negocio</p>
         </div>
-        <button
-          onClick={exportarPDF}
-          disabled={exportando}
-          className="inline-flex items-center gap-2 bg-gold text-ink font-semibold rounded-lg px-4 py-2.5 hover:bg-gold-soft transition-colors disabled:opacity-50 whitespace-nowrap"
-        >
-          {exportando ? "Generando..." : "Exportar PDF"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportarExcelReporte}
+            className="inline-flex items-center gap-2 border border-line text-gray-300 font-semibold rounded-lg px-4 py-2.5 hover:text-white transition-colors"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Exportar Excel
+          </button>
+          <button
+            onClick={exportarPDF}
+            disabled={exportando}
+            className="inline-flex items-center gap-2 bg-gold text-ink font-semibold rounded-lg px-4 py-2.5 hover:bg-gold-soft transition-colors disabled:opacity-50 whitespace-nowrap"
+          >
+            {exportando ? "Generando..." : "Exportar PDF"}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -523,88 +597,83 @@ function Reportes() {
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-            <Card
-              titulo="Ingresos mensuales"
-              subtitulo="Evolución del período"
-              full
-            >
+          {/* Distribución por género — full width, arriba de todo */}
+          <Card
+            titulo="Distribución por género"
+            subtitulo={`${genTotal} clientes`}
+            full
+          >
+            <div className="grid sm:grid-cols-2 gap-6 items-center">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl font-bold"
+                  style={{ background: "rgba(96,165,250,0.2)", color: "#93C5FD" }}
+                >
+                  ♂
+                </div>
+                <div>
+                  <div className="text-4xl font-bold" style={{ color: "#93C5FD" }}>
+                    {masc.cantidad}
+                  </div>
+                  <div className="text-xs text-gray-500">Hombres · {masc.porcentaje}%</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 sm:justify-end">
+                <div>
+                  <div className="text-4xl font-bold sm:text-right" style={{ color: "#F9A8D4" }}>
+                    {fem.cantidad}
+                  </div>
+                  <div className="text-xs text-gray-500 sm:text-right">Mujeres · {fem.porcentaje}%</div>
+                </div>
+                <div
+                  className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl font-bold"
+                  style={{ background: "rgba(244,114,182,0.2)", color: "#F9A8D4" }}
+                >
+                  ♀
+                </div>
+              </div>
+            </div>
+            <div className="h-2.5 rounded-full overflow-hidden bg-white/5 flex mt-5">
+              <div style={{ width: `${masc.porcentaje}%`, background: "linear-gradient(90deg,#60A5FA,#3B82F6)" }} />
+              <div style={{ width: `${fem.porcentaje}%`, background: "linear-gradient(90deg,#EC4899,#F472B6)" }} />
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 mt-6">
+            <Card titulo="Ingresos mensuales" subtitulo="Evolución del período" full>
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={ingresosMes}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#26262d" />
                   <XAxis dataKey="etiqueta" stroke="#6b7280" fontSize={12} />
-                  <YAxis
-                    stroke="#6b7280"
-                    fontSize={12}
-                    tickFormatter={moneyCorto}
-                  />
+                  <YAxis stroke="#6b7280" fontSize={12} tickFormatter={moneyCorto} />
                   <Tooltip
                     formatter={(val) => money(val)}
-                    contentStyle={{
-                      background: "#1a1a1f",
-                      border: "1px solid #26262d",
-                      borderRadius: 12,
-                      color: "#fff",
-                    }}
+                    contentStyle={{ background: "#1a1a1f", border: "1px solid #26262d", borderRadius: 12, color: "#fff" }}
                   />
-                  <Line
-                    type="monotone"
-                    dataKey="total"
-                    stroke="#d4af37"
-                    strokeWidth={2}
-                    dot={{ fill: "#d4af37" }}
-                  />
+                  <Line type="monotone" dataKey="total" stroke="#d4af37" strokeWidth={2} dot={{ fill: "#d4af37" }} />
                 </LineChart>
               </ResponsiveContainer>
             </Card>
 
-            <Card
-              titulo="Turnos por estado"
-              subtitulo="Distribución del período"
-            >
+            <Card titulo="Turnos por estado" subtitulo="Distribución del período">
               {datosDona.length === 0 ? (
-                <div className="h-[260px] flex items-center justify-center text-gray-500">
-                  Sin turnos en el período
-                </div>
+                <div className="h-[260px] flex items-center justify-center text-gray-500">Sin turnos en el período</div>
               ) : (
                 <div className="flex items-center gap-4">
                   <ResponsiveContainer width="60%" height={220}>
                     <PieChart>
-                      <Pie
-                        data={datosDona}
-                        dataKey="valor"
-                        nameKey="nombre"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={2}
-                      >
-                        {datosDona.map((d, i) => (
-                          <Cell key={i} fill={d.color} />
-                        ))}
+                      <Pie data={datosDona} dataKey="valor" nameKey="nombre" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2}>
+                        {datosDona.map((d, i) => <Cell key={i} fill={d.color} />)}
                       </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          background: "#1a1a1f",
-                          border: "1px solid #26262d",
-                          borderRadius: 12,
-                          color: "#fff",
-                        }}
-                      />
+                      <Tooltip contentStyle={{ background: "#1a1a1f", border: "1px solid #26262d", borderRadius: 12, color: "#fff" }} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="flex-1 space-y-2">
                     {datosDona.map((d, i) => (
                       <div key={i} className="flex items-center gap-2 text-sm">
-                        <span
-                          className="w-3 h-3 rounded-full"
-                          style={{ background: d.color }}
-                        />
+                        <span className="w-3 h-3 rounded-full" style={{ background: d.color }} />
                         <span className="text-gray-300 flex-1">{d.nombre}</span>
-                        <span className="text-white font-medium">
-                          {d.valor}
-                        </span>
+                        <span className="text-white font-medium">{d.valor}</span>
                       </div>
                     ))}
                   </div>
@@ -612,38 +681,17 @@ function Reportes() {
               )}
             </Card>
 
-            <Card
-              titulo="Ingresos por barbero"
-              subtitulo="Total generado en el período"
-            >
+            <Card titulo="Ingresos por barbero" subtitulo="Total generado en el período">
               {topBarberos.length === 0 ? (
-                <div className="h-[260px] flex items-center justify-center text-gray-500">
-                  Sin datos
-                </div>
+                <div className="h-[260px] flex items-center justify-center text-gray-500">Sin datos</div>
               ) : (
                 <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={topBarberos}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#26262d" />
                     <XAxis dataKey="nombre" stroke="#6b7280" fontSize={12} />
-                    <YAxis
-                      stroke="#6b7280"
-                      fontSize={12}
-                      tickFormatter={moneyCorto}
-                    />
-                    <Tooltip
-                      formatter={(val) => money(val)}
-                      contentStyle={{
-                        background: "#1a1a1f",
-                        border: "1px solid #26262d",
-                        borderRadius: 12,
-                        color: "#fff",
-                      }}
-                    />
-                    <Bar
-                      dataKey="ingresos"
-                      fill="#d4af37"
-                      radius={[6, 6, 0, 0]}
-                    />
+                    <YAxis stroke="#6b7280" fontSize={12} tickFormatter={moneyCorto} />
+                    <Tooltip formatter={(val) => money(val)} contentStyle={{ background: "#1a1a1f", border: "1px solid #26262d", borderRadius: 12, color: "#fff" }} />
+                    <Bar dataKey="ingresos" fill="#d4af37" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -651,34 +699,15 @@ function Reportes() {
 
             <Card titulo="Servicios más vendidos" subtitulo="Top del período">
               {topServicios.length === 0 ? (
-                <div className="h-[260px] flex items-center justify-center text-gray-500">
-                  Sin datos
-                </div>
+                <div className="h-[260px] flex items-center justify-center text-gray-500">Sin datos</div>
               ) : (
                 <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={topServicios} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="#26262d" />
                     <XAxis type="number" stroke="#6b7280" fontSize={12} />
-                    <YAxis
-                      type="category"
-                      dataKey="nombre"
-                      stroke="#6b7280"
-                      fontSize={11}
-                      width={90}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: "#1a1a1f",
-                        border: "1px solid #26262d",
-                        borderRadius: 12,
-                        color: "#fff",
-                      }}
-                    />
-                    <Bar
-                      dataKey="cantidad"
-                      fill="#a78bfa"
-                      radius={[0, 6, 6, 0]}
-                    />
+                    <YAxis type="category" dataKey="nombre" stroke="#6b7280" fontSize={11} width={90} />
+                    <Tooltip contentStyle={{ background: "#1a1a1f", border: "1px solid #26262d", borderRadius: 12, color: "#fff" }} />
+                    <Bar dataKey="cantidad" fill="#a78bfa" radius={[0, 6, 6, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -690,182 +719,60 @@ function Reportes() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#26262d" />
                   <XAxis dataKey="etiqueta" stroke="#6b7280" fontSize={11} />
                   <YAxis stroke="#6b7280" fontSize={12} allowDecimals={false} />
-                  <Tooltip
-                    contentStyle={{
-                      background: "#1a1a1f",
-                      border: "1px solid #26262d",
-                      borderRadius: 12,
-                      color: "#fff",
-                    }}
-                  />
-                  <Bar
-                    dataKey="cantidad"
-                    fill="#60a5fa"
-                    radius={[6, 6, 0, 0]}
-                  />
+                  <Tooltip contentStyle={{ background: "#1a1a1f", border: "1px solid #26262d", borderRadius: 12, color: "#fff" }} />
+                  <Bar dataKey="cantidad" fill="#60a5fa" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Card>
+          </div>
 
-            <Card
-              titulo="Distribución por género"
-              subtitulo={`${genTotal} clientes`}
-            >
-              <div className="flex items-center justify-between gap-6 mb-4">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-bold"
-                    style={{
-                      background: "rgba(96,165,250,0.2)",
-                      color: "#93C5FD",
-                    }}
-                  >
-                    ♂
-                  </div>
-                  <div>
-                    <div
-                      className="text-3xl font-bold"
-                      style={{ color: "#93C5FD" }}
-                    >
-                      {masc.cantidad}
+          {/* Ranking y clientes frecuentes: lado a lado, con su propio espacio */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <Card titulo="🏆 Ranking de barberos" subtitulo="Por ingresos generados">
+              {barberos.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">Sin datos</div>
+              ) : (
+                <div className="space-y-1">
+                  {barberos.slice(0, 10).map((b, i) => (
+                    <div key={i} className="flex items-center gap-3 py-2.5 border-b border-line last:border-0">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${i === 0 ? "bg-gold text-ink" : i === 1 ? "bg-gray-300 text-ink" : i === 2 ? "bg-orange-700 text-white" : "bg-ink text-gray-400"}`}>
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-medium truncate">{b.nombre}</div>
+                        <div className="text-xs text-gray-500">{b.turnos} turnos · {b.clientes_unicos} clientes</div>
+                      </div>
+                      <div className="text-emerald-400 font-semibold">{money(b.ingresos)}</div>
                     </div>
-                    <div className="text-xs text-gray-500">
-                      Hombres · {masc.porcentaje}%
-                    </div>
-                  </div>
+                  ))}
                 </div>
-                <div className="w-px h-10 bg-line" />
-                <div className="flex items-center gap-3">
-                  <div>
-                    <div
-                      className="text-3xl font-bold text-right"
-                      style={{ color: "#F9A8D4" }}
-                    >
-                      {fem.cantidad}
+              )}
+            </Card>
+
+            <Card titulo="⭐ Clientes frecuentes" subtitulo="Top por cantidad de visitas">
+              {clientesFrec.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">Sin datos</div>
+              ) : (
+                <div className="space-y-1">
+                  {clientesFrec.map((cl, i) => (
+                    <div key={i} className="flex items-center gap-3 py-2.5 border-b border-line last:border-0">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${i === 0 ? "bg-gold text-ink" : i === 1 ? "bg-gray-300 text-ink" : i === 2 ? "bg-orange-700 text-white" : "bg-ink text-gray-400"}`}>
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-medium truncate">{cl.nombre}</div>
+                        <div className="text-xs text-gray-500">{cl.visitas} visitas · última: {fechaCorta(cl.ultima_visita)}</div>
+                      </div>
+                      <div className="text-emerald-400 font-semibold">{money(cl.total_gastado)}</div>
                     </div>
-                    <div className="text-xs text-gray-500">
-                      Mujeres · {fem.porcentaje}%
-                    </div>
-                  </div>
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-bold"
-                    style={{
-                      background: "rgba(244,114,182,0.2)",
-                      color: "#F9A8D4",
-                    }}
-                  >
-                    ♀
-                  </div>
+                  ))}
                 </div>
-              </div>
-              <div className="h-2 rounded-full overflow-hidden bg-white/5 flex">
-                <div
-                  style={{
-                    width: `${masc.porcentaje}%`,
-                    background: "linear-gradient(90deg,#60A5FA,#3B82F6)",
-                  }}
-                />
-                <div
-                  style={{
-                    width: `${fem.porcentaje}%`,
-                    background: "linear-gradient(90deg,#EC4899,#F472B6)",
-                  }}
-                />
-              </div>
+              )}
             </Card>
           </div>
 
-          <Card
-            titulo="🏆 Ranking de barberos"
-            subtitulo="Por ingresos generados"
-          >
-            {barberos.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">Sin datos</div>
-            ) : (
-              <div className="space-y-1">
-                {barberos.slice(0, 10).map((b, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 py-2.5 border-b border-line last:border-0"
-                  >
-                    <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
-                        i === 0
-                          ? "bg-gold text-ink"
-                          : i === 1
-                            ? "bg-gray-300 text-ink"
-                            : i === 2
-                              ? "bg-orange-700 text-white"
-                              : "bg-ink text-gray-400"
-                      }`}
-                    >
-                      {i + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-white font-medium truncate">
-                        {b.nombre}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {b.turnos} turnos · {b.clientes_unicos} clientes
-                      </div>
-                    </div>
-                    <div className="text-emerald-400 font-semibold">
-                      {money(b.ingresos)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-          <Card
-            titulo="⭐ Clientes frecuentes"
-            subtitulo="Top por cantidad de visitas"
-          >
-            {clientesFrec.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">Sin datos</div>
-            ) : (
-              <div className="space-y-1">
-                {clientesFrec.map((cl, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 py-2.5 border-b border-line last:border-0"
-                  >
-                    <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
-                        i === 0
-                          ? "bg-gold text-ink"
-                          : i === 1
-                            ? "bg-gray-300 text-ink"
-                            : i === 2
-                              ? "bg-orange-700 text-white"
-                              : "bg-ink text-gray-400"
-                      }`}
-                    >
-                      {i + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-white font-medium truncate">
-                        {cl.nombre}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {cl.visitas} visitas · última:{" "}
-                        {fechaCorta(cl.ultima_visita)}
-                      </div>
-                    </div>
-                    <div className="text-emerald-400 font-semibold">
-                      {money(cl.total_gastado)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-
-          {/* Rendimiento por barbero */}
-          <Card
-            titulo="Rendimiento por barbero"
-            subtitulo="Métricas detalladas con comparativo"
-          >
+          {/* Rendimiento por barbero: full width, con su propio espacio arriba */}
+          <Card titulo="Rendimiento por barbero" subtitulo="Métricas detalladas con comparativo">
             <select
               value={barberoSel}
               onChange={(e) => setBarberoSel(e.target.value)}
@@ -873,53 +780,23 @@ function Reportes() {
             >
               <option value="">Seleccioná un barbero...</option>
               {barberos.map((b) => (
-                <option key={b.id_barbero} value={b.id_barbero}>
-                  {b.nombre}
-                </option>
+                <option key={b.id_barbero} value={b.id_barbero}>{b.nombre}</option>
               ))}
             </select>
 
             {!rendBarbero ? (
-              <div className="text-center py-8 text-gray-500">
-                Elegí un barbero para ver sus métricas
-              </div>
+              <div className="text-center py-8 text-gray-500">Elegí un barbero para ver sus métricas</div>
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                <MetricaBar
-                  label="Ingresos"
-                  valor={money(rendBarbero.actual.ingresos)}
-                  variacion={rendBarbero.variacion.ingresos}
-                />
-                <MetricaBar
-                  label="Turnos"
-                  valor={rendBarbero.actual.turnos}
-                  variacion={rendBarbero.variacion.turnos}
-                />
-                <MetricaBar
-                  label="Propinas"
-                  valor={money(rendBarbero.actual.propinas)}
-                  variacion={rendBarbero.variacion.propinas}
-                />
-                <MetricaBar
-                  label="Clientes unicos"
-                  valor={rendBarbero.actual.clientes_unicos}
-                  variacion={rendBarbero.variacion.clientes_unicos}
-                />
-                <MetricaBar
-                  label="Ticket promedio"
-                  valor={money(rendBarbero.actual.ticket_promedio)}
-                  variacion={rendBarbero.variacion.ticket_promedio}
-                />
+                <MetricaBar label="Ingresos" valor={money(rendBarbero.actual.ingresos)} variacion={rendBarbero.variacion.ingresos} />
+                <MetricaBar label="Turnos" valor={rendBarbero.actual.turnos} variacion={rendBarbero.variacion.turnos} />
+                <MetricaBar label="Propinas" valor={money(rendBarbero.actual.propinas)} variacion={rendBarbero.variacion.propinas} />
+                <MetricaBar label="Clientes unicos" valor={rendBarbero.actual.clientes_unicos} variacion={rendBarbero.variacion.clientes_unicos} />
+                <MetricaBar label="Ticket promedio" valor={money(rendBarbero.actual.ticket_promedio)} variacion={rendBarbero.variacion.ticket_promedio} />
                 <div className="bg-ink border border-line rounded-xl p-4">
-                  <div className="text-xs text-gray-500 uppercase mb-1">
-                    Rating
-                  </div>
-                  <div className="text-xl font-bold text-white">
-                    {rendBarbero.rating ? `⭐ ${rendBarbero.rating}` : "—"}
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    {rendBarbero.cant_valoraciones} valoraciones
-                  </div>
+                  <div className="text-xs text-gray-500 uppercase mb-1">Rating</div>
+                  <div className="text-xl font-bold text-white">{rendBarbero.rating ? `⭐ ${rendBarbero.rating}` : "—"}</div>
+                  <div className="text-xs text-gray-600">{rendBarbero.cant_valoraciones} valoraciones</div>
                 </div>
               </div>
             )}

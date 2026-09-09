@@ -9,19 +9,13 @@ import {
   ShoppingCart,
   Package,
 } from "lucide-react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import api from "../api/cliente";
-
-// Datos de tu barbería (provisorio hasta la fase fiscal — editá con los tuyos)
-const DATOS_BARBERIA = {
-  nombre: "BARBER PRO",
-  telefono: "300 000 0000",
-  direccion: "Tu dirección, Medellín",
-};
+import { useAuth } from "../context/AuthContext";
+import Recibo from "../components/Recibo";
 
 function VentaNueva() {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
 
   const [productos, setProductos] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -32,6 +26,10 @@ function VentaNueva() {
   const [observaciones, setObservaciones] = useState("");
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
+
+  // Recibo que se muestra al terminar la venta
+  const [reciboAbierto, setReciboAbierto] = useState(false);
+  const [ventaParaRecibo, setVentaParaRecibo] = useState(null);
 
   useEffect(() => {
     const cargar = async () => {
@@ -109,72 +107,10 @@ function VentaNueva() {
       .includes(busqueda.toLowerCase()),
   );
 
-  const nombreClienteSel = () => {
-    if (!idCliente) return "Cliente ocasional";
+  const clienteSel = () => {
+    if (!idCliente) return null;
     const c = clientes.find((x) => x.id_cliente === Number(idCliente));
-    return c ? `${c.primer_nombre} ${c.apellidos}` : "Cliente";
-  };
-
-  // Genera el comprobante PDF de la venta recién hecha
-  const generarComprobante = (venta) => {
-    const doc = new jsPDF();
-
-    // Encabezado: datos de la barbería
-    doc.setFontSize(18);
-    doc.setTextColor(0);
-    doc.text(DATOS_BARBERIA.nombre, 14, 20);
-    doc.setFontSize(10);
-    doc.setTextColor(110);
-    doc.text(`Tel: ${DATOS_BARBERIA.telefono}`, 14, 27);
-    doc.text(DATOS_BARBERIA.direccion, 14, 32);
-
-    // Título comprobante
-    doc.setFontSize(13);
-    doc.setTextColor(0);
-    doc.text("COMPROBANTE DE VENTA", 14, 44);
-    doc.setFontSize(10);
-    doc.setTextColor(110);
-    const numero = venta.numero_factura || venta.id_venta;
-    doc.text(`N°: ${numero}`, 14, 51);
-    doc.text(
-      `Fecha: ${new Date(venta.fecha_venta).toLocaleString("es-CO")}`,
-      14,
-      56,
-    );
-    doc.text(`Cliente: ${nombreClienteSel()}`, 14, 61);
-    doc.text(`Método de pago: ${metodoPago}`, 14, 66);
-
-    // Tabla de productos
-    autoTable(doc, {
-      startY: 73,
-      head: [["Producto", "Cant.", "P. Unit.", "Subtotal"]],
-      body: carrito.map((i) => [
-        i.producto.nombre,
-        i.cantidad,
-        formatoPrecio(i.producto.precio_venta),
-        formatoPrecio(Number(i.producto.precio_venta) * i.cantidad),
-      ]),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [212, 175, 55] },
-    });
-
-    // Totales (usa los que devuelve el backend, ya con IVA)
-    let y = doc.lastAutoTable.finalY + 8;
-    doc.setFontSize(10);
-    doc.setTextColor(0);
-    doc.text(`Subtotal: ${formatoPrecio(venta.subtotal)}`, 140, y);
-    y += 6;
-    doc.text(`IVA: ${formatoPrecio(venta.iva)}`, 140, y);
-    y += 7;
-    doc.setFontSize(12);
-    doc.text(`TOTAL: ${formatoPrecio(venta.total)}`, 140, y);
-
-    y += 14;
-    doc.setFontSize(9);
-    doc.setTextColor(130);
-    doc.text("¡Gracias por tu compra!", 14, y);
-
-    doc.save(`comprobante_${numero}.pdf`);
+    return c ? { nombre: `${c.primer_nombre} ${c.apellidos}`, documento: c.documento } : null;
   };
 
   const cobrar = async () => {
@@ -197,8 +133,27 @@ function VentaNueva() {
 
     try {
       const res = await api.post("/ventas", datos);
-      generarComprobante(res.data); // descarga el PDF con la venta registrada
-      navigate("/ventas");
+      const venta = res.data;
+
+      // Armamos los datos del recibo con lo que ya tenemos en el carrito
+      // (nombres y cantidades) + los totales reales que devuelve el backend.
+      setVentaParaRecibo({
+        numero: venta.numero_factura || venta.id_venta,
+        fecha: venta.fecha_venta,
+        cliente: clienteSel(),
+        atendioPor: { nombre: usuario?.nombre_usuario, rol: "Vendedor" },
+        items: carrito.map((i) => ({
+          nombre: i.producto.nombre,
+          cantidad: i.cantidad,
+          subtotal: Number(i.producto.precio_venta) * i.cantidad,
+        })),
+        subtotal: venta.subtotal,
+        iva: venta.iva,
+        total: venta.total,
+        metodoPago,
+      });
+      setReciboAbierto(true);
+      setCarrito([]);
     } catch (err) {
       setError(
         err.response?.data?.detail &&
@@ -209,6 +164,11 @@ function VentaNueva() {
     } finally {
       setCargando(false);
     }
+  };
+
+  const cerrarReciboYVolver = () => {
+    setReciboAbierto(false);
+    navigate("/ventas");
   };
 
   return (
@@ -261,11 +221,10 @@ function VentaNueva() {
                     type="button"
                     onClick={() => agregar(p)}
                     disabled={agotado || sinMas}
-                    className={`text-left bg-ink-card border rounded-xl p-3 transition-colors ${
-                      agotado || sinMas
+                    className={`text-left bg-ink-card border rounded-xl p-3 transition-colors ${agotado || sinMas
                         ? "border-line opacity-40 cursor-not-allowed"
                         : "border-line hover:border-gold/50"
-                    }`}
+                      }`}
                   >
                     <div className="h-16 flex items-center justify-center mb-2 bg-ink rounded-lg">
                       {p.foto ? (
@@ -423,6 +382,30 @@ function VentaNueva() {
           </div>
         </div>
       </div>
+
+      {ventaParaRecibo && (
+        <Recibo
+          abierto={reciboAbierto}
+          onCerrar={cerrarReciboYVolver}
+          tipo="venta"
+          numero={ventaParaRecibo.numero}
+          fecha={ventaParaRecibo.fecha}
+          cliente={ventaParaRecibo.cliente}
+          atendioPor={ventaParaRecibo.atendioPor}
+          items={ventaParaRecibo.items}
+          subtotal={ventaParaRecibo.subtotal}
+          iva={ventaParaRecibo.iva}
+          total={ventaParaRecibo.total}
+          metodoPago={ventaParaRecibo.metodoPago}
+          barberia={{
+            nombre: usuario?.barberia,
+            nit: usuario?.barberia_nit,
+            direccion: usuario?.barberia_direccion,
+            telefono: usuario?.barberia_telefono,
+            logo_url: usuario?.barberia_logo,
+          }}
+        />
+      )}
     </div>
   );
 }

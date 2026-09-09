@@ -75,5 +75,9 @@ def login(
             "super_admin": usuario.super_admin,
             "id_barberia": barberia.id_barberia,
             "barberia": barberia.nombre,
+            "barberia_nit": barberia.nit,
+            "barberia_direccion": barberia.direccion,
+            "barberia_telefono": barberia.telefono,
+            "barberia_logo": barberia.logo,
         },
     }

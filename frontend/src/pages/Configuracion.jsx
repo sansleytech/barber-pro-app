@@ -42,6 +42,7 @@ const TIPOS_RED = [
 
 const TABS = [
   { id: "negocio", nombre: "Negocio", icono: Store },
+  { id: "portal", nombre: "Portal", icono: Globe },
   { id: "facturacion", nombre: "Facturación", icono: Receipt },
   { id: "redes", nombre: "Redes", icono: Share2 },
   { id: "mensajes", nombre: "Mensajes", icono: MessageSquare },

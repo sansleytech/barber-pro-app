@@ -1,6 +1,8 @@
 export const PERMISOS = {
   "/dashboard": "todos",
   "/turnos": "todos",
+  "/calendario": "todos",
+  "/recordatorios": "todos",
   "/clientes": ["administrador", "recepcionista"],
   "/barberos": ["administrador", "recepcionista"],
   "/servicios": ["administrador", "recepcionista"],

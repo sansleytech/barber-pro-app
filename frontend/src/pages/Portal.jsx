@@ -76,8 +76,7 @@ const input =
 const btnPrimary =
   "font-semibold text-sm text-neutral-950 bg-yellow-400 rounded-lg px-6 py-3 hover:bg-yellow-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-yellow-400/20 transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:cursor-default";
 const pill = (active) =>
-  `text-sm font-medium px-4 py-2 rounded-full border transition-all ${
-    active ? "bg-yellow-400 border-yellow-400 text-neutral-950 scale-105" : "bg-neutral-900 border-white/10 text-gray-400 hover:border-white/25 hover:scale-105"
+  `text-sm font-medium px-4 py-2 rounded-full border transition-all ${active ? "bg-yellow-400 border-yellow-400 text-neutral-950 scale-105" : "bg-neutral-900 border-white/10 text-gray-400 hover:border-white/25 hover:scale-105"
   }`;
 const alert = "bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3";
 const alertBrass = "bg-yellow-400/10 border border-yellow-400/40 text-yellow-400 text-sm rounded-lg px-4 py-3";
@@ -98,6 +97,7 @@ function Portal() {
   const [tabGaleria, setTabGaleria] = useState("todos");
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
   const [navSolido, setNavSolido] = useState(false);
+  const [menuMobileAbierto, setMenuMobileAbierto] = useState(false);
 
   const [paso, setPaso] = useState("documento");
   const [cargando, setCargando] = useState(false);
@@ -112,12 +112,12 @@ function Portal() {
   const [msgResenia, setMsgResenia] = useState("");
 
   useEffect(() => {
-    portalApi.get(`/portal/${subdominio}/info`).then((r) => setInfo(r.data)).catch(() => {});
-    portalApi.get(`/portal/${subdominio}/barberos`).then((r) => setBarberos(r.data)).catch(() => {});
-    portalApi.get(`/portal/${subdominio}/galeria`).then((r) => setGaleria(r.data)).catch(() => {});
-    portalApi.get(`/portal/${subdominio}/categorias-galeria`).then((r) => setCategorias(r.data)).catch(() => {});
-    portalApi.get(`/portal/${subdominio}/comentarios`).then((r) => setComentarios(r.data)).catch(() => {});
-    portalApi.get(`/portal/${subdominio}/servicios`).then((r) => setServicios(r.data)).catch(() => {});
+    portalApi.get(`/portal/${subdominio}/info`).then((r) => setInfo(r.data)).catch(() => { });
+    portalApi.get(`/portal/${subdominio}/barberos`).then((r) => setBarberos(r.data)).catch(() => { });
+    portalApi.get(`/portal/${subdominio}/galeria`).then((r) => setGaleria(r.data)).catch(() => { });
+    portalApi.get(`/portal/${subdominio}/categorias-galeria`).then((r) => setCategorias(r.data)).catch(() => { });
+    portalApi.get(`/portal/${subdominio}/comentarios`).then((r) => setComentarios(r.data)).catch(() => { });
+    portalApi.get(`/portal/${subdominio}/servicios`).then((r) => setServicios(r.data)).catch(() => { });
   }, [subdominio]);
 
   useEffect(() => {
@@ -145,8 +145,8 @@ function Portal() {
   ];
   const galeriaVisible =
     tabGaleria === "todos" ? galeria
-    : tabGaleria === "otros" ? galeria.filter((f) => !f.id_categoria_galeria)
-    : galeria.filter((f) => String(f.id_categoria_galeria) === tabGaleria);
+      : tabGaleria === "otros" ? galeria.filter((f) => !f.id_categoria_galeria)
+        : galeria.filter((f) => String(f.id_categoria_galeria) === tabGaleria);
 
   useEffect(() => {
     if (fotoAmpliada === null) return;
@@ -220,7 +220,7 @@ function Portal() {
       });
       setMsgResenia(`¡Gracias ${res.data.nombre_cliente}! Tu comentario fue publicado.`);
       setResenia({ documento: "", id_barbero: "", estrellas: 5, comentario: "" });
-      portalApi.get(`/portal/${subdominio}/comentarios`).then((r) => setComentarios(r.data)).catch(() => {});
+      portalApi.get(`/portal/${subdominio}/comentarios`).then((r) => setComentarios(r.data)).catch(() => { });
     } catch (err) {
       setMsgResenia(err.response?.data?.detail || "No se pudo publicar el comentario.");
     } finally { setEnviandoResenia(false); }
@@ -244,8 +244,6 @@ function Portal() {
     } catch { return []; }
   })();
 
-  // Coordenadas del mapa: asumo info.latitud / info.longitud. Si tu backend no
-  // los tiene todavía, esta sección no se muestra (no rompe nada).
   const tieneCoordenadas = info?.latitud != null && info?.longitud != null;
   const lat = tieneCoordenadas ? Number(info.latitud) : null;
   const lng = tieneCoordenadas ? Number(info.longitud) : null;
@@ -356,7 +354,7 @@ function Portal() {
     <div className="min-h-screen bg-neutral-950 text-white overflow-x-hidden">
 
       {/* NAV */}
-      <nav className={`fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 sm:px-10 lg:px-16 xl:px-24 py-4 transition-all duration-300 ${navSolido ? "bg-neutral-950/90 backdrop-blur-md border-b border-white/10 py-3" : "bg-transparent"}`}>
+      <nav className={`fixed top-0 left-0 right-0 z-40 relative flex items-center justify-between px-6 sm:px-10 lg:px-16 xl:px-24 py-4 transition-all duration-300 ${navSolido ? "bg-neutral-950/90 backdrop-blur-md border-b border-white/10 py-3" : "bg-transparent"}`}>
         <div className="flex items-center gap-2">
           {info?.logo_url ? (
             <img src={info.logo_url} alt="logo" className="w-9 h-9 rounded-full object-cover" />
@@ -375,7 +373,36 @@ function Portal() {
           <a href="#resenas" className="relative text-gray-300 hover:text-white text-sm transition-colors group">Reseñas<span className="absolute left-0 -bottom-1 w-0 h-px bg-yellow-400 group-hover:w-full transition-all duration-300" /></a>
           <Link to="/login" className="text-gray-300 hover:text-yellow-400 text-sm transition-colors">Ingresar</Link>
         </div>
-        <button onClick={() => setVista("turno")} className="text-xs font-semibold border border-white/15 rounded-full px-4 py-2 hover:border-yellow-400 hover:text-yellow-400 hover:scale-105 transition-all">Agendar</button>
+
+        <div className="flex items-center gap-3">
+          <button onClick={() => setVista("turno")} className="text-xs font-semibold border border-white/15 rounded-full px-4 py-2 hover:border-yellow-400 hover:text-yellow-400 hover:scale-105 transition-all">Agendar</button>
+          <button
+            onClick={() => setMenuMobileAbierto((v) => !v)}
+            className="md:hidden w-9 h-9 flex items-center justify-center text-white"
+            aria-label="Abrir menú"
+          >
+            {menuMobileAbierto ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+                <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+                <path d="M3 6h18M3 12h18M3 18h18" strokeLinecap="round" />
+              </svg>
+            )}
+          </button>
+        </div>
+
+        {menuMobileAbierto && (
+          <div className="md:hidden absolute top-full left-0 right-0 bg-neutral-950/98 backdrop-blur-md border-b border-white/10 flex flex-col px-6 py-4">
+            <a href="#nosotros" onClick={() => setMenuMobileAbierto(false)} className="py-3 text-gray-300 hover:text-white text-sm border-b border-white/5">Nosotros</a>
+            <a href="#servicios" onClick={() => setMenuMobileAbierto(false)} className="py-3 text-gray-300 hover:text-white text-sm border-b border-white/5">Servicios</a>
+            <a href="#trabajos" onClick={() => setMenuMobileAbierto(false)} className="py-3 text-gray-300 hover:text-white text-sm border-b border-white/5">Trabajos</a>
+            <a href="#equipo" onClick={() => setMenuMobileAbierto(false)} className="py-3 text-gray-300 hover:text-white text-sm border-b border-white/5">Equipo</a>
+            <a href="#resenas" onClick={() => setMenuMobileAbierto(false)} className="py-3 text-gray-300 hover:text-white text-sm border-b border-white/5">Reseñas</a>
+            <Link to="/login" onClick={() => setMenuMobileAbierto(false)} className="py-3 text-yellow-400 text-sm font-medium">Ingresar al panel</Link>
+          </div>
+        )}
       </nav>
 
       {/* HERO */}
@@ -488,47 +515,36 @@ function Portal() {
 
       <main className={wrap}>
 
-        {/* QUIÉNES SOMOS — contenido de ejemplo, reemplazar cuando conectemos /contenido */}
         <section className="py-24 grid lg:grid-cols-2 gap-16 items-center" id="nosotros">
           <Reveal>
             <span className="font-['IBM_Plex_Mono'] text-xs tracking-[0.16em] uppercase text-yellow-400 block mb-3">Quiénes somos</span>
             <h2 className="font-['Fraunces'] font-semibold text-3xl sm:text-4xl mb-6">
               Más que un corte, una tradición
             </h2>
-            <p className="text-gray-300 mb-4 leading-relaxed">
-              En {info?.nombre || "nuestra barbería"} creemos que un buen corte empieza con una buena conversación.
-              Desde el primer día, nuestra misión fue simple: ofrecer un servicio de barbería profesional,
-              cercano y sin apuros, donde cada cliente se vaya sintiéndose mejor de lo que llegó.
-            </p>
-            <p className="text-gray-400 leading-relaxed">
-              Trabajamos con técnicas clásicas y tendencias actuales, siempre con la misma dedicación al detalle
-              que nos caracteriza desde el primer corte que hicimos.
-            </p>
+            {info?.historia ? (
+              <p className="text-gray-300 leading-relaxed whitespace-pre-line">{info.historia}</p>
+            ) : (
+              <p className="text-gray-400 leading-relaxed">
+                Todavía no cargaste la historia de tu barbería. Contá tu historia desde el panel de Configuración.
+              </p>
+            )}
           </Reveal>
           <Reveal delay={100} className="grid grid-cols-2 gap-4">
-            <div className="bg-neutral-900 border border-white/10 rounded-2xl p-6">
-              <span className="font-['IBM_Plex_Mono'] text-xs tracking-[0.14em] uppercase text-yellow-400 block mb-2">Misión</span>
-              <p className="text-gray-300 text-sm leading-relaxed">
-                Brindar una experiencia de barbería impecable, con atención personalizada y resultados consistentes.
-              </p>
-            </div>
-            <div className="bg-neutral-900 border border-white/10 rounded-2xl p-6">
-              <span className="font-['IBM_Plex_Mono'] text-xs tracking-[0.14em] uppercase text-yellow-400 block mb-2">Visión</span>
-              <p className="text-gray-300 text-sm leading-relaxed">
-                Ser la barbería de referencia del barrio, reconocida por calidad y trato cercano.
-              </p>
-            </div>
-            <div className="bg-neutral-900 border border-white/10 rounded-2xl p-6 col-span-2">
-              <span className="font-['IBM_Plex_Mono'] text-xs tracking-[0.14em] uppercase text-yellow-400 block mb-2">Nuestra historia</span>
-              <p className="text-gray-300 text-sm leading-relaxed">
-                Empezamos como un pequeño local con una sola silla, y hoy contamos con un equipo de barberos
-                profesionales que comparten la misma pasión por el oficio.
-              </p>
-            </div>
+            {info?.mision && (
+              <div className="bg-neutral-900 border border-white/10 rounded-2xl p-6">
+                <span className="font-['IBM_Plex_Mono'] text-xs tracking-[0.14em] uppercase text-yellow-400 block mb-2">Misión</span>
+                <p className="text-gray-300 text-sm leading-relaxed">{info.mision}</p>
+              </div>
+            )}
+            {info?.vision && (
+              <div className="bg-neutral-900 border border-white/10 rounded-2xl p-6">
+                <span className="font-['IBM_Plex_Mono'] text-xs tracking-[0.14em] uppercase text-yellow-400 block mb-2">Visión</span>
+                <p className="text-gray-300 text-sm leading-relaxed">{info.vision}</p>
+              </div>
+            )}
           </Reveal>
         </section>
 
-        {/* SERVICIOS */}
         {servicios.length > 0 && (
           <section className="py-24 grid lg:grid-cols-[0.8fr_1.2fr] gap-12" id="servicios">
             <Reveal>
@@ -554,7 +570,6 @@ function Portal() {
           </section>
         )}
 
-        {/* GALERÍA — mosaico dinámico tipo carrete de fotos */}
         {galeria.length > 0 && (
           <section className="py-24" id="trabajos">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
@@ -607,7 +622,6 @@ function Portal() {
           </div>
         )}
 
-        {/* EQUIPO — con foto y especialidad si existen, si no cae en el diseño anterior */}
         {barberos.length > 0 && (
           <section className="py-24" id="equipo">
             <Reveal className="mb-10">
@@ -618,9 +632,9 @@ function Portal() {
               {barberos.map((b, i) => (
                 <Reveal key={b.id_barbero} delay={i * 70}>
                   <div className="group bg-neutral-900 border border-white/10 rounded-2xl p-6 text-center hover:border-yellow-400/40 hover:-translate-y-1.5 transition-all h-full">
-                    {b.foto_url ? (
+                    {b.foto ? (
                       <div className="w-16 h-16 rounded-full overflow-hidden mb-3 mx-auto border-2 border-white/10 group-hover:border-yellow-400/50 transition-colors">
-                        <img src={b.foto_url} alt={b.nombre} className="w-full h-full object-cover" />
+                        <img src={b.foto} alt={b.nombre} className="w-full h-full object-cover" />
                       </div>
                     ) : (
                       <div className="w-16 h-16 rounded-full flex items-center justify-center bg-gradient-to-br from-yellow-400 to-yellow-700 font-['Fraunces'] font-semibold text-xl mb-3 mx-auto group-hover:scale-110 group-hover:rotate-3 transition-transform">
@@ -638,7 +652,6 @@ function Portal() {
           </section>
         )}
 
-        {/* UBICACIÓN — solo se muestra si info trae latitud/longitud */}
         {tieneCoordenadas && (
           <section className="py-24">
             <Reveal className="mb-8">
@@ -669,7 +682,6 @@ function Portal() {
           </section>
         )}
 
-        {/* RESEÑAS */}
         <section className="py-24" id="resenas">
           <Reveal className="mb-10">
             <span className="font-['IBM_Plex_Mono'] text-xs tracking-[0.16em] uppercase text-yellow-400 block mb-3">Lo que dicen</span>
@@ -733,7 +745,6 @@ function Portal() {
         </section>
       </main>
 
-      {/* CTA final */}
       <section className="relative border-y border-white/10 bg-neutral-900/50 overflow-hidden">
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-yellow-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "5s" }} />
         <div className={`${wrap} relative py-20 flex flex-col lg:flex-row items-center justify-between gap-6`}>
@@ -747,7 +758,6 @@ function Portal() {
         </div>
       </section>
 
-      {/* FOOTER */}
       <footer className="bg-neutral-950">
         <div className={`${wrap} pt-16 pb-10 border-b border-white/10`}>
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">

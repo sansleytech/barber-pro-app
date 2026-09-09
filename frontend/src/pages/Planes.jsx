@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
 const api = axios.create({ baseURL: "http://localhost:8000" });
 
@@ -22,6 +23,7 @@ function formatoPrecio(valor) {
 
 function Planes() {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
   const [planes, setPlanes] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -37,9 +39,13 @@ function Planes() {
   }, []);
 
   const elegirPlan = (idPlan) => {
-    // Elegir un plan lleva a registrarse, con el plan como referencia.
-    // Cuando conectemos la pasarela real, ese id_plan se usa para iniciar el cobro.
-    navigate(`/registro?plan=${idPlan}`);
+    if (usuario) {
+      // Ya tiene cuenta: va directo a pagar el cambio de plan.
+      navigate(`/pagar?plan=${idPlan}`);
+    } else {
+      // Todavía no tiene cuenta: primero se registra, con el plan como referencia.
+      navigate(`/registro?plan=${idPlan}`);
+    }
   };
 
   const caracteristicas = (plan) => [
@@ -76,9 +82,8 @@ function Planes() {
             return (
               <div
                 key={plan.id_plan}
-                className={`relative flex flex-col rounded-2xl p-6 border ${
-                  destacado ? "border-yellow-400 bg-neutral-900" : "border-white/10 bg-neutral-900/50"
-                }`}
+                className={`relative flex flex-col rounded-2xl p-6 border ${destacado ? "border-yellow-400 bg-neutral-900" : "border-white/10 bg-neutral-900/50"
+                  }`}
               >
                 {destacado && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-neutral-950 text-xs font-bold px-3 py-1 rounded-full">
@@ -109,11 +114,10 @@ function Planes() {
 
                 <button
                   onClick={() => elegirPlan(plan.id_plan)}
-                  className={`w-full font-semibold rounded-lg py-3 transition-colors ${
-                    destacado
+                  className={`w-full font-semibold rounded-lg py-3 transition-colors ${destacado
                       ? "bg-yellow-400 text-neutral-950 hover:bg-yellow-300"
                       : "border border-white/15 text-white hover:border-white/30"
-                  }`}
+                    }`}
                 >
                   Elegir este plan
                 </button>

@@ -67,47 +67,49 @@ function Dashboard() {
     const cargar = async () => {
       setCargando(true);
       setError("");
-      try {
-        const [
-          resR,
-          resI,
-          resB,
-          resE,
-          resCl,
-          resPr,
-          resCa,
-          resPv,
-          resSv,
-          resUs,
-        ] = await Promise.all([
-          api.get("/estadisticas/resumen"),
-          api.get("/estadisticas/ingresos-mensuales?meses=6"),
-          api.get("/estadisticas/barberos"),
-          api.get("/estadisticas/turnos-estado"),
-          api.get("/clientes"),
-          api.get("/productos"),
-          api.get("/categorias"),
-          api.get("/proveedores"),
-          api.get("/servicios"),
-          api.get("/usuarios"),
-        ]);
-        setResumen(resR.data);
-        setIngresosMes(resI.data);
-        setBarberos(resB.data);
-        setEstados(resE.data);
-        setConteos({
-          clientes: resCl.data.length,
-          productos: resPr.data.length,
-          categorias: resCa.data.length,
-          proveedores: resPv.data.length,
-          servicios: resSv.data.length,
-          usuarios: resUs.data.length,
-        });
-      } catch (err) {
+
+      // Cada petición se resuelve por separado: si una falla (por ejemplo,
+      // /productos con 403 porque el plan no incluye inventario), el resto
+      // del dashboard igual se muestra. Antes esto usaba Promise.all, que
+      // tumbaba TODO el dashboard si una sola petición fallaba.
+      const [
+        resR, resI, resB, resE,
+        resCl, resPr, resCa, resPv, resSv, resUs,
+      ] = await Promise.allSettled([
+        api.get("/estadisticas/resumen"),
+        api.get("/estadisticas/ingresos-mensuales?meses=6"),
+        api.get("/estadisticas/barberos"),
+        api.get("/estadisticas/turnos-estado"),
+        api.get("/clientes"),
+        api.get("/productos"),
+        api.get("/categorias"),
+        api.get("/proveedores"),
+        api.get("/servicios"),
+        api.get("/usuarios"),
+      ]);
+
+      const valor = (r, porDefecto) => (r.status === "fulfilled" ? r.value.data : porDefecto);
+
+      setResumen(valor(resR, null));
+      setIngresosMes(valor(resI, []));
+      setBarberos(valor(resB, []));
+      setEstados(valor(resE, []));
+      setConteos({
+        clientes: valor(resCl, []).length,
+        productos: valor(resPr, []).length,
+        categorias: valor(resCa, []).length,
+        proveedores: valor(resPv, []).length,
+        servicios: valor(resSv, []).length,
+        usuarios: valor(resUs, []).length,
+      });
+
+      // Solo mostramos el error general si fallaron las estadísticas
+      // principales (lo demás son datos secundarios, no bloquean la vista).
+      if (resR.status === "rejected") {
         setError("No se pudieron cargar las estadísticas");
-      } finally {
-        setCargando(false);
       }
+
+      setCargando(false);
     };
     cargar();
   }, []);
@@ -141,9 +143,8 @@ function Dashboard() {
     return (
       <div
         onClick={irA ? () => navigate(irA) : undefined}
-        className={`bg-ink-card border border-line rounded-2xl p-5 transition-colors ${
-          irA ? "cursor-pointer hover:border-gold/40" : ""
-        }`}
+        className={`bg-ink-card border border-line rounded-2xl p-5 transition-colors ${irA ? "cursor-pointer hover:border-gold/40" : ""
+          }`}
       >
         <div className="flex items-start justify-between mb-3">
           <div
@@ -153,11 +154,10 @@ function Dashboard() {
           </div>
           {!sinCambio && (
             <span
-              className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${
-                positivo
+              className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${positivo
                   ? "bg-emerald-500/10 text-emerald-400"
                   : "bg-red-500/10 text-red-400"
-              }`}
+                }`}
             >
               {positivo ? (
                 <TrendingUp className="w-3 h-3" />
@@ -507,9 +507,8 @@ function Dashboard() {
                   className="flex items-center gap-3 cursor-pointer hover:bg-ink rounded-lg p-1 -m-1 transition-colors"
                 >
                   <span
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${
-                      i === 0 ? "bg-gold text-ink" : "bg-ink text-gray-400"
-                    }`}
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${i === 0 ? "bg-gold text-ink" : "bg-ink text-gray-400"
+                      }`}
                   >
                     {i + 1}
                   </span>

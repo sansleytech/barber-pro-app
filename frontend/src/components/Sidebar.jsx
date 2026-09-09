@@ -36,6 +36,18 @@ const secciones = [
         icono: LayoutDashboard,
         roles: "todos",
       },
+      {
+        a: "/calendario",
+        texto: "Calendario",
+        icono: Calendar,
+        roles: "todos",
+      },
+      {
+        a: "/recordatorios",
+        texto: "Recordatorios",
+        icono: Bell,
+        roles: "todos",
+      },
     ],
   },
   {
@@ -188,9 +200,8 @@ function Sidebar({ abierta, cerrar, rol }) {
       )}
 
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-ink-soft border-r border-line z-40 flex flex-col transform transition-transform duration-300 md:translate-x-0 ${
-          abierta ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed top-0 left-0 h-full w-64 bg-ink-soft border-r border-line z-40 flex flex-col transform transition-transform duration-300 md:translate-x-0 ${abierta ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         {/* Logo */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-line shrink-0">
@@ -229,10 +240,9 @@ function Sidebar({ abierta, cerrar, rol }) {
                       to={a}
                       onClick={cerrar}
                       className={({ isActive }) =>
-                        `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                          isActive
-                            ? "bg-gold/10 text-gold"
-                            : "text-gray-400 hover:text-white hover:bg-ink-card"
+                        `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
+                          ? "bg-gold/10 text-gold"
+                          : "text-gray-400 hover:text-white hover:bg-ink-card"
                         }`
                       }
                     >

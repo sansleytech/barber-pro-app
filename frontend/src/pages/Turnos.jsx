@@ -9,12 +9,30 @@ import {
   Pencil,
   Trash2,
   MessageCircle,
+  ChevronLeft,
+  ChevronRight,
+  Lock,
 } from "lucide-react";
 import api from "../api/cliente";
 import { useUI } from "../context/UIContext";
+import { useAuth } from "../context/AuthContext";
 import Tabla from "../components/Tabla";
+import Recibo from "../components/Recibo";
+
+function fechaHoyLocal() {
+  const d = new Date();
+  return (
+    d.getFullYear() +
+    "-" +
+    String(d.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(d.getDate()).padStart(2, "0")
+  );
+}
+
 function Turnos() {
   const { confirmar, avisar } = useUI();
+  const { usuario } = useAuth();
   const [turnos, setTurnos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [barberos, setBarberos] = useState([]);
@@ -23,7 +41,13 @@ function Turnos() {
   const [error, setError] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("todos");
+  const [fecha, setFecha] = useState(fechaHoyLocal());
+  const [verTodos, setVerTodos] = useState(false);
   const navigate = useNavigate();
+
+  // Recibo del turno completado
+  const [reciboAbierto, setReciboAbierto] = useState(false);
+  const [turnoParaRecibo, setTurnoParaRecibo] = useState(null);
 
   const cargarDatos = async () => {
     setCargando(true);
@@ -50,10 +74,17 @@ function Turnos() {
     cargarDatos();
   }, []);
 
+  const irDia = (delta) => {
+    const d = new Date(fecha);
+    d.setDate(d.getDate() + delta);
+    setFecha(d.toISOString().split("T")[0]);
+  };
+
   const nombreCliente = (id) => {
     const c = clientes.find((x) => x.id_cliente === id);
     return c ? `${c.primer_nombre} ${c.apellidos}` : "Cliente";
   };
+  const clienteCompleto = (id) => clientes.find((x) => x.id_cliente === id);
   const nombreBarbero = (id) => {
     const b = barberos.find((x) => x.id_barbero === id);
     return b ? `${b.nombre} ${b.apellido}` : "Barbero";
@@ -68,13 +99,63 @@ function Turnos() {
       .join(", ");
   };
 
-  const cambiarEstado = async (idTurno, nuevoEstado) => {
+  // Arma los ítems del recibo a partir de los servicios del turno
+  const itemsDelTurno = (t) => {
+    if (!t.servicios || t.servicios.length === 0) {
+      return [{ nombre: "Servicio", cantidad: 1, subtotal: t.precio_total || 0 }];
+    }
+    return t.servicios.map((item) => {
+      const s = servicios.find((x) => x.id_servicio === item.id_servicio);
+      return {
+        nombre: s ? s.nombre : "Servicio",
+        cantidad: 1,
+        subtotal: s ? Number(s.precio) : 0,
+      };
+    });
+  };
+
+  // Ejecuta el cambio de estado real (backend + recibo si corresponde)
+  const aplicarCambioEstado = async (turno, nuevoEstado) => {
     try {
-      await api.patch(`/turnos/${idTurno}/estado`, { estado: nuevoEstado });
+      await api.patch(`/turnos/${turno.id_turno}/estado`, { estado: nuevoEstado });
+
+      if (nuevoEstado === "completado") {
+        const cliente = clienteCompleto(turno.id_cliente);
+        setTurnoParaRecibo({
+          numero: turno.id_turno,
+          fecha: `${turno.fecha}T${turno.hora_inicio || "00:00:00"}`,
+          cliente: cliente
+            ? { nombre: `${cliente.primer_nombre} ${cliente.apellidos}`, documento: cliente.documento }
+            : null,
+          atendioPor: { nombre: nombreBarbero(turno.id_barbero), rol: "Barbero" },
+          items: itemsDelTurno(turno),
+          subtotal: turno.precio_total,
+          iva: 0,
+          total: turno.precio_total,
+          metodoPago: turno.metodo_pago,
+        });
+        setReciboAbierto(true);
+      }
+
       cargarDatos();
     } catch (err) {
       avisar(err.response?.data?.detail || "No se pudo cambiar el estado", "error");
     }
+  };
+
+  // Punto de entrada del <select>: si es "completado", pide confirmación
+  // primero, porque es un cambio irreversible (el turno queda bloqueado).
+  const cambiarEstado = (turno, nuevoEstado) => {
+    if (nuevoEstado === "completado") {
+      confirmar({
+        titulo: "Completar turno",
+        mensaje: "¿Seguro que querés marcar este turno como completado? Después no vas a poder cambiar su estado.",
+        textoConfirmar: "Sí, completar",
+        onConfirmar: () => aplicarCambioEstado(turno, nuevoEstado),
+      });
+      return;
+    }
+    aplicarCambioEstado(turno, nuevoEstado);
   };
 
   const eliminarTurno = (idTurno) => {
@@ -133,10 +214,10 @@ function Turnos() {
 
   const textoEstado = (estado) => {
     const textos = {
-      pendiente: "Pendiente",
+      pendiente: "Pendientes",
       confirmado: "Confirmado",
       en_proceso: "En proceso",
-      completado: "Completado",
+      completado: "Completados",
       cancelado: "Cancelado",
       no_asistio: "No asistió",
     };
@@ -150,7 +231,7 @@ function Turnos() {
       minimumFractionDigits: 0,
     }).format(valor || 0);
 
-  // "14:30:00" -> "2:30 p.m."
+
   const formatoHora = (hora) => {
     if (!hora) return "—";
     const [h, m] = hora.split(":").map(Number);
@@ -165,7 +246,8 @@ function Turnos() {
     const coincideBusqueda = texto.includes(busqueda.toLowerCase());
     const coincideEstado =
       estadoFiltro === "todos" || t.estado === estadoFiltro;
-    return coincideBusqueda && coincideEstado;
+    const coincideFecha = verTodos || t.fecha === fecha;
+    return coincideBusqueda && coincideEstado && coincideFecha;
   });
 
   const estadosPosibles = [
@@ -233,19 +315,28 @@ function Turnos() {
     {
       campo: "estado",
       titulo: "Estado",
-      render: (t) => (
-        <select
-          value={t.estado}
-          onChange={(e) => cambiarEstado(t.id_turno, e.target.value)}
-          className={`bg-ink border rounded-lg px-2.5 py-1.5 text-sm font-medium focus:outline-none cursor-pointer ${estiloEstado(t.estado)}`}
-        >
-          {estadosPosibles.map((est) => (
-            <option key={est} value={est} className="bg-ink text-white">
-              {textoEstado(est)}
-            </option>
-          ))}
-        </select>
-      ),
+      render: (t) =>
+        t.estado === "completado" ? (
+          <span
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium border border-emerald-500/40 text-emerald-400"
+            title="Turno completado: ya no se puede cambiar"
+          >
+            <Lock className="w-3.5 h-3.5" />
+            Completado
+          </span>
+        ) : (
+          <select
+            value={t.estado}
+            onChange={(e) => cambiarEstado(t, e.target.value)}
+            className={`bg-ink border rounded-lg px-2.5 py-1.5 text-sm font-medium focus:outline-none cursor-pointer ${estiloEstado(t.estado)}`}
+          >
+            {estadosPosibles.map((est) => (
+              <option key={est} value={est} className="bg-ink text-white">
+                {textoEstado(est)}
+              </option>
+            ))}
+          </select>
+        ),
     },
     {
       campo: "acciones",
@@ -298,16 +389,56 @@ function Turnos() {
         </button>
       </div>
 
+      {/* Navegador de fecha */}
+      <div className="flex flex-wrap items-center gap-2 mb-5 bg-ink-card border border-line rounded-2xl px-4 py-3">
+        <button
+          onClick={() => irDia(-1)}
+          disabled={verTodos}
+          className="w-9 h-9 rounded-xl bg-ink border border-line text-gray-400 hover:text-gold hover:border-gold/40 transition-colors flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <input
+          type="date"
+          value={fecha}
+          disabled={verTodos}
+          onChange={(e) => setFecha(e.target.value)}
+          className="bg-ink border border-line text-white text-sm font-semibold rounded-xl px-3.5 py-2 focus:outline-none focus:border-gold [color-scheme:dark] disabled:opacity-30"
+        />
+        <button
+          onClick={() => irDia(1)}
+          disabled={verTodos}
+          className="w-9 h-9 rounded-xl bg-ink border border-line text-gray-400 hover:text-gold hover:border-gold/40 transition-colors flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => { setVerTodos(false); setFecha(fechaHoyLocal()); }}
+          className="px-4 py-2 rounded-full text-xs font-semibold bg-ink border border-line text-gray-300 hover:text-white hover:border-gold/40 transition-colors"
+        >
+          Hoy
+        </button>
+        <div className="w-px h-6 bg-line mx-1" />
+        <button
+          onClick={() => setVerTodos((v) => !v)}
+          className={`px-4 py-2 rounded-full text-xs font-semibold transition-colors ${verTodos
+              ? "bg-gold text-ink"
+              : "bg-ink border border-line text-gray-300 hover:text-white"
+            }`}
+        >
+          Ver todos
+        </button>
+      </div>
+
       <div className="flex flex-wrap items-center gap-2 mb-5">
         {estadosFiltro.map((e) => (
           <button
             key={e}
             onClick={() => setEstadoFiltro(e)}
-            className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              estadoFiltro === e
+            className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${estadoFiltro === e
                 ? "bg-gold text-ink"
                 : "bg-ink-card border border-line text-gray-300 hover:text-white"
-            }`}
+              }`}
           >
             {e === "todos" ? "Todos" : textoEstado(e)}
           </button>
@@ -338,10 +469,34 @@ function Turnos() {
           columnas={columnas}
           datos={filtrados}
           vacioTexto={
-            busqueda || estadoFiltro !== "todos"
-              ? "No se encontraron turnos"
-              : "Todavía no hay turnos"
+            verTodos
+              ? (busqueda || estadoFiltro !== "todos" ? "No se encontraron turnos" : "Todavía no hay turnos")
+              : `No hay turnos para el ${fecha}`
           }
+        />
+      )}
+
+      {turnoParaRecibo && (
+        <Recibo
+          abierto={reciboAbierto}
+          onCerrar={() => setReciboAbierto(false)}
+          tipo="turno"
+          numero={turnoParaRecibo.numero}
+          fecha={turnoParaRecibo.fecha}
+          cliente={turnoParaRecibo.cliente}
+          atendioPor={turnoParaRecibo.atendioPor}
+          items={turnoParaRecibo.items}
+          subtotal={turnoParaRecibo.subtotal}
+          iva={turnoParaRecibo.iva}
+          total={turnoParaRecibo.total}
+          metodoPago={turnoParaRecibo.metodoPago}
+          barberia={{
+            nombre: usuario?.barberia,
+            nit: usuario?.barberia_nit,
+            direccion: usuario?.barberia_direccion,
+            telefono: usuario?.barberia_telefono,
+            logo_url: usuario?.barberia_logo,
+          }}
         />
       )}
     </div>
