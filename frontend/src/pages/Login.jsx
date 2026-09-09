@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Store, User, Lock, Scissors } from "lucide-react";
-
 import { useAuth } from "../context/AuthContext";
 import api from "../api/cliente";
 
@@ -13,12 +12,9 @@ const Login = () => {
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
   const [tocado, setTocado] = useState({});
-
   const { login } = useAuth();
   const navigate = useNavigate();
-
   const marcarTocado = (campo) => setTocado((t) => ({ ...t, [campo]: true }));
-
   const manejarSubmit = async (e) => {
     e.preventDefault();
     setError("");
