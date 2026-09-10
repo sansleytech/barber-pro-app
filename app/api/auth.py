@@ -82,6 +82,7 @@ def login(
             "id_usuario": usuario.id_usuario,
             "nombre_usuario": usuario.nombre_usuario,
             "rol": usuario.rol.value,
+            "id_barbero": usuario.id_barbero,
             "super_admin": usuario.super_admin,
             "id_barberia": barberia.id_barberia,
             "barberia": barberia.nombre,

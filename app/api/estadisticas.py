@@ -505,3 +505,50 @@ def rendimiento_barbero(
         "cant_valoraciones": rating.cant or 0,
     }
 
+@router.get("/mis-estadisticas")
+def mis_estadisticas(
+    desde: date | None = Query(None),
+    hasta: date | None = Query(None),
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(requiere_rol(RolEnum.barbero)),
+):
+    """Estadísticas propias de un barbero: solo sus datos, nunca los de otros
+    ni el total del negocio."""
+    if not usuario.id_barbero:
+        raise HTTPException(status_code=400, detail="Tu usuario no está vinculado a un barbero")
+
+    bid = usuario.id_barberia
+    desde, hasta = _rango_default(desde, hasta)
+
+    actual = _metricas_barbero(db, bid, usuario.id_barbero, desde, hasta)
+
+    dias = (hasta - desde).days + 1
+    hasta_prev = desde - timedelta(days=1)
+    desde_prev = hasta_prev - timedelta(days=dias - 1)
+    anterior = _metricas_barbero(db, bid, usuario.id_barbero, desde_prev, hasta_prev)
+
+    def variacion(act, ant):
+        if ant == 0:
+            return 100.0 if act > 0 else 0.0
+        return round((act - ant) / ant * 100, 1)
+
+    rating = db.query(
+        func.avg(Valoracion.estrellas).label("rating"),
+        func.count(Valoracion.id_valoracion).label("cant"),
+    ).filter(
+        Valoracion.id_barberia == bid,
+        Valoracion.id_barbero == usuario.id_barbero,
+    ).first()
+
+    return {
+        "actual": actual,
+        "anterior": anterior,
+        "variacion": {
+            "ingresos": variacion(actual["ingresos"], anterior["ingresos"]),
+            "turnos": variacion(actual["turnos"], anterior["turnos"]),
+            "propinas": variacion(actual["propinas"], anterior["propinas"]),
+            "clientes_unicos": variacion(actual["clientes_unicos"], anterior["clientes_unicos"]),
+        },
+        "rating": round(float(rating.rating), 2) if rating.rating else None,
+        "cant_valoraciones": rating.cant or 0,
+    }

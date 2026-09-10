@@ -142,6 +142,10 @@ def crear_venta(
     db.add(venta)
     db.flush()
 
+    from app.core.notificaciones_helper import crear_notificacion
+    from app.models.barberia import Barberia
+
+    productos_con_stock_bajo = []
     for producto, cantidad in productos_venta:
         sub = producto.precio_venta * cantidad
         db.add(
@@ -155,6 +159,23 @@ def crear_venta(
         )
         producto.stock_actual = producto.stock_actual - cantidad
 
+        if producto.stock_actual <= (producto.stock_minimo or 0):
+            productos_con_stock_bajo.append(producto)
+
     db.commit()
     db.refresh(venta)
+
+    if productos_con_stock_bajo:
+        barberia = db.query(Barberia).filter(Barberia.id_barberia == bid).first()
+        nombres = ", ".join(p.nombre for p in productos_con_stock_bajo)
+        crear_notificacion(
+            db, bid,
+            titulo="Stock bajo",
+            mensaje=f"Quedan pocas unidades de: {nombres}. Es momento de reabastecer.",
+            tipo="alerta",
+            enlace="/productos",
+            email_destino=barberia.email_contacto if barberia else None,
+        )
+        db.commit()
+
     return venta

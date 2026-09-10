@@ -92,6 +92,18 @@ def crear_solicitud(
     db.add(solicitud)
     db.commit()
     db.refresh(solicitud)
+
+    from app.core.notificaciones_helper import crear_notificacion
+    crear_notificacion(
+        db, barberia.id_barberia,
+        titulo="Nueva solicitud de turno",
+        mensaje=f"{solicitud.nombre_cliente} pidió un turno desde el portal.",
+        tipo="info",
+        enlace="/solicitudes",
+        email_destino=barberia.email_contacto,
+    )
+    db.commit()
+
     return {"mensaje": "Solicitud recibida", "id_solicitud": solicitud.id_solicitud}
 
 
@@ -271,10 +283,23 @@ def crear_comentario(subdominio: str, datos: ComentarioCrear, db: Session = Depe
     db.add(valoracion)
     db.commit()
     db.refresh(valoracion)
+
+    from app.core.notificaciones_helper import crear_notificacion
+    estrellas_texto = "★" * datos.estrellas
+    crear_notificacion(
+        db, barberia.id_barberia,
+        titulo="Nueva reseña recibida",
+        mensaje=f"{cliente.primer_nombre} dejó {estrellas_texto}" + (f': "{datos.comentario}"' if datos.comentario else "."),
+        tipo="info",
+        enlace="/valoraciones",
+        email_destino=barberia.email_contacto if datos.estrellas <= 3 else None,
+    )
+    db.commit()
+
     return {
         "mensaje": "Comentario publicado",
         "nombre_cliente": f"{cliente.primer_nombre} {cliente.apellidos}",
-    }
+    } 
 
 
 @router.get("/{subdominio}/categorias-galeria")

@@ -43,27 +43,41 @@ import Calendario from "./pages/Calendario";
 import PagarPlan from "./pages/PagarPlan";
 import PagoResultado from "./pages/PagoResultado";
 import Home from "./pages/Home";
+import MiDia from "./pages/MiDia";
 
 // Protege una ruta según el rol. Si no tiene permiso, lo manda al dashboard.
 function RutaPorRol({ ruta, children }) {
   const { usuario } = useAuth();
   if (!usuario) return <Navigate to="/login" replace />;
   if (!puedeAcceder(ruta, usuario.rol)) {
-    return <Navigate to="/dashboard" replace />;
+    const inicio = usuario.rol === "barbero" ? "/mi-dia" : "/dashboard";
+    return <Navigate to={inicio} replace />;
   }
   return children;
 }
-
 function RutaProtegida({ children }) {
   const { usuario } = useAuth();
   return usuario ? children : <Navigate to="/login" replace />;
+}
+
+function RedirigirInicio() {
+  const { usuario } = useAuth();
+  if (!usuario) return <Navigate to="/login" replace />;
+  return (
+    <Navigate
+      to={usuario.rol === "barbero" ? "/mi-dia" : "/dashboard"}
+      replace
+    />
+  );
 }
 
 // Placeholder temporal para las vistas que todavía no construimos
 function EnConstruccion({ nombre }) {
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white mb-2">{nombre}</h1>
+      <h1 className="text-2xl font-bold text-white mb-2">
+        {nombre}
+      </h1>
       <p className="text-gray-400">Esta sección está en construcción.</p>
     </div>
   );
@@ -79,6 +93,7 @@ function App() {
         <Route path="/register" element={<Registro />} />
         <Route path="/planes" element={<Planes />} />
         <Route path="/directorio" element={<Directorio />} />
+        <Route path="*" element={<RedirigirInicio />} />
 
         <Route
           element={
@@ -87,10 +102,38 @@ function App() {
             </RutaProtegida>
           }
         >
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/solicitudes" element={<RutaPorRol ruta="/solicitudes"><Solicitudes /></RutaPorRol>} />
-          <Route path="/reportes" element={<RutaPorRol ruta="/reportes"><Reportes /></RutaPorRol>} />
-          <Route path="/galeria" element={<RutaPorRol ruta="/galeria"><Galeria /></RutaPorRol>} />
+          <Route
+            path="/dashboard"
+            element={
+              <RutaPorRol ruta="/dashboard">
+                <Dashboard />
+              </RutaPorRol>
+            }
+          />
+          <Route
+            path="/solicitudes"
+            element={
+              <RutaPorRol ruta="/solicitudes">
+                <Solicitudes />
+              </RutaPorRol>
+            }
+          />
+          <Route
+            path="/reportes"
+            element={
+              <RutaPorRol ruta="/reportes">
+                <Reportes />
+              </RutaPorRol>
+            }
+          />
+          <Route
+            path="/galeria"
+            element={
+              <RutaPorRol ruta="/galeria">
+                <Galeria />
+              </RutaPorRol>
+            }
+          />
           <Route
             path="/turnos"
             element={
@@ -379,13 +422,18 @@ function App() {
               </RutaPorRol>
             }
           />
+          <Route
+            path="/mi-dia"
+            element={
+              <RutaPorRol ruta="/mi-dia">
+                <MiDia />
+              </RutaPorRol>
+            }
+          />
         </Route>
-        
-          <Route path="/pagar" element={<PagarPlan />} />
-          <Route path="/pago/resultado" element={<PagoResultado />} />
-          <Route path="/" element={<Home />} />
-
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/pagar" element={<PagarPlan />} />
+        <Route path="/pago/resultado" element={<PagoResultado />} />
+        <Route path="/" element={<Home />} />
       </Routes>
     </BrowserRouter>
   );

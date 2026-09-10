@@ -1,5 +1,3 @@
-"""Esquemas Pydantic de notificaciones."""
-
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
@@ -10,7 +8,8 @@ class NotificacionCrear(BaseModel):
     titulo: str
     mensaje: str
     tipo: TipoNotificacionEnum = TipoNotificacionEnum.info
-    id_usuario: Optional[int] = None  # None = para todos
+    id_usuario: Optional[int] = None
+    enlace: Optional[str] = None
 
 
 class NotificacionRespuesta(BaseModel):
@@ -19,7 +18,7 @@ class NotificacionRespuesta(BaseModel):
     mensaje: str
     tipo: TipoNotificacionEnum
     id_usuario: Optional[int] = None
+    enlace: Optional[str] = None
     leida: bool
     fecha_creacion: datetime
-
     model_config = ConfigDict(from_attributes=True)

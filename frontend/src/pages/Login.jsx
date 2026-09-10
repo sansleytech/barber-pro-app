@@ -1,10 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Store, User, Lock, Scissors } from "lucide-react";
+import { Eye, EyeOff, Store, User, Lock, Scissors, ShieldCheck, Calendar } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/cliente";
 
+const ROLES = [
+  { valor: "administrador", label: "Administrador", icono: ShieldCheck },
+  { valor: "barbero", label: "Barbero", icono: Scissors },
+  { valor: "recepcionista", label: "Recepcionista", icono: Calendar },
+];
+
 const Login = () => {
+  const [rolSeleccionado, setRolSeleccionado] = useState("administrador");
   const [subdominio, setSubdominio] = useState("");
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
@@ -15,6 +22,7 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const marcarTocado = (campo) => setTocado((t) => ({ ...t, [campo]: true }));
+
   const manejarSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -25,8 +33,25 @@ const Login = () => {
       datos.append("password", password);
       datos.append("client_id", subdominio);
       const respuesta = await api.post("/auth/login", datos);
+
+      const rolReal = respuesta.data.usuario?.rol;
+
+      // Si el rol real no coincide con el que la persona eligió arriba,
+      // le avisamos en vez de dejarla entrar confundida a otra vista.
+      if (rolReal !== rolSeleccionado) {
+        setError(
+          `Este usuario no tiene el rol "${ROLES.find((r) => r.valor === rolSeleccionado)?.label}". Probá con la pestaña correcta.`
+        );
+        setCargando(false);
+        return;
+      }
+
       login(respuesta.data);
-      navigate("/dashboard");
+      if (rolReal === "barbero") {
+        navigate("/mi-dia");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       if (err.response && err.response.status === 401) {
         setError("Usuario o contraseña incorrectos");
@@ -50,12 +75,9 @@ const Login = () => {
     <div className="min-h-screen flex flex-col md:flex-row bg-ink">
       {/* Panel de marca */}
       <div className="md:w-1/2 relative overflow-hidden flex items-center justify-center p-8 md:p-16 min-h-[40vh] md:min-h-screen">
-        {/* Imagen de fondo: reemplazá la URL por tu foto real cuando la tengas */}
         <div
           className="absolute inset-0 bg-cover bg-center opacity-30"
-          style={{
-            backgroundImage: "",
-          }}
+          style={{ backgroundImage: "" }}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-ink/90 via-ink/70 to-ink" />
         <div
@@ -65,13 +87,10 @@ const Login = () => {
               "radial-gradient(circle at 30% 40%, rgba(212,175,55,0.5), transparent 55%)",
           }}
         />
-
         <div className="relative z-10 text-center md:text-left max-w-md animate-fade-in-up">
-          {/* Logo: reemplazá este círculo por tu logo real */}
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gold mb-8 shadow-lg shadow-gold/20">
             <Scissors className="w-10 h-10 text-ink" />
           </div>
-
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
             Barber <span className="text-gold">Pro</span>
           </h1>
@@ -92,11 +111,32 @@ const Login = () => {
       {/* Panel del formulario */}
       <div className="md:w-1/2 flex items-center justify-center p-8 md:p-16">
         <div className="w-full max-w-md animate-fade-in delay-200">
-          <div className="mb-10">
+          <div className="mb-8">
             <h2 className="text-4xl font-bold text-white mb-3">Bienvenido</h2>
             <p className="text-gray-400 text-lg">
               Ingresá a tu cuenta para continuar
             </p>
+          </div>
+
+          {/* Selector de rol */}
+          <div className="flex gap-1.5 p-1.5 bg-ink-card border border-line rounded-xl mb-8">
+            {ROLES.map((r) => {
+              const Icono = r.icono;
+              const activo = rolSeleccionado === r.valor;
+              return (
+                <button
+                  key={r.valor}
+                  type="button"
+                  onClick={() => { setRolSeleccionado(r.valor); setError(""); }}
+                  className={`flex-1 inline-flex flex-col items-center justify-center gap-1 py-2.5 rounded-lg text-xs font-semibold transition-colors ${
+                    activo ? "bg-gold text-ink" : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  <Icono className="w-4 h-4" />
+                  {r.label}
+                </button>
+              );
+            })}
           </div>
 
           <form onSubmit={manejarSubmit} className="space-y-5" noValidate>
@@ -122,9 +162,7 @@ const Login = () => {
                 />
               </div>
               {tocado.subdominio && !subdominio && (
-                <p className="text-red-400 text-xs mt-1.5">
-                  Este campo es obligatorio
-                </p>
+                <p className="text-red-400 text-xs mt-1.5">Este campo es obligatorio</p>
               )}
             </div>
 
@@ -144,9 +182,7 @@ const Login = () => {
                 />
               </div>
               {tocado.usuario && !usuario && (
-                <p className="text-red-400 text-xs mt-1.5">
-                  Este campo es obligatorio
-                </p>
+                <p className="text-red-400 text-xs mt-1.5">Este campo es obligatorio</p>
               )}
             </div>
 
@@ -169,17 +205,11 @@ const Login = () => {
                   onClick={() => setVerPassword((v) => !v)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gold transition-colors"
                 >
-                  {verPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {verPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
               {tocado.password && !password && (
-                <p className="text-red-400 text-xs mt-1.5">
-                  Este campo es obligatorio
-                </p>
+                <p className="text-red-400 text-xs mt-1.5">Este campo es obligatorio</p>
               )}
             </div>
 
@@ -202,7 +232,6 @@ const Login = () => {
               Registrá tu barbería
             </button>
           </p>
-
         </div>
       </div>
     </div>

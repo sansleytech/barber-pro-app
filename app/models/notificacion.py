@@ -20,6 +20,7 @@ class Notificacion(Base, TenantMixin):
     titulo = Column(String(150), nullable=False)
     mensaje = Column(Text, nullable=False)
     tipo = Column(Enum(TipoNotificacionEnum), default=TipoNotificacionEnum.info)
+    enlace = Column(String(255), nullable=True)
     # Si id_usuario es NULL, la notificación es general (para todos)
     id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario", ondelete="CASCADE"), nullable=True)
     leida = Column(Boolean, default=False)
