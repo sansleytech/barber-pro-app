@@ -97,3 +97,24 @@ def login(
             "id_plan_actual": suscripcion.id_plan if suscripcion else None,
         },
     }
+
+    from app.models.permiso_rol import PermisoRol
+from app.core.dependencies import get_usuario_actual
+
+
+@router.get("/permisos-vigentes")
+def permisos_vigentes(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_actual),
+):
+    """Devuelve el mapa de permisos actual, para que el frontend sepa
+    qué rutas puede ver cada rol (reemplaza el permiso.js fijo)."""
+    permisos = db.query(PermisoRol).all()
+    return {
+        p.ruta: {
+            "administrador": p.administrador,
+            "recepcionista": p.recepcionista,
+            "barbero": p.barbero,
+        }
+        for p in permisos
+    }

@@ -40,8 +40,6 @@ def get_usuario_actual(
     return usuario
 
 
-
-
 def get_barberia_actual(
     usuario: Usuario = Depends(get_usuario_actual),
 ) -> int:
@@ -111,6 +109,7 @@ def requiere_rol(*roles_permitidos: RolEnum):
 
     return verificador
 
+
 def requiere_plan(*campos: str):
     """Crea una dependencia que exige que el plan de la barbería tenga
     habilitada alguna de las funciones indicadas (ej. 'permite_inventario').
@@ -148,4 +147,13 @@ def requiere_plan(*campos: str):
         return usuario
 
     return verificador
-    
+
+
+def requiere_super_admin(usuario: Usuario = Depends(get_usuario_actual)) -> Usuario:
+    """Exige que el usuario sea super_admin de la plataforma (no de una barbería)."""
+    if not usuario.super_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Esta acción requiere permisos de superadministrador",
+        )
+    return usuario

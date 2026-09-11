@@ -35,7 +35,8 @@ from app.api import (
     uploads,
     portal,
     pagos,
-    directorio
+    directorio,
+    superadmin,
 )
 
 app = FastAPI(
@@ -91,6 +92,7 @@ app.include_router(gastos.router)
 app.include_router(caja.router)
 app.include_router(gastos.router)
 app.include_router(directorio.router)
+app.include_router(superadmin.router)
 @app.get("/")
 def inicio():
     return {"mensaje": "Barber Pro App funcionando 💈"}

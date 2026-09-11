@@ -39,6 +39,21 @@ class PlanRespuesta(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PlanActualizar(BaseModel):
+    nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+    precio_mensual: Optional[Decimal] = None
+    max_barberos: Optional[int] = None
+    max_turnos_mes: Optional[int] = None
+    permite_whatsapp: Optional[bool] = None
+    permite_pagos_online: Optional[bool] = None
+    permite_reportes: Optional[bool] = None
+    permite_inventario: Optional[bool] = None
+    permite_qr: Optional[bool] = None
+    orden: Optional[int] = None
+    activo: Optional[bool] = None
+
+
 # ---- Suscripciones ----
 class SuscripcionRespuesta(BaseModel):
     id_suscripcion: int

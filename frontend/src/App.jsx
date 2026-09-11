@@ -44,20 +44,34 @@ import PagarPlan from "./pages/PagarPlan";
 import PagoResultado from "./pages/PagoResultado";
 import Home from "./pages/Home";
 import MiDia from "./pages/MiDia";
-
+import SuperadminPanel from "./pages/SuperAdminPanel";
+import SuperadminLogin from "./pages/SuperAdminLogin";
+import SuperadminLayout from "./components/SuperadminLayout";
+import SuperadminDashboard from "./pages/SuperadminDashboard";
+import SuperadminPlanes from "./pages/SuperadminPlanes";
+import SuperadminPermisos from "./pages/SuperadminPermisos";
 // Protege una ruta según el rol. Si no tiene permiso, lo manda al dashboard.
 function RutaPorRol({ ruta, children }) {
-  const { usuario } = useAuth();
+  const { usuario, permisosListos } = useAuth();
   if (!usuario) return <Navigate to="/login" replace />;
-  if (!puedeAcceder(ruta, usuario.rol)) {
+  if (!permisosListos) return null; // esperar a que carguen los permisos antes de decidir
+  if (!puedeAcceder(ruta, usuario.rol, usuario.super_admin)) {
     const inicio = usuario.rol === "barbero" ? "/mi-dia" : "/dashboard";
     return <Navigate to={inicio} replace />;
   }
   return children;
 }
+
 function RutaProtegida({ children }) {
   const { usuario } = useAuth();
   return usuario ? children : <Navigate to="/login" replace />;
+}
+
+function RutaSuperAdmin({ children }) {
+  const { usuario } = useAuth();
+  if (!usuario) return <Navigate to="/superadmin/login" replace />;
+  if (!usuario.super_admin) return <Navigate to="/login" replace />;
+  return children;
 }
 
 function RedirigirInicio() {
@@ -92,6 +106,21 @@ function App() {
         <Route path="/registro" element={<Registro />} />
         <Route path="/register" element={<Registro />} />
         <Route path="/planes" element={<Planes />} />
+        <Route path="/superadmin/login" element={<SuperadminLogin />} />
+
+        <Route
+          element={
+            <RutaSuperAdmin>
+              <SuperadminLayout />
+            </RutaSuperAdmin>
+          }
+        >
+          <Route path="/superadmin" element={<SuperadminDashboard />} />
+          <Route path="/superadmin/barberias" element={<SuperadminPanel />} />
+          <Route path="/superadmin/planes" element={<SuperadminPlanes />} />
+          <Route path="/superadmin/permisos" element={<SuperadminPermisos />} />
+        </Route>
+
         <Route path="/directorio" element={<Directorio />} />
         <Route path="*" element={<RedirigirInicio />} />
 

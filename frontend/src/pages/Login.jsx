@@ -232,6 +232,17 @@ const Login = () => {
               Registrá tu barbería
             </button>
           </p>
+
+          <p className="text-center text-gray-600 text-xs mt-4">
+            ¿Sos parte del equipo de soporte?{" "}
+            <button
+              type="button"
+              onClick={() => navigate("/superadmin/login")}
+              className="text-gray-500 hover:text-gold hover:underline cursor-pointer"
+            >
+              Ingresá acá
+            </button>
+          </p>
         </div>
       </div>
     </div>
