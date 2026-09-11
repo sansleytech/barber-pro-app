@@ -22,6 +22,7 @@ import {
   Settings,
   QrCode,
   X,
+  CreditCard,
 } from "lucide-react";
 
 // Cada módulo indica qué roles lo pueden ver.
@@ -179,6 +180,12 @@ const secciones = [
         texto: "Configuración",
         icono: Settings,
         roles: ["administrador"],
+      },      
+      {  
+        a: "/facturacion",
+        texto: "Facturación",
+        icono: CreditCard,
+        roles: ["administrador"],
       },
       {
         a: "/qr",
@@ -186,6 +193,7 @@ const secciones = [
         icono: QrCode,
         roles: ["administrador"],
       },
+
     ],
   },
 ];

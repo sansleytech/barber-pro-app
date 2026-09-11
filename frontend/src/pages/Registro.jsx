@@ -61,7 +61,7 @@ function Registro() {
     const navigate = useNavigate();
     const { login } = useAuth();
     const [params] = useSearchParams();
-    const planElegido = params.get("plan"); // id del plan si venís desde /planes, o null si es registro directo
+    const planElegido = params.get("plan");
 
     const [paso, setPaso] = useState(1);
     const [error, setError] = useState("");
@@ -124,8 +124,6 @@ function Registro() {
                 password_admin: form.password_admin,
             });
 
-            // Si vino con un plan pago elegido desde /planes, lo logueamos automáticamente
-            // y lo mandamos derecho a pagar, en vez de mostrarle la pantalla de "listo".
             if (planElegido) {
                 try {
                     const datosLogin = new URLSearchParams();
@@ -137,8 +135,7 @@ function Registro() {
                     navigate(`/pagar?plan=${planElegido}`);
                     return;
                 } catch {
-                    // Si el auto-login falla por algún motivo, no perdemos el registro ya hecho:
-                    // mostramos igual la pantalla de éxito para que entre manualmente.
+                    // Si el auto-login falla, mostramos igual la pantalla de éxito.
                 }
             }
 
@@ -150,7 +147,6 @@ function Registro() {
         }
     };
 
-    // ============ PANEL IZQUIERDO (igual al login) ============
     const PanelMarca = (
         <div className="flex flex-col justify-center px-10 lg:px-16 py-16">
             <div className="w-20 h-20 rounded-2xl bg-yellow-400 flex items-center justify-center mb-8">
@@ -173,218 +169,220 @@ function Registro() {
         </div>
     );
 
-    // ============ VISTA DE ÉXITO (solo si NO venía a pagar un plan) ============
     if (completado) {
         return (
-            <div className="min-h-screen bg-neutral-950 grid lg:grid-cols-2">
-                <div className="hidden lg:block">{PanelMarca}</div>
-                <div className="flex items-center justify-center px-6 py-16">
-                    <div className="w-full max-w-md text-center">
-                        <div className="w-16 h-16 rounded-full bg-yellow-400 flex items-center justify-center mx-auto mb-6">
-                            <IconCheck className="w-8 h-8 text-neutral-950" />
+            <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+                <div className="w-full max-w-6xl grid lg:grid-cols-2">
+                    <div className="hidden lg:block">{PanelMarca}</div>
+                    <div className="flex items-center justify-center px-6 py-16">
+                        <div className="w-full max-w-md text-center">
+                            <div className="w-16 h-16 rounded-full bg-yellow-400 flex items-center justify-center mx-auto mb-6">
+                                <IconCheck className="w-8 h-8 text-neutral-950" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-white mb-2">¡Listo, {completado.nombre_usuario_admin}!</h2>
+                            <p className="text-gray-400 mb-8">{completado.mensaje}</p>
+                            <div className="bg-neutral-900 border border-white/10 rounded-xl p-5 text-left mb-8">
+                                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Tu barbería</p>
+                                <p className="text-white font-semibold mb-3">{completado.subdominio}</p>
+                                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Portal público</p>
+                                <p className="text-yellow-400 text-sm">barberproapp.online/portal/{completado.subdominio}</p>
+                            </div>
+                            <button
+                                onClick={() => navigate("/login")}
+                                className="w-full bg-yellow-400 text-neutral-950 font-semibold rounded-lg py-3 hover:bg-yellow-300 transition-colors"
+                            >
+                                Ir a iniciar sesión
+                            </button>
                         </div>
-                        <h2 className="text-2xl font-bold text-white mb-2">¡Listo, {completado.nombre_usuario_admin}!</h2>
-                        <p className="text-gray-400 mb-8">{completado.mensaje}</p>
-                        <div className="bg-neutral-900 border border-white/10 rounded-xl p-5 text-left mb-8">
-                            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Tu barbería</p>
-                            <p className="text-white font-semibold mb-3">{completado.subdominio}</p>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Portal público</p>
-                            <p className="text-yellow-400 text-sm">barberproapp.online/portal/{completado.subdominio}</p>
-                        </div>
-                        <button
-                            onClick={() => navigate("/login")}
-                            className="w-full bg-yellow-400 text-neutral-950 font-semibold rounded-lg py-3 hover:bg-yellow-300 transition-colors"
-                        >
-                            Ir a iniciar sesión
-                        </button>
                     </div>
                 </div>
             </div>
         );
     }
 
-    // ============ WIZARD ============
     return (
-        <div className="min-h-screen bg-neutral-950 grid lg:grid-cols-2">
-            <div className="hidden lg:block">{PanelMarca}</div>
+        <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+            <div className="w-full max-w-6xl grid lg:grid-cols-2">
+                <div className="hidden lg:block">{PanelMarca}</div>
 
-            <div className="flex items-center justify-center px-6 py-16">
-                <div className="w-full max-w-md">
-                    <h2 className="text-3xl font-bold text-white mb-1">Registrá tu barbería</h2>
-                    <p className="text-gray-400 mb-8">
-                        {planElegido ? "Un último paso antes de activar tu plan" : "Empezá tu prueba gratuita de 14 días"}
-                    </p>
+                <div className="flex items-center justify-center px-6 py-16">
+                    <div className="w-full max-w-md">
+                        <h2 className="text-3xl font-bold text-white mb-1">Registrá tu barbería</h2>
+                        <p className="text-gray-400 mb-8">
+                            {planElegido ? "Un último paso antes de activar tu plan" : "Empezá tu prueba gratuita de 14 días"}
+                        </p>
 
-                    <div className="flex items-center mb-8">
-                        {PASOS.map((p, i) => (
-                            <div key={p.n} className="flex items-center flex-1 last:flex-none">
-                                <div className="flex flex-col items-center">
-                                    <div
-                                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border transition-colors ${paso === p.n
-                                                ? "bg-yellow-400 border-yellow-400 text-neutral-950"
-                                                : paso > p.n
-                                                    ? "bg-yellow-400/20 border-yellow-400 text-yellow-400"
-                                                    : "bg-neutral-900 border-white/15 text-gray-500"
-                                            }`}
-                                    >
-                                        {paso > p.n ? <IconCheck className="w-4 h-4" /> : p.n}
+                        <div className="flex items-center mb-8">
+                            {PASOS.map((p, i) => (
+                                <div key={p.n} className="flex items-center flex-1 last:flex-none">
+                                    <div className="flex flex-col items-center">
+                                        <div
+                                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border transition-colors ${paso === p.n
+                                                    ? "bg-yellow-400 border-yellow-400 text-neutral-950"
+                                                    : paso > p.n
+                                                        ? "bg-yellow-400/20 border-yellow-400 text-yellow-400"
+                                                        : "bg-neutral-900 border-white/15 text-gray-500"
+                                                }`}
+                                        >
+                                            {paso > p.n ? <IconCheck className="w-4 h-4" /> : p.n}
+                                        </div>
+                                        <span className={`text-[0.7rem] mt-1.5 ${paso >= p.n ? "text-white" : "text-gray-500"}`}>{p.label}</span>
                                     </div>
-                                    <span className={`text-[0.7rem] mt-1.5 ${paso >= p.n ? "text-white" : "text-gray-500"}`}>{p.label}</span>
+                                    {i < PASOS.length - 1 && (
+                                        <div className={`flex-1 h-px mx-2 ${paso > p.n ? "bg-yellow-400" : "bg-white/10"}`} />
+                                    )}
                                 </div>
-                                {i < PASOS.length - 1 && (
-                                    <div className={`flex-1 h-px mx-2 ${paso > p.n ? "bg-yellow-400" : "bg-white/10"}`} />
-                                )}
-                            </div>
-                        ))}
-                    </div>
-
-                    {error && (
-                        <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3 mb-5">
-                            {error}
+                            ))}
                         </div>
-                    )}
 
-                    {paso === 1 && (
-                        <div className="space-y-5">
-                            <div>
-                                <label className={labelCls}>Nombre de tu barbería</label>
-                                <div className="relative">
-                                    <IconTienda className={iconCls} />
-                                    <input type="text" placeholder="Barber Kobe" value={form.nombre_barberia}
-                                        onChange={set("nombre_barberia")} className={inputCls} autoFocus />
-                                </div>
+                        {error && (
+                            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3 mb-5">
+                                {error}
                             </div>
-                            <div>
-                                <label className={labelCls}>Subdominio</label>
-                                <div className="relative">
-                                    <IconTienda className={iconCls} />
-                                    <input type="text" placeholder="barberkobe" value={form.subdominio}
-                                        onChange={setSubdominio} className={inputCls} />
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1.5">
-                                    Tu portal quedará en: <span className="text-yellow-400">barberproapp.online/portal/{form.subdominio || "..."}</span>
-                                </p>
-                            </div>
-                            <div>
-                                <label className={labelCls}>Email de contacto <span className="text-gray-500 font-normal">(opcional)</span></label>
-                                <div className="relative">
-                                    <IconMail className={iconCls} />
-                                    <input type="email" placeholder="contacto@barberkobe.com" value={form.email_contacto}
-                                        onChange={set("email_contacto")} className={inputCls} />
-                                </div>
-                            </div>
-                            <div>
-                                <label className={labelCls}>Teléfono <span className="text-gray-500 font-normal">(opcional)</span></label>
-                                <div className="relative">
-                                    <IconTelefono className={iconCls} />
-                                    <input type="text" placeholder="1800-404040" value={form.telefono}
-                                        onChange={set("telefono")} className={inputCls} />
-                                </div>
-                            </div>
-                            <button onClick={continuar} className="w-full bg-yellow-400 text-neutral-950 font-semibold rounded-lg py-3 hover:bg-yellow-300 transition-colors">
-                                Continuar
-                            </button>
-                        </div>
-                    )}
+                        )}
 
-                    {paso === 2 && (
-                        <div className="space-y-5">
-                            <div>
-                                <label className={labelCls}>Tu nombre</label>
-                                <div className="relative">
-                                    <IconUsuario className={iconCls} />
-                                    <input type="text" placeholder="Kobe Pérez" value={form.nombre_admin}
-                                        onChange={set("nombre_admin")} className={inputCls} autoFocus />
+                        {paso === 1 && (
+                            <div className="space-y-5">
+                                <div>
+                                    <label className={labelCls}>Nombre de tu barbería</label>
+                                    <div className="relative">
+                                        <IconTienda className={iconCls} />
+                                        <input type="text" placeholder="Barber Kobe" value={form.nombre_barberia}
+                                            onChange={set("nombre_barberia")} className={inputCls} autoFocus />
+                                    </div>
                                 </div>
-                            </div>
-                            <div>
-                                <label className={labelCls}>Tu email</label>
-                                <div className="relative">
-                                    <IconMail className={iconCls} />
-                                    <input type="email" placeholder="kobe@barberkobe.com" value={form.email_admin}
-                                        onChange={set("email_admin")} className={inputCls} />
+                                <div>
+                                    <label className={labelCls}>Subdominio</label>
+                                    <div className="relative">
+                                        <IconTienda className={iconCls} />
+                                        <input type="text" placeholder="barberkobe" value={form.subdominio}
+                                            onChange={setSubdominio} className={inputCls} />
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1.5">
+                                        Tu portal quedará en: <span className="text-yellow-400">barberproapp.online/portal/{form.subdominio || "..."}</span>
+                                    </p>
                                 </div>
-                            </div>
-                            <div>
-                                <label className={labelCls}>Contraseña</label>
-                                <div className="relative">
-                                    <IconCandado className={iconCls} />
-                                    <input type={verPassword ? "text" : "password"} placeholder="••••••••" value={form.password_admin}
-                                        onChange={set("password_admin")} className={`${inputCls} pr-11`} />
-                                    <button type="button" onClick={() => setVerPassword((v) => !v)}
-                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
-                                        {verPassword ? <IconOjoTachado className="w-5 h-5" /> : <IconOjo className="w-5 h-5" />}
-                                    </button>
+                                <div>
+                                    <label className={labelCls}>Email de contacto <span className="text-gray-500 font-normal">(opcional)</span></label>
+                                    <div className="relative">
+                                        <IconMail className={iconCls} />
+                                        <input type="email" placeholder="contacto@barberkobe.com" value={form.email_contacto}
+                                            onChange={set("email_contacto")} className={inputCls} />
+                                    </div>
                                 </div>
-                            </div>
-                            <div>
-                                <label className={labelCls}>Confirmar contraseña</label>
-                                <div className="relative">
-                                    <IconCandado className={iconCls} />
-                                    <input type={verPassword ? "text" : "password"} placeholder="••••••••" value={form.password_confirmar}
-                                        onChange={set("password_confirmar")} className={inputCls} />
+                                <div>
+                                    <label className={labelCls}>Teléfono <span className="text-gray-500 font-normal">(opcional)</span></label>
+                                    <div className="relative">
+                                        <IconTelefono className={iconCls} />
+                                        <input type="text" placeholder="1800-404040" value={form.telefono}
+                                            onChange={set("telefono")} className={inputCls} />
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="flex gap-3">
-                                <button onClick={volver} className="flex-1 border border-white/15 text-white font-semibold rounded-lg py-3 hover:border-white/30 transition-colors">
-                                    Atrás
-                                </button>
-                                <button onClick={continuar} className="flex-[2] bg-yellow-400 text-neutral-950 font-semibold rounded-lg py-3 hover:bg-yellow-300 transition-colors">
+                                <button onClick={continuar} className="w-full bg-yellow-400 text-neutral-950 font-semibold rounded-lg py-3 hover:bg-yellow-300 transition-colors">
                                     Continuar
                                 </button>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {paso === 3 && (
-                        <div className="space-y-5">
-                            <div className="bg-neutral-900 border border-white/10 rounded-xl p-5 space-y-3">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Barbería</span>
-                                    <span className="text-white font-medium">{form.nombre_barberia}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Subdominio</span>
-                                    <span className="text-yellow-400 font-medium">{form.subdominio}</span>
-                                </div>
-                                {form.email_contacto && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Email de contacto</span>
-                                        <span className="text-white font-medium">{form.email_contacto}</span>
+                        {paso === 2 && (
+                            <div className="space-y-5">
+                                <div>
+                                    <label className={labelCls}>Tu nombre</label>
+                                    <div className="relative">
+                                        <IconUsuario className={iconCls} />
+                                        <input type="text" placeholder="Kobe Pérez" value={form.nombre_admin}
+                                            onChange={set("nombre_admin")} className={inputCls} autoFocus />
                                     </div>
-                                )}
-                                {form.telefono && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Teléfono</span>
-                                        <span className="text-white font-medium">{form.telefono}</span>
-                                    </div>
-                                )}
-                                <div className="border-t border-white/10 pt-3 flex justify-between text-sm">
-                                    <span className="text-gray-500">Administrador</span>
-                                    <span className="text-white font-medium">{form.nombre_admin}</span>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Email de acceso</span>
-                                    <span className="text-white font-medium">{form.email_admin}</span>
+                                <div>
+                                    <label className={labelCls}>Tu email</label>
+                                    <div className="relative">
+                                        <IconMail className={iconCls} />
+                                        <input type="email" placeholder="kobe@barberkobe.com" value={form.email_admin}
+                                            onChange={set("email_admin")} className={inputCls} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Contraseña</label>
+                                    <div className="relative">
+                                        <IconCandado className={iconCls} />
+                                        <input type={verPassword ? "text" : "password"} placeholder="••••••••" value={form.password_admin}
+                                            onChange={set("password_admin")} className={`${inputCls} pr-11`} />
+                                        <button type="button" onClick={() => setVerPassword((v) => !v)}
+                                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+                                            {verPassword ? <IconOjoTachado className="w-5 h-5" /> : <IconOjo className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Confirmar contraseña</label>
+                                    <div className="relative">
+                                        <IconCandado className={iconCls} />
+                                        <input type={verPassword ? "text" : "password"} placeholder="••••••••" value={form.password_confirmar}
+                                            onChange={set("password_confirmar")} className={inputCls} />
+                                    </div>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button onClick={volver} className="flex-1 border border-white/15 text-white font-semibold rounded-lg py-3 hover:border-white/30 transition-colors">
+                                        Atrás
+                                    </button>
+                                    <button onClick={continuar} className="flex-[2] bg-yellow-400 text-neutral-950 font-semibold rounded-lg py-3 hover:bg-yellow-300 transition-colors">
+                                        Continuar
+                                    </button>
                                 </div>
                             </div>
-                            <div className="flex gap-3">
-                                <button onClick={volver} disabled={enviando} className="flex-1 border border-white/15 text-white font-semibold rounded-lg py-3 hover:border-white/30 transition-colors disabled:opacity-50">
-                                    Atrás
-                                </button>
-                                <button onClick={enviar} disabled={enviando} className="flex-[2] bg-yellow-400 text-neutral-950 font-semibold rounded-lg py-3 hover:bg-yellow-300 transition-colors disabled:opacity-60">
-                                    {enviando ? "Creando barbería…" : planElegido ? "Crear barbería y pagar" : "Crear mi barbería"}
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                        )}
 
-                    <p className="text-center text-gray-500 text-sm mt-8">
-                        ¿Ya tenés cuenta?{" "}
-                        <Link to="/login" className="text-yellow-400 font-medium hover:text-yellow-300">
-                            Iniciar sesión
-                        </Link>
-                    </p>
+                        {paso === 3 && (
+                            <div className="space-y-5">
+                                <div className="bg-neutral-900 border border-white/10 rounded-xl p-5 space-y-3">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Barbería</span>
+                                        <span className="text-white font-medium">{form.nombre_barberia}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Subdominio</span>
+                                        <span className="text-yellow-400 font-medium">{form.subdominio}</span>
+                                    </div>
+                                    {form.email_contacto && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500">Email de contacto</span>
+                                            <span className="text-white font-medium">{form.email_contacto}</span>
+                                        </div>
+                                    )}
+                                    {form.telefono && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500">Teléfono</span>
+                                            <span className="text-white font-medium">{form.telefono}</span>
+                                        </div>
+                                    )}
+                                    <div className="border-t border-white/10 pt-3 flex justify-between text-sm">
+                                        <span className="text-gray-500">Administrador</span>
+                                        <span className="text-white font-medium">{form.nombre_admin}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Email de acceso</span>
+                                        <span className="text-white font-medium">{form.email_admin}</span>
+                                    </div>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button onClick={volver} disabled={enviando} className="flex-1 border border-white/15 text-white font-semibold rounded-lg py-3 hover:border-white/30 transition-colors disabled:opacity-50">
+                                        Atrás
+                                    </button>
+                                    <button onClick={enviar} disabled={enviando} className="flex-[2] bg-yellow-400 text-neutral-950 font-semibold rounded-lg py-3 hover:bg-yellow-300 transition-colors disabled:opacity-60">
+                                        {enviando ? "Creando barbería…" : planElegido ? "Crear barbería y pagar" : "Crear mi barbería"}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <p className="text-center text-gray-500 text-sm mt-8">
+                            ¿Ya tenés cuenta?{" "}
+                            <Link to="/login" className="text-yellow-400 font-medium hover:text-yellow-300">
+                                Iniciar sesión
+                            </Link>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

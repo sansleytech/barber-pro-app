@@ -3,6 +3,9 @@
 import hashlib
 import os
 import uuid
+from dotenv import load_dotenv
+
+load_dotenv()
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
@@ -34,7 +37,7 @@ def listar_planes_disponibles(db: Session = Depends(get_db)):
     )
 
 
-@router.post("/pagos/iniciar", response_model=PagoRespuesta, status_code=201)
+@router.post("/pagos/iniciar", status_code=201)
 def iniciar_pago(
     datos: PagoIniciar,
     db: Session = Depends(get_db),
@@ -169,3 +172,68 @@ async def webhook_pago(request: Request, db: Session = Depends(get_db)):
         db.commit()
 
     return {"mensaje": "Webhook procesado"}
+
+from app.models.fuente_pago import FuentePago
+from app.core.wompi_api import crear_fuente_pago
+from pydantic import BaseModel
+
+
+class TokenizarInput(BaseModel):
+    token_tarjeta: str
+
+
+@router.post("/pagos/guardar-fuente")
+def guardar_fuente_pago(
+    datos: TokenizarInput,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(requiere_rol(RolEnum.administrador)),
+    id_barberia: int = Depends(get_barberia_actual),
+):
+    """Recibe el token de una tarjeta (generado por el widget en modo
+    tokenización), lo convierte en una 'fuente de pago' reutilizable en
+    Wompi, y guarda su id para poder cobrar automáticamente después."""
+    if not usuario.email:
+        raise HTTPException(status_code=400, detail="Tu usuario necesita un email cargado para guardar la tarjeta")
+
+    try:
+        fuente_wompi = crear_fuente_pago(datos.token_tarjeta, usuario.email)
+    except Exception:
+        raise HTTPException(status_code=502, detail="No se pudo registrar la tarjeta con la pasarela de pago")
+
+    # Desactivamos cualquier fuente anterior: solo una tarjeta activa por barbería.
+    db.query(FuentePago).filter(FuentePago.id_barberia == id_barberia).update({"activa": False})
+
+    nueva = FuentePago(
+        id_barberia=id_barberia,
+        id_fuente_wompi=str(fuente_wompi["id"]),
+        ultimos_4_digitos=fuente_wompi.get("last_four"),
+        franquicia=fuente_wompi.get("brand"),
+        activa=True,
+    )
+    db.add(nueva)
+    db.commit()
+    return {"mensaje": "Tarjeta guardada correctamente"}
+
+
+@router.get("/pagos/mi-fuente")
+def mi_fuente_pago(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(requiere_rol(RolEnum.administrador)),
+    id_barberia: int = Depends(get_barberia_actual),
+):
+    """Devuelve la tarjeta guardada actualmente (si hay), sin datos sensibles."""
+    fuente = db.query(FuentePago).filter(
+        FuentePago.id_barberia == id_barberia,
+        FuentePago.activa == True,
+    ).first()
+    if fuente is None:
+        return None
+    return {
+        "ultimos_4_digitos": fuente.ultimos_4_digitos,
+        "franquicia": fuente.franquicia,
+        "fecha_creacion": fuente.fecha_creacion,
+    }
+
+@router.get("/pagos/public-key")
+def obtener_public_key():
+    return {"public_key": WOMPI_PUBLIC_KEY}

@@ -26,6 +26,7 @@ const PERMISOS_RESPALDO = {
   "/solicitudes": ["administrador", "recepcionista"],
   "/reportes": ["administrador", "barbero"],
   "/galeria": ["administrador"],
+  "/facturacion": ["administrador"],
 };
 
 // Se llena en tiempo real desde /auth/permisos-vigentes (ver AuthContext.jsx).

@@ -50,6 +50,8 @@ import SuperadminLayout from "./components/SuperadminLayout";
 import SuperadminDashboard from "./pages/SuperadminDashboard";
 import SuperadminPlanes from "./pages/SuperadminPlanes";
 import SuperadminPermisos from "./pages/SuperadminPermisos";
+import Facturacion from "./pages/Facturacion";
+
 // Protege una ruta según el rol. Si no tiene permiso, lo manda al dashboard.
 function RutaPorRol({ ruta, children }) {
   const { usuario, permisosListos } = useAuth();
@@ -456,6 +458,15 @@ function App() {
             element={
               <RutaPorRol ruta="/mi-dia">
                 <MiDia />
+              </RutaPorRol>
+            }
+          />
+
+          <Route
+            path="/facturacion"
+            element={
+              <RutaPorRol ruta="/facturacion">
+                <Facturacion />
               </RutaPorRol>
             }
           />
