@@ -2,7 +2,9 @@ import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Building2, CreditCard, Lock, LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import logo from "../assets/img/logo1.png";
+            <div className="w-20 h-20 rounded-2xl bg-yellow-400 flex items-center justify-center mb-8">
+                <span className="text-3xl">✂️</span>
+            </div>
 
 const ITEMS = [
   { a: "/superadmin", texto: "Resumen", icono: LayoutDashboard, exacto: true },

@@ -1,14 +1,14 @@
 // src/pages/Home.jsx
+import React from "react";
 import { Link } from "react-router-dom";
 import {
-  Scissors,
   Calendar,
   Package,
   BarChart3,
   Globe,
   MapPin,
-  Check
 } from "lucide-react";
+import logo from "../assets/img/logo1.png";
 
 function Home() {
   return (
@@ -16,9 +16,7 @@ function Home() {
       {/* NAV */}
       <nav className="flex items-center justify-between px-6 sm:px-10 py-5 border-b border-line">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-gold flex items-center justify-center">
-            <Scissors className="w-5 h-5 text-ink" />
-          </div>
+          <img src={logo} alt="Barber Pro" className="w-9 h-9 rounded-xl object-cover" />
           <span className="text-lg font-bold">
             Barber <span className="text-gold">Pro</span>
           </span>
@@ -175,12 +173,18 @@ function Home() {
       <footer className="border-t border-line py-10 px-6 text-center">
         <p className="text-gray-500 text-sm">
           © {new Date().getFullYear()} Barber Pro. Plataforma desarrollada por{" "}
-          <a
-            href="mailto:sansley.tech-sol@outlook.com"
-            className="text-gray-400 hover:text-gold transition-colors"
-          >
-            Sansley Tech Solutions
-          </a>
+          {React.createElement(
+            "a",
+            {
+              href: "mailto:sansley.tech-sol@outlook.com",
+              className: "text-gray-400 hover:text-gold transition-colors",
+            },
+            "Sansley Tech Solutions"
+          )}
+          {" · "}
+          <Link to="/superadmin/login" className="text-gray-600 hover:text-gray-400 transition-colors">
+            Soporte
+          </Link>
         </p>
       </footer>
     </div>

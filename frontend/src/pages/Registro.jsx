@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/cliente";
 import { useAuth } from "../context/AuthContext";
+import logo from "../assets/img/logo1.png";
 
-// --- Íconos inline (sin dependencias externas) ---
 const IconTienda = (p) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...p}>
         <path d="M3 9l1-5h16l1 5M3 9a2 2 0 002 2h1a2 2 0 002-2M3 9v9a1 1 0 001 1h3M21 9a2 2 0 01-2 2h-1a2 2 0 01-2-2M21 9v9a1 1 0 01-1 1h-3M9 9a2 2 0 01-2 2H6a2 2 0 01-2-2M15 9a2 2 0 002 2M9 21v-6h6v6" strokeLinecap="round" strokeLinejoin="round" />
@@ -149,9 +149,7 @@ function Registro() {
 
     const PanelMarca = (
         <div className="flex flex-col justify-center px-10 lg:px-16 py-16">
-            <div className="w-20 h-20 rounded-2xl bg-yellow-400 flex items-center justify-center mb-8">
-                <span className="text-3xl">✂️</span>
-            </div>
+            <img src={logo} alt="Barber Pro" className="w-20 h-20 rounded-2xl object-cover mb-8" />
             <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">
                 Barber <span className="text-yellow-400">Pro</span>
             </h1>

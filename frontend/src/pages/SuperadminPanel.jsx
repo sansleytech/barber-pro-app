@@ -7,7 +7,9 @@ import {
 import api from "../api/cliente";
 import { useAuth } from "../context/AuthContext";
 import { useUI } from "../context/UIContext";
-import logo from "../assets/img/logo1.png";
+            <div className="w-20 h-20 rounded-2xl bg-yellow-400 flex items-center justify-center mb-8">
+                <span className="text-3xl">✂️</span>
+            </div>
 
 const ESTADOS = [
   { valor: "trial", label: "Trial", dot: "bg-blue-400", pill: "bg-blue-500/10 text-blue-400 border-blue-500/25" },

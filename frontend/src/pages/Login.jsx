@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Store, User, Lock, Scissors, ShieldCheck, Calendar } from "lucide-react";
+import { Eye, EyeOff, Store, User, Lock, ShieldCheck, Calendar } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/cliente";
+import logo from "../assets/img/logo1.png";
 
 const ROLES = [
   { valor: "administrador", label: "Administrador", icono: ShieldCheck },
-  { valor: "barbero", label: "Barbero", icono: Scissors },
+  { valor: "barbero", label: "Barbero", icono: Store },
   { valor: "recepcionista", label: "Recepcionista", icono: Calendar },
 ];
 
@@ -36,8 +37,6 @@ const Login = () => {
 
       const rolReal = respuesta.data.usuario?.rol;
 
-      // Si el rol real no coincide con el que la persona eligió arriba,
-      // le avisamos en vez de dejarla entrar confundida a otra vista.
       if (rolReal !== rolSeleccionado) {
         setError(
           `Este usuario no tiene el rol "${ROLES.find((r) => r.valor === rolSeleccionado)?.label}". Probá con la pestaña correcta.`
@@ -88,9 +87,8 @@ const Login = () => {
           }}
         />
         <div className="relative z-10 text-center md:text-left max-w-md animate-fade-in-up">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gold mb-8 shadow-lg shadow-gold/20">
-            <Scissors className="w-10 h-10 text-ink" />
-          </div>
+          <img src={logo} alt="Barber Pro" className="w-20 h-20 rounded-2xl object-cover mb-8 shadow-lg shadow-gold/20" />
+
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
             Barber <span className="text-gold">Pro</span>
           </h1>
