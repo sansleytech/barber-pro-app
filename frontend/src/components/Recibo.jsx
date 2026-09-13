@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-// Recibo imprimible, reutilizable para venta de productos o turno completado.
+// Recibo imprimible, con formato inspirado en factura de venta colombiana.
 // Uso:
 // <Recibo
 //   abierto={mostrarRecibo}
@@ -45,9 +45,13 @@ export default function Recibo({
 
   if (!abierto) return null;
 
-  const fechaFmt = fecha
-    ? new Date(fecha).toLocaleString("es-CO", { dateStyle: "medium", timeStyle: "short" })
-    : new Date().toLocaleString("es-CO", { dateStyle: "medium", timeStyle: "short" });
+  const fechaObj = fecha ? new Date(fecha) : new Date();
+  const fechaFmt = fechaObj.toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" });
+  const horaFmt = fechaObj.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+
+  const prefijo = tipo === "venta" ? "FV" : "FS";
+  const numeroFactura = `${prefijo}-${fechaObj.getFullYear()}-${String(numero).padStart(6, "0")}`;
+  const porcentajeIva = subtotal > 0 && iva > 0 ? Math.round((iva / subtotal) * 100) : 0;
 
   return (
     <div className="fixed inset-0 z-[999] bg-black/70 flex items-center justify-center px-4 py-8 print:bg-white print:p-0">
@@ -67,12 +71,12 @@ export default function Recibo({
         </button>
       </div>
 
-      {/* Hoja del recibo: blanco y negro, como papel */}
+      {/* Hoja del recibo */}
       <div className="bg-white text-neutral-900 w-full max-w-md max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl print:shadow-none print:rounded-none print:max-w-full print:max-h-none print:overflow-visible" id="recibo-imprimible">
         <div className="p-8 font-mono text-sm">
 
-          {/* Encabezado */}
-          <div className="text-center mb-6 pb-4 border-b-2 border-dashed border-neutral-300">
+          {/* Encabezado: datos del negocio */}
+          <div className="text-center mb-4 pb-4 border-b-2 border-neutral-800">
             {barberia?.logo_url && (
               <img
                 src={barberia.logo_url}
@@ -84,25 +88,27 @@ export default function Recibo({
             {barberia?.nit && <p className="text-xs text-neutral-600">NIT: {barberia.nit}</p>}
             {barberia?.direccion && <p className="text-xs text-neutral-600">{barberia.direccion}</p>}
             {barberia?.telefono && <p className="text-xs text-neutral-600">Tel: {barberia.telefono}</p>}
+            <p className="text-[10px] text-neutral-500 mt-1.5">Régimen simplificado · No responsable de IVA</p>
           </div>
 
-          {/* Título del comprobante */}
-          <div className="text-center mb-5">
-            <p className="font-bold uppercase tracking-wide">
-              {tipo === "venta" ? "Comprobante de venta" : "Comprobante de servicio"}
+          {/* Título del comprobante, tipo factura */}
+          <div className="text-center mb-5 pb-3 border-b border-dashed border-neutral-300">
+            <p className="font-bold uppercase tracking-wide text-base">
+              {tipo === "venta" ? "Factura de venta" : "Factura de servicio"}
             </p>
-            <p className="text-xs text-neutral-500 mt-1">N.° {String(numero).padStart(6, "0")}</p>
-            <p className="text-xs text-neutral-500">{fechaFmt}</p>
+            <p className="text-sm font-semibold text-neutral-800 mt-1">N.° {numeroFactura}</p>
+            <div className="flex justify-center gap-3 text-xs text-neutral-500 mt-1">
+              <span>Fecha: {fechaFmt}</span>
+              <span>Hora: {horaFmt}</span>
+            </div>
           </div>
 
           {/* Datos del cliente / atendió */}
           <div className="mb-5 text-xs space-y-1 pb-4 border-b border-dashed border-neutral-300">
-            {cliente?.nombre && (
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Cliente</span>
-                <span className="font-semibold">{cliente.nombre}</span>
-              </div>
-            )}
+            <div className="flex justify-between">
+              <span className="text-neutral-500">Cliente</span>
+              <span className="font-semibold">{cliente?.nombre || "Consumidor final"}</span>
+            </div>
             {cliente?.documento && (
               <div className="flex justify-between">
                 <span className="text-neutral-500">Documento</span>
@@ -119,9 +125,9 @@ export default function Recibo({
 
           {/* Ítems */}
           <div className="mb-4">
-            <div className="flex justify-between text-[11px] uppercase text-neutral-500 font-semibold mb-2">
-              <span>Ítem</span>
-              <span>Total</span>
+            <div className="flex justify-between text-[11px] uppercase text-neutral-500 font-semibold mb-2 pb-1.5 border-b border-neutral-300">
+              <span>Descripción</span>
+              <span>Valor</span>
             </div>
             <div className="space-y-2">
               {items.map((it, i) => (
@@ -137,33 +143,31 @@ export default function Recibo({
           </div>
 
           {/* Totales */}
-          <div className="pt-3 border-t-2 border-dashed border-neutral-300 space-y-1.5">
+          <div className="pt-3 border-t-2 border-neutral-800 space-y-1.5">
             <div className="flex justify-between text-xs text-neutral-600">
               <span>Subtotal</span>
               <span>{formatCOP(subtotal)}</span>
             </div>
-            {iva > 0 && (
-              <div className="flex justify-between text-xs text-neutral-600">
-                <span>IVA</span>
-                <span>{formatCOP(iva)}</span>
-              </div>
-            )}
-            <div className="flex justify-between font-bold text-base pt-1.5 border-t border-neutral-300">
-              <span>TOTAL</span>
+            <div className="flex justify-between text-xs text-neutral-600">
+              <span>IVA{porcentajeIva > 0 ? ` (${porcentajeIva}%)` : ""}</span>
+              <span>{formatCOP(iva)}</span>
+            </div>
+            <div className="flex justify-between font-bold text-lg pt-1.5 border-t border-neutral-300">
+              <span>TOTAL A PAGAR</span>
               <span>{formatCOP(total)}</span>
             </div>
             {metodoPago && (
               <div className="flex justify-between text-xs text-neutral-500 pt-1">
-                <span>Método de pago</span>
-                <span>{metodoPago}</span>
+                <span>Forma de pago</span>
+                <span className="capitalize">{metodoPago}</span>
               </div>
             )}
           </div>
 
-          {/* Pie */}
+          {/* Pie: aviso legal y numeración */}
           <div className="mt-6 pt-4 border-t border-dashed border-neutral-300 text-center">
             <p className="text-[10px] text-neutral-400 leading-relaxed">
-              Este documento es un comprobante interno y no constituye factura electrónica válida ante la DIAN.
+              Documento equivalente de venta. No constituye factura electrónica válida ante la DIAN.
             </p>
             <p className="text-[10px] text-neutral-400 mt-2">¡Gracias por tu visita!</p>
           </div>

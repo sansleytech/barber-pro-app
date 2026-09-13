@@ -13,23 +13,21 @@ class Plan(Base):
     nombre = Column(String(60), nullable=False)          # ej: Básico, Pro, Premium
     descripcion = Column(Text, nullable=True)
     precio_mensual = Column(DECIMAL(10, 2), nullable=False)
+    precio_anterior = Column(DECIMAL(10, 2), nullable=True)  # precio tachado, para mostrar descuento
     max_barberos = Column(Integer, nullable=True)        # límite de barberos (NULL = ilimitado)
     max_turnos_mes = Column(Integer, nullable=True)      # límite de turnos/mes (NULL = ilimitado)
-    
-    # Funcionalidades habilitadas (banderas)
-    permite_whatsapp = Column(Boolean, default=False)
-    permite_pagos_online = Column(Boolean, default=False)
-    permite_reportes = Column(Boolean, default=True)
-    orden = Column(Integer, default=0)
-    activo = Column(Boolean, default=True)
-    fecha_creacion = Column(DateTime, server_default=func.now())
 
     # Funcionalidades habilitadas (banderas)
     permite_whatsapp = Column(Boolean, default=False)
     permite_pagos_online = Column(Boolean, default=False)
     permite_reportes = Column(Boolean, default=True)
-    permite_inventario = Column(Boolean, default=False)   # ← nuevo: inventario y ventas
-    permite_qr = Column(Boolean, default=False)           # ← nuevo: códigos QR
+    permite_inventario = Column(Boolean, default=False)
+    permite_qr = Column(Boolean, default=False)
+
+    orden = Column(Integer, default=0)
+    activo = Column(Boolean, default=True)
+    fecha_creacion = Column(DateTime, server_default=func.now())
+
 
 class EstadoSuscripcionEnum(str, enum.Enum):
     trial = "trial"
@@ -46,7 +44,7 @@ class Suscripcion(Base):
     id_plan = Column(Integer, ForeignKey("planes.id_plan"), nullable=False)
     estado = Column(Enum(EstadoSuscripcionEnum), default=EstadoSuscripcionEnum.trial)
     fecha_inicio = Column(Date, nullable=False)
-    fecha_fin = Column(Date, nullable=True)            # próximo cobro / vencimiento
+    fecha_fin = Column(Date, nullable=True)
     fecha_creacion = Column(DateTime, server_default=func.now())
 
     barberia = relationship("Barberia")

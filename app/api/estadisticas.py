@@ -1,4 +1,5 @@
-"""Endpoints de estadísticas y analítica — multi-tenant."""
+"""Endpoints de estadísticas y analítica — multi-tenant, con soporte
+para ver otra sede de la misma organización (Plan Premium)."""
 
 from datetime import date, timedelta
 from decimal import Decimal
@@ -13,11 +14,40 @@ from app.models.barbero import Barbero
 from app.models.servicio import Servicio
 from app.models.valoracion import Valoracion
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia
+from app.models.plan import Suscripcion
 from app.core.dependencies import requiere_rol
 
 router = APIRouter(prefix="/estadisticas", tags=["Estadísticas"])
 
 _ROL = (RolEnum.administrador, RolEnum.recepcionista)
+
+
+def _resolver_bid(db: Session, usuario: Usuario, sede: int | None) -> int:
+    """Si 'sede' no viene o es la propia barbería, usa la del usuario.
+    Si pide ver otra, valida que sea Premium y que esa sede sea de su
+    misma organización antes de permitirlo."""
+    if sede is None or sede == usuario.id_barberia:
+        return usuario.id_barberia
+
+    suscripcion = (
+        db.query(Suscripcion)
+        .filter(Suscripcion.id_barberia == usuario.id_barberia)
+        .order_by(Suscripcion.fecha_creacion.desc())
+        .first()
+    )
+    if not suscripcion or not suscripcion.plan or suscripcion.plan.nombre != "Premium":
+        raise HTTPException(status_code=403, detail="Ver otras sedes solo está disponible en el plan Premium")
+
+    propia = db.query(Barberia).filter(Barberia.id_barberia == usuario.id_barberia).first()
+    if propia.id_organizacion is None:
+        raise HTTPException(status_code=403, detail="Tu barbería no pertenece a ninguna organización")
+
+    objetivo = db.query(Barberia).filter(Barberia.id_barberia == sede).first()
+    if objetivo is None or objetivo.id_organizacion != propia.id_organizacion:
+        raise HTTPException(status_code=403, detail="Esa sede no pertenece a tu organización")
+
+    return sede
 
 
 def _rango_default(desde: date | None, hasta: date | None):
@@ -91,11 +121,12 @@ def resumen(
     desde: date | None = Query(None),
     hasta: date | None = Query(None),
     comparar: bool = Query(True, description="Comparar con el período anterior"),
+    sede: int | None = Query(None, description="Ver otra sede de la organización (Premium)"),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(*_ROL)),
 ):
     """KPIs del período + comparación con el período anterior."""
-    bid = usuario.id_barberia
+    bid = _resolver_bid(db, usuario, sede)
     desde, hasta = _rango_default(desde, hasta)
 
     actual = _calcular_resumen(db, bid, desde, hasta)
@@ -126,11 +157,12 @@ def resumen(
 @router.get("/ingresos-mensuales")
 def ingresos_mensuales(
     meses: int = Query(6, ge=1, le=24, description="Cuántos meses hacia atrás"),
+    sede: int | None = Query(None),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(*_ROL)),
 ):
     """Ingresos por mes (turnos completados + ventas) de los últimos N meses."""
-    bid = usuario.id_barberia
+    bid = _resolver_bid(db, usuario, sede)
     hoy = date.today()
 
     año = hoy.year
@@ -190,11 +222,12 @@ def ingresos_mensuales(
 def ranking_barberos(
     desde: date | None = Query(None),
     hasta: date | None = Query(None),
+    sede: int | None = Query(None),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(*_ROL)),
 ):
     """Ranking de barberos por ingresos, con turnos, propinas, clientes y rating."""
-    bid = usuario.id_barberia
+    bid = _resolver_bid(db, usuario, sede)
     desde, hasta = _rango_default(desde, hasta)
 
     filas = db.query(
@@ -252,11 +285,12 @@ def servicios_top(
     desde: date | None = Query(None),
     hasta: date | None = Query(None),
     limite: int = Query(10, ge=1, le=50),
+    sede: int | None = Query(None),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(*_ROL)),
 ):
     """Servicios más vendidos en el período (cantidad e ingresos)."""
-    bid = usuario.id_barberia
+    bid = _resolver_bid(db, usuario, sede)
     desde, hasta = _rango_default(desde, hasta)
 
     filas = db.query(
@@ -292,11 +326,12 @@ def servicios_top(
 def turnos_por_estado(
     desde: date | None = Query(None),
     hasta: date | None = Query(None),
+    sede: int | None = Query(None),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(*_ROL)),
 ):
     """Cantidad de turnos en cada estado durante el período."""
-    bid = usuario.id_barberia
+    bid = _resolver_bid(db, usuario, sede)
     desde, hasta = _rango_default(desde, hasta)
 
     filas = db.query(
@@ -318,11 +353,12 @@ def turnos_por_estado(
 
 @router.get("/genero")
 def distribucion_genero(
+    sede: int | None = Query(None),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(*_ROL)),
 ):
     """Distribución de clientes por género."""
-    bid = usuario.id_barberia
+    bid = _resolver_bid(db, usuario, sede)
 
     filas = db.query(
         Cliente.genero.label("genero"),
@@ -352,15 +388,17 @@ def distribucion_genero(
     }
     return resultado
 
+
 @router.get("/horas-pico")
 def horas_pico(
     desde: date | None = Query(None),
     hasta: date | None = Query(None),
+    sede: int | None = Query(None),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(*_ROL)),
 ):
     """Cantidad de turnos agrupados por hora del día en el período."""
-    bid = usuario.id_barberia
+    bid = _resolver_bid(db, usuario, sede)
     desde, hasta = _rango_default(desde, hasta)
 
     filas = db.query(
@@ -372,10 +410,8 @@ def horas_pico(
         Turno.fecha <= hasta,
     ).group_by("hora").all()
 
-    # Armar un diccionario hora -> cantidad
     por_hora = {int(f.hora): int(f.cantidad) for f in filas}
 
-    # Rellenar de 6am a 10pm (rango típico de una barbería)
     resultado = []
     for h in range(6, 23):
         resultado.append({
@@ -391,11 +427,12 @@ def clientes_frecuentes(
     desde: date | None = Query(None),
     hasta: date | None = Query(None),
     limite: int = Query(10, ge=1, le=50),
+    sede: int | None = Query(None),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(*_ROL)),
 ):
     """Top de clientes por cantidad de visitas (turnos) en el período."""
-    bid = usuario.id_barberia
+    bid = _resolver_bid(db, usuario, sede)
     desde, hasta = _rango_default(desde, hasta)
 
     filas = db.query(
@@ -456,11 +493,12 @@ def rendimiento_barbero(
     id_barbero: int,
     desde: date | None = Query(None),
     hasta: date | None = Query(None),
+    sede: int | None = Query(None),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(*_ROL)),
 ):
     """Métricas detalladas de un barbero con comparativo del período anterior."""
-    bid = usuario.id_barberia
+    bid = _resolver_bid(db, usuario, sede)
     desde, hasta = _rango_default(desde, hasta)
 
     barbero = db.query(Barbero).filter(
@@ -504,6 +542,7 @@ def rendimiento_barbero(
         "rating": round(float(rating.rating), 2) if rating.rating else None,
         "cant_valoraciones": rating.cant or 0,
     }
+
 
 @router.get("/mis-estadisticas")
 def mis_estadisticas(

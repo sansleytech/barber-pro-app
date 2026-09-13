@@ -51,6 +51,10 @@ import SuperadminDashboard from "./pages/SuperadminDashboard";
 import SuperadminPlanes from "./pages/SuperadminPlanes";
 import SuperadminPermisos from "./pages/SuperadminPermisos";
 import Facturacion from "./pages/Facturacion";
+import MisSedes from "./pages/MisSedes";
+import PoliticaPrivacidad from "./pages/PoliticaPrivacidad";
+import OlvidePassword from "./pages/OlvidePassword";
+import RestablecerPassword from "./pages/RestablecerPassword";
 
 // Protege una ruta según el rol. Si no tiene permiso, lo manda al dashboard.
 function RutaPorRol({ ruta, children }) {
@@ -87,29 +91,22 @@ function RedirigirInicio() {
   );
 }
 
-// Placeholder temporal para las vistas que todavía no construimos
-function EnConstruccion({ nombre }) {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold text-white mb-2">
-        {nombre}
-      </h1>
-      <p className="text-gray-400">Esta sección está en construcción.</p>
-    </div>
-  );
-}
-
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/portal/:subdominio" element={<Portal />} />
+        <Route path="/portal/:subdominio/turno" element={<Portal />} />
         <Route path="/registro" element={<Registro />} />
         <Route path="/register" element={<Registro />} />
         <Route path="/planes" element={<Planes />} />
         <Route path="/superadmin/login" element={<SuperadminLogin />} />
-
+        <Route
+          path="/politicas-de-privacidad"
+          element={<PoliticaPrivacidad />}
+        />
+        
         <Route
           element={
             <RutaSuperAdmin>
@@ -470,7 +467,19 @@ function App() {
               </RutaPorRol>
             }
           />
+
+          <Route
+            path="/mis-sedes"
+            element={
+              <RutaPorRol ruta="/mis-sedes">
+                <MisSedes />
+              </RutaPorRol>
+            }
+          />
+          
         </Route>
+        <Route path="/olvide-password" element={<OlvidePassword />} />
+        <Route path="/restablecer-password" element={<RestablecerPassword />} />
         <Route path="/pagar" element={<PagarPlan />} />
         <Route path="/pago/resultado" element={<PagoResultado />} />
         <Route path="/" element={<Home />} />

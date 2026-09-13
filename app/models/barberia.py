@@ -1,9 +1,9 @@
 """Modelo de Barbería (tenant del SaaS)."""
 
 import enum
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Date, Enum, func
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Date, Enum, ForeignKey, func
+from sqlalchemy.orm import relationship
 from app.db.session import Base
-
 
 
 class EstadoBarberiaEnum(str, enum.Enum):
@@ -17,6 +17,7 @@ class Barberia(Base):
     __tablename__ = "barberias"
 
     id_barberia = Column(Integer, primary_key=True, autoincrement=True)
+    id_organizacion = Column(Integer, ForeignKey("organizaciones.id_organizacion", ondelete="SET NULL"), nullable=True)
     subdominio = Column(String(60), unique=True, nullable=False)
     nombre = Column(String(150), nullable=False)
     nit = Column(String(40), nullable=True)
@@ -30,3 +31,6 @@ class Barberia(Base):
     trial_hasta = Column(Date, nullable=True)
     activo = Column(Boolean, default=True)
     fecha_registro = Column(DateTime, server_default=func.now())
+
+
+Barberia.organizacion = relationship("Organizacion", back_populates="barberias")

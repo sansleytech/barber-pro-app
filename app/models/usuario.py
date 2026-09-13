@@ -34,10 +34,10 @@ class Usuario(Base, TenantMixin):
     cantidad_logins = Column(Integer, default=0)
     pregunta_seguridad = Column(String(255), nullable=True)
     respuesta_hash = Column(String(255), nullable=True)
+    reset_token = Column(String(255), nullable=True)
+    reset_token_expira = Column(DateTime, nullable=True)
     fecha_creacion = Column(DateTime, server_default=func.now())
 
-    # El nombre de usuario es único DENTRO de cada barbería, no globalmente.
-    # Así dos barberías pueden tener su propio "admin".
     __table_args__ = (
         UniqueConstraint("nombre_usuario", "id_barberia", name="uq_usuario_barberia"),
     )

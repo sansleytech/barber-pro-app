@@ -29,11 +29,48 @@ def crear_barbero(
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(RolEnum.administrador)),
 ):
-    """Crea un nuevo barbero. Solo administradores."""
+    """Crea un nuevo barbero. Solo administradores. Respeta el límite del plan."""
+    if not usuario.super_admin:
+        from app.models.plan import Suscripcion
+
+        suscripcion = (
+            db.query(Suscripcion)
+            .filter(Suscripcion.id_barberia == usuario.id_barberia)
+            .order_by(Suscripcion.fecha_creacion.desc())
+            .first()
+        )
+        if suscripcion and suscripcion.plan and suscripcion.plan.max_barberos is not None:
+            cantidad_actual = db.query(Barbero).filter(
+                Barbero.id_barberia == usuario.id_barberia,
+                Barbero.activo == True,
+            ).count()
+            if cantidad_actual >= suscripcion.plan.max_barberos:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Tu plan permite hasta {suscripcion.plan.max_barberos} barbero(s). Mejorá tu plan para agregar más.",
+                )
+
     nuevo = Barbero(**barbero.model_dump(), id_barberia=usuario.id_barberia)
     db.add(nuevo)
     db.commit()
     db.refresh(nuevo)
+
+    usuario_barbero = db.query(Usuario).filter(
+        Usuario.id_barbero == barbero.id_barbero,
+        Usuario.id_barberia == id_barberia,
+    ).first()
+    if usuario_barbero and usuario_barbero.email:
+        from app.core.email import enviar_email
+        enviar_email(
+            destinatario=usuario_barbero.email,
+            asunto="Tenés un turno nuevo asignado",
+            cuerpo_html=f"""
+                <p>Hola {barbero.nombre},</p>
+                <p>Te asignaron un turno para el <strong>{nuevo.fecha}</strong> a las <strong>{nuevo.hora_inicio.strftime('%H:%M')}</strong>.</p>
+                <p>Revisá los detalles en tu panel: <a href="https://barberproapp.online/login">Ingresar</a></p>
+            """,
+        )
+
     return nuevo
 
 

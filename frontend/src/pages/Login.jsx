@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, Store, User, Lock, ShieldCheck, Calendar } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/cliente";
@@ -218,6 +218,9 @@ const Login = () => {
             >
               {cargando ? "Entrando..." : "Entrar"}
             </button>
+                      <p className="text-center text-gray-500 text-sm mt-4">
+            <Link to="/olvide-password" className="text-gold hover:underline">¿Olvidaste tu contraseña?</Link>
+          </p>
           </form>
 
           <p className="text-center text-gray-500 text-sm mt-10">

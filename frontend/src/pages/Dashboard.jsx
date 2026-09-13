@@ -87,7 +87,7 @@ function Dashboard() {
       // del dashboard igual se muestra.
       const [
         resR, resI, resB, resE,
-        resCl, resPr, resCa, resPv, resSv, resUs,
+        resCl, resPr, resCa, resPv, resSv, resUs, resBaTotal,
       ] = await Promise.allSettled([
         api.get("/estadisticas/resumen"),
         api.get("/estadisticas/ingresos-mensuales?meses=6"),
@@ -99,6 +99,7 @@ function Dashboard() {
         api.get("/proveedores"),
         api.get("/servicios"),
         api.get("/usuarios"),
+        api.get("/barberos"),
       ]);
 
       const valor = (r, porDefecto) => (r.status === "fulfilled" ? r.value.data : porDefecto);
@@ -114,6 +115,7 @@ function Dashboard() {
         proveedores: valor(resPv, []).length,
         servicios: valor(resSv, []).length,
         usuarios: valor(resUs, []).length,
+        barberos_total: valor(resBaTotal, []).length,
       });
 
       if (resR.status === "rejected") {
@@ -315,7 +317,7 @@ function Dashboard() {
             <ConteoCard
               icono={Award}
               label="Barberos"
-              valor={barberos.length}
+              valor={conteos.barberos_total}
               irA="/barberos"
               color="bg-gold/10 text-gold"
             />

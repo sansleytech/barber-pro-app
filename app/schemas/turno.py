@@ -37,6 +37,9 @@ class TurnoRespuesta(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 class TurnoCambiarEstado(BaseModel):
     estado: EstadoTurnoEnum
+    metodo_pago: Optional[str] = None
+    propina: Optional[Decimal] = None
+    id_barbero_propina: Optional[int] = None
 class TurnoRegistrarPago(BaseModel):
     metodo_pago: str
     propina: Optional[Decimal] = 0

@@ -1,13 +1,7 @@
 // src/pages/Home.jsx
 import React from "react";
 import { Link } from "react-router-dom";
-import {
-  Calendar,
-  Package,
-  BarChart3,
-  Globe,
-  MapPin,
-} from "lucide-react";
+import { Calendar, Package, BarChart3, Globe, MapPin } from "lucide-react";
 import logo from "../assets/img/logo1.png";
 
 function Home() {
@@ -16,7 +10,11 @@ function Home() {
       {/* NAV */}
       <nav className="flex items-center justify-between px-6 sm:px-10 py-5 border-b border-line">
         <div className="flex items-center gap-2">
-          <img src={logo} alt="Barber Pro" className="w-9 h-9 rounded-xl object-cover" />
+          <img
+            src={logo}
+            alt="Barber Pro"
+            className="w-9 h-9 rounded-xl object-cover"
+          />
           <span className="text-lg font-bold">
             Barber <span className="text-gold">Pro</span>
           </span>
@@ -177,13 +175,23 @@ function Home() {
             "a",
             {
               href: "mailto:sansley.tech-sol@outlook.com",
-              className: "text-gray-400 hover:text-gold transition-colors",
+              className: "text-gray-400 hover:text-gold transition-colors"
             },
             "Sansley Tech Solutions"
           )}
           {" · "}
-          <Link to="/superadmin/login" className="text-gray-600 hover:text-gray-400 transition-colors">
+          <Link
+            to="/superadmin/login"
+            className="text-gray-600 hover:text-gray-400 transition-colors"
+          >
             Soporte
+          </Link>
+          {" · "}
+          <Link
+            to="/politicas-de-privacidad"
+            className="text-gray-600 hover:text-gray-400 transition-colors"
+          >
+            Políticas de privacidad
           </Link>
         </p>
       </footer>

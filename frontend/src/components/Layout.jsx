@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Menu, Search, Bell, LogOut, X, Check } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -53,7 +53,7 @@ function Layout() {
 
     useEffect(() => {
         cargarContador();
-        const intervalo = setInterval(cargarContador, 60000); // se actualiza solo cada minuto
+        const intervalo = setInterval(cargarContador, 60000);
         return () => clearInterval(intervalo);
     }, [cargarContador]);
 
@@ -80,8 +80,6 @@ function Layout() {
     };
 
     const clickNotificacion = async (n) => {
-        // Las "virtuales" (cumpleaños, plan por vencer) tienen id de texto, no numérico —
-        // no se marcan como leídas en la base, solo navegamos.
         if (typeof n.id_notificacion === "number" && !n.leida) {
             try {
                 await api.patch(`/notificaciones/${n.id_notificacion}/leida`);
@@ -100,6 +98,7 @@ function Layout() {
                 abierta={barraAbierta}
                 cerrar={() => setBarraAbierta(false)}
                 rol={usuario?.rol}
+                nombrePlan={usuario?.nombre_plan}
             />
 
             <div className="md:ml-64 flex flex-col min-h-screen">
@@ -122,7 +121,18 @@ function Layout() {
                         </div>
                     </div>
 
-                    <div className="hidden lg:block text-sm text-gray-400 capitalize ml-auto">
+                    {React.createElement(
+                        "a",
+                        {
+                            href: `https://barberproapp.online/portal/${usuario?.subdominio || ""}`,
+                            target: "_blank",
+                            rel: "noreferrer",
+                            className: "hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-gold border border-line hover:border-gold/40 rounded-lg px-3 py-1.5 transition-colors ml-auto",
+                        },
+                        "Ver portal público ↗"
+                    )}
+
+                    <div className="hidden lg:block text-sm text-gray-400 capitalize">
                         {fecha}
                     </div>
 

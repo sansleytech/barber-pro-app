@@ -12,6 +12,7 @@ class PlanCrear(BaseModel):
     nombre: str
     descripcion: Optional[str] = None
     precio_mensual: Decimal
+    precio_anterior: Optional[Decimal] = None
     max_barberos: Optional[int] = None
     max_turnos_mes: Optional[int] = None
     permite_whatsapp: bool = False
@@ -27,6 +28,7 @@ class PlanRespuesta(BaseModel):
     nombre: str
     descripcion: Optional[str] = None
     precio_mensual: Decimal
+    precio_anterior: Optional[Decimal] = None
     max_barberos: Optional[int] = None
     max_turnos_mes: Optional[int] = None
     permite_whatsapp: bool
@@ -43,6 +45,7 @@ class PlanActualizar(BaseModel):
     nombre: Optional[str] = None
     descripcion: Optional[str] = None
     precio_mensual: Optional[Decimal] = None
+    precio_anterior: Optional[Decimal] = None
     max_barberos: Optional[int] = None
     max_turnos_mes: Optional[int] = None
     permite_whatsapp: Optional[bool] = None

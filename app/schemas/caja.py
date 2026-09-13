@@ -24,6 +24,7 @@ class PorBarbero(BaseModel):
     barbero: str
     cantidad: int
     total: float
+    propinas: float = 0.0
 
 
 class ResumenCaja(BaseModel):

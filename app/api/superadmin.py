@@ -1,16 +1,19 @@
 """Panel de superadministrador: gestión global de todas las barberías."""
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
+from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from dateutil.relativedelta import relativedelta
 
 from app.db.session import get_db
 from app.models.usuario import Usuario
 from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.models.plan import Plan, Suscripcion, EstadoSuscripcionEnum
 from app.models.pago import Pago
-from app.core.security import verificar_password, crear_token
+from app.models.permiso_rol import PermisoRol
+from app.core.security import verificar_password, crear_token, hashear_password, hashear_password
 from app.core.dependencies import requiere_super_admin
 from app.schemas.superadmin import (
     LoginSuperAdmin,
@@ -19,6 +22,8 @@ from app.schemas.superadmin import (
     MetricasGlobales,
     PagoResumen,
 )
+from app.schemas.plan import PlanCrear, PlanActualizar, PlanRespuesta
+from app.schemas.permiso_rol import PermisoRolRespuesta, PermisoRolActualizar
 
 router = APIRouter(prefix="/superadmin", tags=["Superadmin"])
 
@@ -174,10 +179,6 @@ def historial_pagos_barberia(
         .all()
     )
 
-    from decimal import Decimal
-from dateutil.relativedelta import relativedelta
-from app.schemas.plan import PlanCrear, PlanActualizar, PlanRespuesta
-
 
 @router.get("/planes", response_model=list[PlanRespuesta])
 def listar_todos_los_planes(
@@ -198,6 +199,23 @@ def crear_plan(
     db.add(nuevo)
     db.commit()
     db.refresh(nuevo)
+
+    usuario_barbero = db.query(Usuario).filter(
+        Usuario.id_barbero == barbero.id_barbero,
+        Usuario.id_barberia == id_barberia,
+    ).first()
+    if usuario_barbero and usuario_barbero.email:
+        from app.core.email import enviar_email
+        enviar_email(
+            destinatario=usuario_barbero.email,
+            asunto="Tenés un turno nuevo asignado",
+            cuerpo_html=f"""
+                <p>Hola {barbero.nombre},</p>
+                <p>Te asignaron un turno para el <strong>{nuevo.fecha}</strong> a las <strong>{nuevo.hora_inicio.strftime('%H:%M')}</strong>.</p>
+                <p>Revisá los detalles en tu panel: <a href="https://barberproapp.online/login">Ingresar</a></p>
+            """,
+        )
+
     return nuevo
 
 
@@ -264,9 +282,6 @@ def series_historicas(
         })
 
     return resultado
-
-from app.models.permiso_rol import PermisoRol
-from app.schemas.permiso_rol import PermisoRolRespuesta, PermisoRolActualizar
 
 
 @router.get("/permisos", response_model=list[PermisoRolRespuesta])

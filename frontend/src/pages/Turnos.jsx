@@ -316,7 +316,7 @@ function Turnos() {
       campo: "estado",
       titulo: "Estado",
       render: (t) =>
-        t.estado === "completado" ? (
+        t.estado === "completado" && usuario?.rol === "barbero" ? (
           <span
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium border border-emerald-500/40 text-emerald-400"
             title="Turno completado: ya no se puede cambiar"

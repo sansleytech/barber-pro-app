@@ -487,11 +487,19 @@ export default function CajaDiaria() {
             <p className="text-xs text-gray-500">Solo tu barbería</p>
           ) : (
             dataCaja.porBarbero.map((b, i) => (
-              <div key={i} className="flex justify-between items-center py-2 border-b border-line last:border-0 text-sm">
-                <span className="text-white font-medium">
-                  {b.barbero} <span className="text-gray-500 text-xs ml-1">({b.cantidad})</span>
-                </span>
-                <span className="text-gold font-bold">{formatCOP(b.total)}</span>
+              <div key={i} className="py-2 border-b border-line last:border-0">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-white font-medium">
+                    {b.barbero} <span className="text-gray-500 text-xs ml-1">({b.cantidad})</span>
+                  </span>
+                  <span className="text-gold font-bold">{formatCOP(b.total)}</span>
+                </div>
+                {b.propinas > 0 && (
+                  <div className="flex justify-between items-center text-xs mt-0.5">
+                    <span className="text-gray-500 flex items-center gap-1"><Gem className="w-3 h-3" /> Propinas</span>
+                    <span className="text-gold/80">{formatCOP(b.propinas)}</span>
+                  </div>
+                )}
               </div>
             ))
           )}

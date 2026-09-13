@@ -2,7 +2,7 @@
 
 import enum
 from sqlalchemy import (
-    Column, Integer, String, Date, Time, DateTime, Enum, ForeignKey, DECIMAL, Text, func
+    Column, Integer, String, Boolean, Date, Time, DateTime, Enum, ForeignKey, DECIMAL, Text, func
 )
 from sqlalchemy.orm import relationship
 from app.db.session import Base
@@ -34,6 +34,8 @@ class Turno(Base, TenantMixin):
     observaciones = Column(Text, nullable=True)
     propina = Column(DECIMAL(10, 2), default=0)
     id_barbero_propina = Column(Integer, ForeignKey("barberos.id_barbero"), nullable=True)
+    recordatorio_enviado = Column(Boolean, default=False)
+    encuesta_enviada = Column(Boolean, default=False)
     fecha_creacion = Column(DateTime, server_default=func.now())
 
     cliente = relationship("Cliente")

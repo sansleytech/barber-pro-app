@@ -33,4 +33,4 @@ class Cliente(Base, TenantMixin):
     fecha_registro = Column(DateTime, server_default=func.now())
     es_vip = Column(Boolean, default=False)
     activo = Column(Boolean, default=True)
-    
+    fecha_ultima_reactivacion = Column(DateTime, nullable=True)

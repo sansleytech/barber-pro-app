@@ -10,16 +10,47 @@ const IconCheck = (p) => (
     <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
-const IconX = (p) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" {...p}>
-    <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 function formatoPrecio(valor) {
   const n = Number(valor);
   return n.toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 }
+
+// Descripción breve y puntos a destacar por plan. Si en algún momento se crea
+// un plan con otro nombre, cae al armado genérico basado en los flags del backend.
+const INFO_PLANES = {
+  Básico: {
+    descripcion: "Para empezar a organizar tu barbería, vos solo.",
+    puntos: ["1 barbero", "Turnos y clientes", "Caja", "Reportes básicos", "Configuración de tu barbería"],
+  },
+  Estándar: {
+    descripcion: "Ideal cuando ya sos un equipo chico.",
+    puntos: ["Hasta 3 barberos", "Turnos, clientes y caja", "Reportes", "Código QR para tu barbería", "Configuración de tu barbería"],
+  },
+  Pro: {
+    descripcion: "Todo lo que necesitás para crecer en serio.",
+    puntos: [
+      "Hasta 6 barberos",
+      "Turnos, clientes y caja",
+      "Reportes avanzados",
+      "Código QR",
+      "Notificaciones automáticas",
+      "Inventario y ventas",
+      "Acontecimientos y recordatorios",
+    ],
+  },
+  Premium: {
+    descripcion: "Para cadenas de barberías con varias sedes.",
+    puntos: [
+      "Barberos ilimitados",
+      "Sedes ilimitadas",
+      "Cada sede con su propio subdominio",
+      "Panel comparativo entre sedes",
+      "Todo lo del Pro, sin límites",
+      "Descuento por permanencia",
+    ],
+  },
+};
 
 function Planes() {
   const navigate = useNavigate();
@@ -31,7 +62,6 @@ function Planes() {
   useEffect(() => {
     api.get("/planes")
       .then((res) => {
-        // El Trial no se "elige" acá, se asigna solo al registrarse.
         setPlanes(res.data.filter((p) => p.nombre !== "Trial"));
       })
       .catch(() => setError("No se pudieron cargar los planes."))
@@ -40,22 +70,21 @@ function Planes() {
 
   const elegirPlan = (idPlan) => {
     if (usuario) {
-      // Ya tiene cuenta: va directo a pagar el cambio de plan.
       navigate(`/pagar?plan=${idPlan}`);
     } else {
-      // Todavía no tiene cuenta: primero se registra, con el plan como referencia.
       navigate(`/registro?plan=${idPlan}`);
     }
   };
 
-  const caracteristicas = (plan) => [
-    { label: plan.max_barberos ? `Hasta ${plan.max_barberos} barbero${plan.max_barberos > 1 ? "s" : ""}` : "Barberos ilimitados", ok: true },
-    { label: "Turnos y clientes", ok: true },
-    { label: "Caja", ok: true },
-    { label: "Inventario y ventas", ok: plan.permite_inventario },
-    { label: "Notificaciones automáticas", ok: plan.permite_whatsapp },
-    { label: "Reportes", ok: plan.permite_reportes },
-    { label: "Códigos QR", ok: plan.permite_qr },
+  // Fallback genérico por si aparece un plan con un nombre que no está en INFO_PLANES.
+  const puntosGenericos = (plan) => [
+    plan.max_barberos ? `Hasta ${plan.max_barberos} barbero${plan.max_barberos > 1 ? "s" : ""}` : "Barberos ilimitados",
+    "Turnos y clientes",
+    "Caja",
+    ...(plan.permite_inventario ? ["Inventario y ventas"] : []),
+    ...(plan.permite_whatsapp ? ["Notificaciones automáticas"] : []),
+    ...(plan.permite_reportes ? ["Reportes"] : []),
+    ...(plan.permite_qr ? ["Códigos QR"] : []),
   ];
 
   if (cargando) {
@@ -79,6 +108,10 @@ function Planes() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {planes.map((plan) => {
             const destacado = plan.nombre === "Pro";
+            const info = INFO_PLANES[plan.nombre];
+            const descripcion = info?.descripcion || plan.descripcion;
+            const puntos = info?.puntos || puntosGenericos(plan);
+
             return (
               <div
                 key={plan.id_plan}
@@ -92,22 +125,21 @@ function Planes() {
                 )}
 
                 <h3 className="text-lg font-bold text-white mb-1">{plan.nombre}</h3>
-                {plan.descripcion && <p className="text-gray-500 text-xs mb-4">{plan.descripcion}</p>}
+                {descripcion && <p className="text-gray-500 text-xs mb-4">{descripcion}</p>}
 
                 <div className="mb-6">
+                  {plan.precio_anterior && Number(plan.precio_anterior) > Number(plan.precio_mensual) && (
+                    <div className="text-gray-500 text-sm line-through mb-0.5">{formatoPrecio(plan.precio_anterior)}</div>
+                  )}
                   <span className="text-3xl font-bold text-white">{formatoPrecio(plan.precio_mensual)}</span>
                   <span className="text-gray-500 text-sm"> /mes</span>
                 </div>
 
                 <ul className="flex-1 space-y-2.5 mb-6">
-                  {caracteristicas(plan).map((c) => (
-                    <li key={c.label} className="flex items-center gap-2 text-sm">
-                      {c.ok ? (
-                        <IconCheck className="w-4 h-4 text-yellow-400 shrink-0" />
-                      ) : (
-                        <IconX className="w-4 h-4 text-gray-600 shrink-0" />
-                      )}
-                      <span className={c.ok ? "text-gray-300" : "text-gray-600"}>{c.label}</span>
+                  {puntos.map((label) => (
+                    <li key={label} className="flex items-center gap-2 text-sm">
+                      <IconCheck className="w-4 h-4 text-yellow-400 shrink-0" />
+                      <span className="text-gray-300">{label}</span>
                     </li>
                   ))}
                 </ul>

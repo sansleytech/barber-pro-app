@@ -25,6 +25,7 @@ from app.models.codigo_qr import CodigoQR
 from app.models.galeria import FotoGaleria
 from app.models.categoria_galeria import CategoriaGaleria
 from app.models.plan import Plan, Suscripcion
+from app.models.organizacion import Organizacion
 from app.models.pago import Pago
 
 print("Creando tablas...")

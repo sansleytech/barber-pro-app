@@ -74,6 +74,25 @@ def registrar_barberia(datos: RegistroBarberia, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error al registrar: {str(e)}")
 
+    from app.core.email import enviar_email
+    if admin.email:
+        enviar_email(
+            destinatario=admin.email,
+            asunto=f"¡Bienvenido a Barber Pro, {admin.nombre_usuario}! 💈",
+            cuerpo_html=f"""
+                <h2>¡Tu barbería ya está lista!</h2>
+                <p>Hola {admin.nombre_usuario}, creamos <strong>{barberia.nombre}</strong> con éxito.</p>
+                <p>Tenés 14 días de prueba gratis. Para arrancar con el pie derecho:</p>
+                <ol>
+                    <li>Cargá tus servicios y precios</li>
+                    <li>Agregá a tus barberos</li>
+                    <li>Personalizá tu portal público en Configuración</li>
+                    <li>Compartí tu link: barberproapp.online/portal/{barberia.subdominio}</li>
+                </ol>
+                <p><a href="https://barberproapp.online/login">Entrar a mi panel</a></p>
+            """,
+        )
+
     return RegistroRespuesta(
         mensaje="Barbería registrada con éxito. Tu prueba gratuita es de 14 días.",
         id_barberia=barberia.id_barberia,

@@ -34,23 +34,33 @@ class ClientePublico(BaseModel):
 
     primer_nombre: str
     existe: bool
+    documento_encontrado: Optional[str] = None
 
 
 @router.get("/{subdominio}/cliente/{documento}", response_model=ClientePublico)
 def identificar_cliente(subdominio: str, documento: str, db: Session = Depends(get_db)):
-    """Dice si un cliente con ese documento ya existe en la barbería. No expone datos sensibles."""
+    """Busca al cliente por documento, teléfono o nombre (lo que haya escrito
+    en el campo del portal). No expone datos sensibles."""
+    from sqlalchemy import or_, func
+
     barberia = _barberia_por_subdominio(subdominio, db)
+    texto = documento.strip()
+
     cliente = (
         db.query(Cliente)
         .filter(
-            Cliente.documento == documento,
             Cliente.id_barberia == barberia.id_barberia,
+            or_(
+                Cliente.documento == texto,
+                Cliente.telefono == texto,
+                func.concat(Cliente.primer_nombre, " ", Cliente.apellidos).ilike(f"%{texto}%"),
+            ),
         )
         .first()
     )
     if cliente is None:
         return {"primer_nombre": "", "existe": False}
-    return {"primer_nombre": cliente.primer_nombre, "existe": True}
+    return {"primer_nombre": cliente.primer_nombre, "existe": True, "documento_encontrado": cliente.documento}
 
 
 @router.post("/{subdominio}/solicitar", status_code=201)
@@ -103,6 +113,23 @@ def crear_solicitud(
         email_destino=barberia.email_contacto,
     )
     db.commit()
+
+    if datos.documento:
+        cliente = db.query(Cliente).filter(
+            Cliente.documento == datos.documento.strip(),
+            Cliente.id_barberia == barberia.id_barberia,
+        ).first()
+        if cliente and cliente.email:
+            from app.core.email import enviar_email
+            enviar_email(
+                destinatario=cliente.email,
+                asunto=f"Recibimos tu solicitud de turno — {barberia.nombre}",
+                cuerpo_html=f"""
+                    <p>Hola {cliente.primer_nombre},</p>
+                    <p>Recibimos tu solicitud de turno en <strong>{barberia.nombre}</strong>. Te van a contactar pronto para confirmar el horario exacto.</p>
+                    <p>¡Gracias por tu preferencia!</p>
+                """,
+            )
 
     return {"mensaje": "Solicitud recibida", "id_solicitud": solicitud.id_solicitud}
 

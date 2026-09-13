@@ -70,15 +70,16 @@ def caja_del_dia(
         metodos[m]["total"] += float(t.precio_total)
     por_metodo = [{"metodo": k, **v} for k, v in metodos.items()]
 
-    # Por barbero
+    # Por barbero (servicio y propinas por separado)
     barberos_map = {}
     for t in turnos:
         b = db.query(Barbero).filter(Barbero.id_barbero == t.id_barbero).first()
         nombre = _nombre_barbero(b) if b else "—"
         if nombre not in barberos_map:
-            barberos_map[nombre] = {"cantidad": 0, "total": 0.0}
+            barberos_map[nombre] = {"cantidad": 0, "total": 0.0, "propinas": 0.0}
         barberos_map[nombre]["cantidad"] += 1
         barberos_map[nombre]["total"] += float(t.precio_total)
+        barberos_map[nombre]["propinas"] += float(t.propina or 0)
     por_barbero = [{"barbero": k, **v} for k, v in barberos_map.items()]
 
     # Detalle

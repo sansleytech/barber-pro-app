@@ -7,6 +7,7 @@ import {
   TrendingUp,
   TrendingDown,
   FileSpreadsheet,
+  Building2,
 } from "lucide-react";
 import {
   LineChart,
@@ -25,9 +26,11 @@ import {
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import api from "../api/cliente";
+import { useAuth } from "../context/AuthContext";
 import { exportarExcelMultiHoja } from "../utils/exportarExcel";
 
 const PERIODOS = [
+  { dias: 7, label: "1 semana" },
   { dias: 30, label: "1 mes" },
   { dias: 90, label: "3 meses" },
   { dias: 180, label: "6 meses" },
@@ -73,6 +76,10 @@ const fechaCorta = (f) =>
   f ? new Date(f + "T00:00:00").toLocaleDateString("es-CO") : "—";
 
 function Reportes() {
+  const { usuario } = useAuth();
+  const [sedes, setSedes] = useState([]);
+  const [sedeSel, setSedeSel] = useState(null); // null = la propia
+
   const [periodo, setPeriodo] = useState(90);
   const [rangoPersonalizado, setRangoPersonalizado] = useState(false);
   const [desdeCustom, setDesdeCustom] = useState("");
@@ -91,6 +98,12 @@ function Reportes() {
   const [error, setError] = useState("");
   const [exportando, setExportando] = useState(false);
   const contenidoRef = useRef(null);
+
+  // Carga la lista de sedes solo si el plan es Premium.
+  useEffect(() => {
+    if (usuario?.nombre_plan !== "Premium") return;
+    api.get("/organizacion/mis-sedes").then((res) => setSedes(res.data)).catch(() => {});
+  }, [usuario?.nombre_plan]);
 
   const exportarPDF = () => {
     setExportando(true);
@@ -117,42 +130,20 @@ function Reportes() {
       );
       y += 8;
 
-      // KPIs
       autoTable(doc, {
         startY: y,
         head: [["Metrica", "Actual", "Anterior", "Variacion"]],
         body: [
-          [
-            "Ingresos totales",
-            money(a.ingresos_totales),
-            money(ant?.ingresos_totales),
-            `${v?.ingresos_totales}%`,
-          ],
-          [
-            "Turnos totales",
-            String(a.total_turnos),
-            String(ant?.total_turnos),
-            `${v?.total_turnos}%`,
-          ],
-          [
-            "Ticket promedio",
-            money(a.ticket_promedio),
-            money(ant?.ticket_promedio),
-            `${v?.ticket_promedio}%`,
-          ],
-          [
-            "Tasa cancelacion",
-            `${a.tasa_cancelacion}%`,
-            `${ant?.tasa_cancelacion}%`,
-            `${v?.tasa_cancelacion}%`,
-          ],
+          ["Ingresos totales", money(a.ingresos_totales), money(ant?.ingresos_totales), `${v?.ingresos_totales}%`],
+          ["Turnos totales", String(a.total_turnos), String(ant?.total_turnos), `${v?.total_turnos}%`],
+          ["Ticket promedio", money(a.ticket_promedio), money(ant?.ticket_promedio), `${v?.ticket_promedio}%`],
+          ["Tasa cancelacion", `${a.tasa_cancelacion}%`, `${ant?.tasa_cancelacion}%`, `${v?.tasa_cancelacion}%`],
         ],
         theme: "striped",
         headStyles: { fillColor: [230, 230, 230], textColor: [20, 20, 20] },
       });
       y = doc.lastAutoTable.finalY + 8;
 
-      // Ranking de barberos
       if (barberos.length > 0) {
         doc.setFontSize(13);
         doc.setTextColor(20, 20, 20);
@@ -161,20 +152,13 @@ function Reportes() {
         autoTable(doc, {
           startY: y + 2,
           head: [["#", "Barbero", "Ingresos", "Turnos", "Clientes"]],
-          body: barberos.map((b, i) => [
-            String(i + 1),
-            b.nombre,
-            money(b.ingresos),
-            String(b.turnos),
-            String(b.clientes_unicos),
-          ]),
+          body: barberos.map((b, i) => [String(i + 1), b.nombre, money(b.ingresos), String(b.turnos), String(b.clientes_unicos)]),
           theme: "striped",
           headStyles: { fillColor: [230, 230, 230], textColor: [20, 20, 20] },
         });
         y = doc.lastAutoTable.finalY + 8;
       }
 
-      // Servicios top
       if (serviciosTop.length > 0) {
         doc.setFontSize(13);
         doc.setTextColor(20, 20, 20);
@@ -190,7 +174,6 @@ function Reportes() {
         y = doc.lastAutoTable.finalY + 8;
       }
 
-      // Clientes frecuentes
       if (clientesFrec.length > 0) {
         doc.setFontSize(13);
         doc.setTextColor(20, 20, 20);
@@ -199,12 +182,7 @@ function Reportes() {
         autoTable(doc, {
           startY: y + 2,
           head: [["Cliente", "Visitas", "Total gastado", "Última visita"]],
-          body: clientesFrec.map((cl) => [
-            cl.nombre,
-            String(cl.visitas),
-            money(cl.total_gastado),
-            fechaCorta(cl.ultima_visita),
-          ]),
+          body: clientesFrec.map((cl) => [cl.nombre, String(cl.visitas), money(cl.total_gastado), fechaCorta(cl.ultima_visita)]),
           theme: "striped",
           headStyles: { fillColor: [230, 230, 230], textColor: [20, 20, 20] },
         });
@@ -224,56 +202,23 @@ function Reportes() {
         {
           nombreHoja: "Resumen",
           filas: [
-            {
-              Métrica: "Ingresos totales",
-              Actual: a.ingresos_totales,
-              Anterior: ant?.ingresos_totales ?? "",
-              "Variación %": v?.ingresos_totales ?? "",
-            },
-            {
-              Métrica: "Turnos totales",
-              Actual: a.total_turnos,
-              Anterior: ant?.total_turnos ?? "",
-              "Variación %": v?.total_turnos ?? "",
-            },
-            {
-              Métrica: "Ticket promedio",
-              Actual: a.ticket_promedio,
-              Anterior: ant?.ticket_promedio ?? "",
-              "Variación %": v?.ticket_promedio ?? "",
-            },
-            {
-              Métrica: "Tasa de cancelación %",
-              Actual: a.tasa_cancelacion,
-              Anterior: ant?.tasa_cancelacion ?? "",
-              "Variación %": v?.tasa_cancelacion ?? "",
-            },
+            { Métrica: "Ingresos totales", Actual: a.ingresos_totales, Anterior: ant?.ingresos_totales ?? "", "Variación %": v?.ingresos_totales ?? "" },
+            { Métrica: "Turnos totales", Actual: a.total_turnos, Anterior: ant?.total_turnos ?? "", "Variación %": v?.total_turnos ?? "" },
+            { Métrica: "Ticket promedio", Actual: a.ticket_promedio, Anterior: ant?.ticket_promedio ?? "", "Variación %": v?.ticket_promedio ?? "" },
+            { Métrica: "Tasa de cancelación %", Actual: a.tasa_cancelacion, Anterior: ant?.tasa_cancelacion ?? "", "Variación %": v?.tasa_cancelacion ?? "" },
           ],
         },
         {
           nombreHoja: "Ranking barberos",
-          filas: barberos.map((b) => ({
-            Barbero: b.nombre,
-            Ingresos: b.ingresos,
-            Turnos: b.turnos,
-            "Clientes únicos": b.clientes_unicos,
-          })),
+          filas: barberos.map((b) => ({ Barbero: b.nombre, Ingresos: b.ingresos, Turnos: b.turnos, "Clientes únicos": b.clientes_unicos })),
         },
         {
           nombreHoja: "Servicios top",
-          filas: serviciosTop.map((s) => ({
-            Servicio: s.nombre,
-            Cantidad: s.cantidad,
-          })),
+          filas: serviciosTop.map((s) => ({ Servicio: s.nombre, Cantidad: s.cantidad })),
         },
         {
           nombreHoja: "Clientes frecuentes",
-          filas: clientesFrec.map((cl) => ({
-            Cliente: cl.nombre,
-            Visitas: cl.visitas,
-            "Total gastado": cl.total_gastado,
-            "Última visita": fechaCorta(cl.ultima_visita),
-          })),
+          filas: clientesFrec.map((cl) => ({ Cliente: cl.nombre, Visitas: cl.visitas, "Total gastado": cl.total_gastado, "Última visita": fechaCorta(cl.ultima_visita) })),
         },
       ],
       "reportes-barberpro"
@@ -293,27 +238,27 @@ function Reportes() {
     setError("");
     try {
       const { desde, hasta } = rangoActivo();
-      const dias = Math.round(
-        (new Date(hasta) - new Date(desde)) / 86400000,
-      ) + 1;
+      const dias = Math.round((new Date(hasta) - new Date(desde)) / 86400000) + 1;
       const meses = Math.max(1, Math.round(dias / 30));
-      const [resR, resI, resB, resE, resS, resG, resH, resCF] =
-        await Promise.all([
-          api.get("/estadisticas/resumen", {
-            params: { desde, hasta, comparar: true },
-          }),
-          api.get(`/estadisticas/ingresos-mensuales?meses=${meses}`),
-          api.get("/estadisticas/barberos", { params: { desde, hasta } }),
-          api.get("/estadisticas/turnos-estado", { params: { desde, hasta } }),
-          api.get("/estadisticas/servicios-top", {
-            params: { desde, hasta, limite: 8 },
-          }),
-          api.get("/estadisticas/genero"),
-          api.get("/estadisticas/horas-pico", { params: { desde, hasta } }),
-          api.get("/estadisticas/clientes-frecuentes", {
-            params: { desde, hasta, limite: 10 },
-          }),
-        ]);
+      const paramsBase = { desde, hasta };
+      if (sedeSel) paramsBase.sede = sedeSel;
+
+      const paramsMes = { meses };
+      if (sedeSel) paramsMes.sede = sedeSel;
+
+      const paramsGenero = {};
+      if (sedeSel) paramsGenero.sede = sedeSel;
+
+      const [resR, resI, resB, resE, resS, resG, resH, resCF] = await Promise.all([
+        api.get("/estadisticas/resumen", { params: { ...paramsBase, comparar: true } }),
+        api.get("/estadisticas/ingresos-mensuales", { params: paramsMes }),
+        api.get("/estadisticas/barberos", { params: paramsBase }),
+        api.get("/estadisticas/turnos-estado", { params: paramsBase }),
+        api.get("/estadisticas/servicios-top", { params: { ...paramsBase, limite: 8 } }),
+        api.get("/estadisticas/genero", { params: paramsGenero }),
+        api.get("/estadisticas/horas-pico", { params: paramsBase }),
+        api.get("/estadisticas/clientes-frecuentes", { params: { ...paramsBase, limite: 10 } }),
+      ]);
       setResumen(resR.data);
       setIngresosMes(resI.data);
       setBarberos(resB.data);
@@ -331,7 +276,7 @@ function Reportes() {
 
   useEffect(() => {
     cargar();
-  }, [periodo, rangoPersonalizado, desdeCustom, hastaCustom]);
+  }, [periodo, rangoPersonalizado, desdeCustom, hastaCustom, sedeSel]);
 
   useEffect(() => {
     if (!barberoSel) {
@@ -342,84 +287,49 @@ function Reportes() {
     const cargarRend = async () => {
       try {
         const { desde, hasta } = rangoActivo();
-        const res = await api.get(
-          `/estadisticas/rendimiento-barbero/${barberoSel}`,
-          { params: { desde, hasta } },
-        );
+        const params = { desde, hasta };
+        if (sedeSel) params.sede = sedeSel;
+        const res = await api.get(`/estadisticas/rendimiento-barbero/${barberoSel}`, { params });
         setRendBarbero(res.data);
       } catch {
         setRendBarbero(null);
       }
     };
     cargarRend();
-  }, [barberoSel, periodo, rangoPersonalizado, desdeCustom, hastaCustom]);
+  }, [barberoSel, periodo, rangoPersonalizado, desdeCustom, hastaCustom, sedeSel]);
 
-  const KpiCard = ({
-    icono: Icono,
-    color,
-    label,
-    valor,
-    variacion,
-    valorAnterior,
-    invertir,
-  }) => {
+  const KpiCard = ({ icono: Icono, color, label, valor, variacion, valorAnterior, invertir }) => {
     const sube = variacion > 0;
     const esBueno = invertir ? !sube : sube;
-    const neutral =
-      variacion === 0 || variacion === undefined || variacion === null;
+    const neutral = variacion === 0 || variacion === undefined || variacion === null;
     return (
       <div className="bg-ink-card border border-line rounded-2xl p-5">
         <div className="flex items-start justify-between mb-3">
-          <div
-            className={`w-9 h-9 rounded-lg flex items-center justify-center ${color}`}
-          >
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${color}`}>
             <Icono className="w-5 h-5" />
           </div>
           {!neutral && (
-            <span
-              className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${
-                esBueno
-                  ? "bg-emerald-500/10 text-emerald-400"
-                  : "bg-red-500/10 text-red-400"
-              }`}
-            >
-              {sube ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : (
-                <TrendingDown className="w-3 h-3" />
-              )}
+            <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${esBueno ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+              {sube ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
               {Math.abs(variacion)}%
             </span>
           )}
         </div>
-        <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-          {label}
-        </div>
+        <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">{label}</div>
         <div className="text-2xl font-bold text-white">{valor}</div>
-        {valorAnterior !== undefined && (
-          <div className="text-xs text-gray-600 mt-1">
-            Anterior: {valorAnterior}
-          </div>
-        )}
+        {valorAnterior !== undefined && <div className="text-xs text-gray-600 mt-1">Anterior: {valorAnterior}</div>}
       </div>
     );
   };
 
   const MetricaBar = ({ label, valor, variacion }) => {
     const sube = variacion > 0;
-    const neutral =
-      variacion === 0 || variacion === undefined || variacion === null;
+    const neutral = variacion === 0 || variacion === undefined || variacion === null;
     return (
       <div className="bg-ink border border-line rounded-xl p-4">
         <div className="text-xs text-gray-500 uppercase mb-1">{label}</div>
         <div className="text-xl font-bold text-white">{valor}</div>
-        {!neutral && (
-          <div
-            className={`text-xs font-medium ${sube ? "text-emerald-400" : "text-red-400"}`}
-          >
-            {sube ? "▲" : "▼"} {Math.abs(variacion)}%
-          </div>
-        )}
+        {!neutral && <div className={`text-xs font-medium ${sube ? "text-emerald-400" : "text-red-400"}`}>{sube ? "▲" : "▼"} {Math.abs(variacion)}%</div>}
       </div>
     );
   };
@@ -430,35 +340,18 @@ function Reportes() {
 
   const datosDona = estados
     .filter((e) => e.cantidad > 0)
-    .map((e) => ({
-      nombre: TEXTO_ESTADO[e.estado] || e.estado,
-      valor: e.cantidad,
-      color: COLORES_ESTADO[e.estado] || "#6b7280",
-    }));
+    .map((e) => ({ nombre: TEXTO_ESTADO[e.estado] || e.estado, valor: e.cantidad, color: COLORES_ESTADO[e.estado] || "#6b7280" }));
 
-  const topBarberos = barberos.slice(0, 6).map((b) => ({
-    nombre: b.nombre.split(" ")[0],
-    ingresos: b.ingresos,
-  }));
-
-  const topServicios = serviciosTop.map((s) => ({
-    nombre: s.nombre,
-    cantidad: s.cantidad,
-  }));
+  const topBarberos = barberos.slice(0, 6).map((b) => ({ nombre: b.nombre.split(" ")[0], ingresos: b.ingresos }));
+  const topServicios = serviciosTop.map((s) => ({ nombre: s.nombre, cantidad: s.cantidad }));
 
   const genTotal = genero?.total || 0;
-  const genDet = (g) =>
-    genero?.detalle?.find((d) => d.genero === g) || {
-      cantidad: 0,
-      porcentaje: 0,
-    };
+  const genDet = (g) => genero?.detalle?.find((d) => d.genero === g) || { cantidad: 0, porcentaje: 0 };
   const masc = genDet("masculino");
   const fem = genDet("femenino");
 
   const Card = ({ titulo, subtitulo, children, full }) => (
-    <div
-      className={`bg-ink-card border border-line rounded-2xl p-5 ${full ? "lg:col-span-2" : ""}`}
-    >
+    <div className={`bg-ink-card border border-line rounded-2xl p-5 ${full ? "lg:col-span-2" : ""}`}>
       <div className="mb-4">
         <h2 className="text-white font-semibold">{titulo}</h2>
         {subtitulo && <p className="text-xs text-gray-500">{subtitulo}</p>}
@@ -467,14 +360,35 @@ function Reportes() {
     </div>
   );
 
+  const sedeActualNombre = sedeSel ? sedes.find((s) => s.id_barberia === sedeSel)?.nombre : sedes.find((s) => s.es_actual)?.nombre;
+
   return (
     <div>
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold text-white mb-1">Reportes</h1>
-          <p className="text-gray-400">Analítica y métricas del negocio</p>
+          <p className="text-gray-400">
+            Analítica y métricas del negocio
+            {sedes.length > 1 && sedeActualNombre && <span className="text-gold"> · {sedeActualNombre}</span>}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {usuario?.nombre_plan === "Premium" && sedes.length > 1 && (
+            <div className="relative">
+              <select
+                value={sedeSel || ""}
+                onChange={(e) => setSedeSel(e.target.value ? Number(e.target.value) : null)}
+                className="appearance-none bg-ink-card border border-line text-white text-sm rounded-lg pl-9 pr-8 py-2.5 outline-none focus:border-gold cursor-pointer"
+              >
+                {sedes.map((s) => (
+                  <option key={s.id_barberia} value={s.es_actual ? "" : s.id_barberia}>
+                    {s.nombre}{s.es_actual ? " (esta sede)" : ""}
+                  </option>
+                ))}
+              </select>
+              <Building2 className="w-4 h-4 text-gold absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          )}
           <button
             onClick={exportarExcelReporte}
             className="inline-flex items-center gap-2 border border-line text-gray-300 font-semibold rounded-lg px-4 py-2.5 hover:text-white transition-colors"
@@ -499,33 +413,20 @@ function Reportes() {
       )}
 
       <div className="flex items-center gap-2 mb-6 flex-wrap">
-        <span className="text-xs text-gray-500 uppercase tracking-wide mr-2">
-          Período:
-        </span>
+        <span className="text-xs text-gray-500 uppercase tracking-wide mr-2">Período:</span>
         <div className="flex gap-1 p-1 bg-ink-card border border-line rounded-full">
           {PERIODOS.map((p) => (
             <button
               key={p.dias}
-              onClick={() => {
-                setRangoPersonalizado(false);
-                setPeriodo(p.dias);
-              }}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                !rangoPersonalizado && periodo === p.dias
-                  ? "bg-gold text-ink"
-                  : "text-gray-400 hover:text-white"
-              }`}
+              onClick={() => { setRangoPersonalizado(false); setPeriodo(p.dias); }}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${!rangoPersonalizado && periodo === p.dias ? "bg-gold text-ink" : "text-gray-400 hover:text-white"}`}
             >
               {p.label}
             </button>
           ))}
           <button
             onClick={() => setRangoPersonalizado(true)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              rangoPersonalizado
-                ? "bg-gold text-ink"
-                : "text-gray-400 hover:text-white"
-            }`}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${rangoPersonalizado ? "bg-gold text-ink" : "text-gray-400 hover:text-white"}`}
           >
             Personalizado
           </button>
@@ -554,83 +455,33 @@ function Reportes() {
       </div>
 
       {cargando ? (
-        <div className="text-center py-16 text-gray-500">
-          Cargando reportes...
-        </div>
+        <div className="text-center py-16 text-gray-500">Cargando reportes...</div>
       ) : !resumen ? (
         <div className="text-center py-16 text-gray-500">Sin datos</div>
       ) : (
         <div ref={contenidoRef}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <KpiCard
-              icono={DollarSign}
-              color="bg-emerald-500/10 text-emerald-400"
-              label="Ingresos totales"
-              valor={money(a.ingresos_totales)}
-              variacion={v?.ingresos_totales}
-              valorAnterior={money(ant?.ingresos_totales)}
-            />
-            <KpiCard
-              icono={Calendar}
-              color="bg-gold/10 text-gold"
-              label="Turnos totales"
-              valor={a.total_turnos}
-              variacion={v?.total_turnos}
-              valorAnterior={ant?.total_turnos}
-            />
-            <KpiCard
-              icono={Receipt}
-              color="bg-purple-500/10 text-purple-400"
-              label="Ticket promedio"
-              valor={money(a.ticket_promedio)}
-              variacion={v?.ticket_promedio}
-              valorAnterior={money(ant?.ticket_promedio)}
-            />
-            <KpiCard
-              icono={XCircle}
-              color="bg-red-500/10 text-red-400"
-              label="Tasa de cancelación"
-              valor={`${a.tasa_cancelacion}%`}
-              variacion={v?.tasa_cancelacion}
-              valorAnterior={`${ant?.tasa_cancelacion}%`}
-              invertir
-            />
+            <KpiCard icono={DollarSign} color="bg-emerald-500/10 text-emerald-400" label="Ingresos totales" valor={money(a.ingresos_totales)} variacion={v?.ingresos_totales} valorAnterior={money(ant?.ingresos_totales)} />
+            <KpiCard icono={Calendar} color="bg-gold/10 text-gold" label="Turnos totales" valor={a.total_turnos} variacion={v?.total_turnos} valorAnterior={ant?.total_turnos} />
+            <KpiCard icono={Receipt} color="bg-purple-500/10 text-purple-400" label="Ticket promedio" valor={money(a.ticket_promedio)} variacion={v?.ticket_promedio} valorAnterior={money(ant?.ticket_promedio)} />
+            <KpiCard icono={XCircle} color="bg-red-500/10 text-red-400" label="Tasa de cancelación" valor={`${a.tasa_cancelacion}%`} variacion={v?.tasa_cancelacion} valorAnterior={`${ant?.tasa_cancelacion}%`} invertir />
           </div>
 
-          {/* Distribución por género — full width, arriba de todo */}
-          <Card
-            titulo="Distribución por género"
-            subtitulo={`${genTotal} clientes`}
-            full
-          >
+          <Card titulo="Distribución por género" subtitulo={`${genTotal} clientes`} full>
             <div className="grid sm:grid-cols-2 gap-6 items-center">
               <div className="flex items-center gap-3">
-                <div
-                  className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl font-bold"
-                  style={{ background: "rgba(96,165,250,0.2)", color: "#93C5FD" }}
-                >
-                  ♂
-                </div>
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl font-bold" style={{ background: "rgba(96,165,250,0.2)", color: "#93C5FD" }}>♂</div>
                 <div>
-                  <div className="text-4xl font-bold" style={{ color: "#93C5FD" }}>
-                    {masc.cantidad}
-                  </div>
+                  <div className="text-4xl font-bold" style={{ color: "#93C5FD" }}>{masc.cantidad}</div>
                   <div className="text-xs text-gray-500">Hombres · {masc.porcentaje}%</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 sm:justify-end">
                 <div>
-                  <div className="text-4xl font-bold sm:text-right" style={{ color: "#F9A8D4" }}>
-                    {fem.cantidad}
-                  </div>
+                  <div className="text-4xl font-bold sm:text-right" style={{ color: "#F9A8D4" }}>{fem.cantidad}</div>
                   <div className="text-xs text-gray-500 sm:text-right">Mujeres · {fem.porcentaje}%</div>
                 </div>
-                <div
-                  className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl font-bold"
-                  style={{ background: "rgba(244,114,182,0.2)", color: "#F9A8D4" }}
-                >
-                  ♀
-                </div>
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl font-bold" style={{ background: "rgba(244,114,182,0.2)", color: "#F9A8D4" }}>♀</div>
               </div>
             </div>
             <div className="h-2.5 rounded-full overflow-hidden bg-white/5 flex mt-5">
@@ -646,10 +497,7 @@ function Reportes() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#26262d" />
                   <XAxis dataKey="etiqueta" stroke="#6b7280" fontSize={12} />
                   <YAxis stroke="#6b7280" fontSize={12} tickFormatter={moneyCorto} />
-                  <Tooltip
-                    formatter={(val) => money(val)}
-                    contentStyle={{ background: "#1a1a1f", border: "1px solid #26262d", borderRadius: 12, color: "#fff" }}
-                  />
+                  <Tooltip formatter={(val) => money(val)} contentStyle={{ background: "#1a1a1f", border: "1px solid #26262d", borderRadius: 12, color: "#fff" }} />
                   <Line type="monotone" dataKey="total" stroke="#d4af37" strokeWidth={2} dot={{ fill: "#d4af37" }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -726,7 +574,6 @@ function Reportes() {
             </Card>
           </div>
 
-          {/* Ranking y clientes frecuentes: lado a lado, con su propio espacio */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
             <Card titulo="🏆 Ranking de barberos" subtitulo="Por ingresos generados">
               {barberos.length === 0 ? (
@@ -735,9 +582,7 @@ function Reportes() {
                 <div className="space-y-1">
                   {barberos.slice(0, 10).map((b, i) => (
                     <div key={i} className="flex items-center gap-3 py-2.5 border-b border-line last:border-0">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${i === 0 ? "bg-gold text-ink" : i === 1 ? "bg-gray-300 text-ink" : i === 2 ? "bg-orange-700 text-white" : "bg-ink text-gray-400"}`}>
-                        {i + 1}
-                      </div>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${i === 0 ? "bg-gold text-ink" : i === 1 ? "bg-gray-300 text-ink" : i === 2 ? "bg-orange-700 text-white" : "bg-ink text-gray-400"}`}>{i + 1}</div>
                       <div className="flex-1 min-w-0">
                         <div className="text-white font-medium truncate">{b.nombre}</div>
                         <div className="text-xs text-gray-500">{b.turnos} turnos · {b.clientes_unicos} clientes</div>
@@ -756,9 +601,7 @@ function Reportes() {
                 <div className="space-y-1">
                   {clientesFrec.map((cl, i) => (
                     <div key={i} className="flex items-center gap-3 py-2.5 border-b border-line last:border-0">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${i === 0 ? "bg-gold text-ink" : i === 1 ? "bg-gray-300 text-ink" : i === 2 ? "bg-orange-700 text-white" : "bg-ink text-gray-400"}`}>
-                        {i + 1}
-                      </div>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${i === 0 ? "bg-gold text-ink" : i === 1 ? "bg-gray-300 text-ink" : i === 2 ? "bg-orange-700 text-white" : "bg-ink text-gray-400"}`}>{i + 1}</div>
                       <div className="flex-1 min-w-0">
                         <div className="text-white font-medium truncate">{cl.nombre}</div>
                         <div className="text-xs text-gray-500">{cl.visitas} visitas · última: {fechaCorta(cl.ultima_visita)}</div>
@@ -771,7 +614,6 @@ function Reportes() {
             </Card>
           </div>
 
-          {/* Rendimiento por barbero: full width, con su propio espacio arriba */}
           <Card titulo="Rendimiento por barbero" subtitulo="Métricas detalladas con comparativo">
             <select
               value={barberoSel}

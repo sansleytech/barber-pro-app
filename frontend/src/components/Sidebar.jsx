@@ -23,6 +23,7 @@ import {
   QrCode,
   X,
   CreditCard,
+  Building2,
 } from "lucide-react";
 
 // Cada módulo indica qué roles lo pueden ver.
@@ -175,12 +176,13 @@ const secciones = [
   {
     titulo: "SISTEMA",
     items: [
-      {
-        a: "/configuracion",
-        texto: "Configuración",
-        icono: Settings,
+        {
+        a: "/mis-sedes",
+        texto: "Mis sedes",
+        icono: Building2,
         roles: ["administrador"],
-      },      
+        soloPremium: true,
+      },
       {  
         a: "/facturacion",
         texto: "Facturación",
@@ -194,16 +196,23 @@ const secciones = [
         roles: ["administrador"],
       },
 
+      {
+        a: "/configuracion",
+        texto: "Configuración",
+        icono: Settings,
+        roles: ["administrador"],
+      },      
     ],
   },
 ];
 
-function puedeVer(item, rol) {
+function puedeVer(item, rol, esPremium) {
+  if (item.soloPremium && !esPremium) return false;
   if (item.roles === "todos") return true;
   return item.roles.includes(rol);
 }
 
-function Sidebar({ abierta, cerrar, rol }) {
+function Sidebar({ abierta, cerrar, rol, nombrePlan }) {
   return (
     <>
       {abierta && (
@@ -241,7 +250,7 @@ function Sidebar({ abierta, cerrar, rol }) {
         {/* Navegación con scroll */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
           {secciones.map((seccion) => {
-            const visibles = seccion.items.filter((it) => puedeVer(it, rol));
+            const visibles = seccion.items.filter((it) => puedeVer(it, rol, nombrePlan === "Premium"));
             if (visibles.length === 0) return null;
             return (
               <div key={seccion.titulo}>

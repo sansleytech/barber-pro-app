@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 
-const portalApi = axios.create({ baseURL: "http://localhost:8000" });
+const portalApi = axios.create({ baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000" });
 
 const FRANJAS = [
   { valor: "manana", label: "Mañana" },
@@ -83,6 +83,9 @@ const alertBrass = "bg-yellow-400/10 border border-yellow-400/40 text-yellow-400
 
 function Portal() {
   const { subdominio } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const empiezaEnTurno = location.pathname.endsWith("/turno");
   useFuentes();
 
   const [info, setInfo] = useState(null);
@@ -92,7 +95,7 @@ function Portal() {
   const [comentarios, setComentarios] = useState([]);
   const [servicios, setServicios] = useState([]);
 
-  const [vista, setVista] = useState("inicio");
+  const vista = empiezaEnTurno ? "turno" : "inicio";
   const [slideActual, setSlideActual] = useState(0);
   const [tabGaleria, setTabGaleria] = useState("todos");
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
@@ -162,13 +165,19 @@ function Portal() {
   const identificar = async (e) => {
     e.preventDefault();
     setError("");
-    if (!documento.trim()) { setError("Ingresá tu número de documento"); return; }
+    if (!documento.trim()) { setError("Ingresá tu documento, teléfono o nombre"); return; }
     setCargando(true);
     try {
-      const res = await portalApi.get(`/portal/${subdominio}/cliente/${documento.trim()}`);
-      if (res.data.existe) { setCliente(res.data); setPaso("solicitar"); }
-      else { setPaso("registro"); }
-    } catch { setError("No se pudo verificar el documento."); }
+      const res = await portalApi.get(`/portal/${subdominio}/cliente/${encodeURIComponent(documento.trim())}`);
+      if (res.data.existe) {
+        setCliente(res.data);
+        if (res.data.documento_encontrado) setDocumento(res.data.documento_encontrado);
+        setPaso("solicitar");
+      } else {
+        setDocumento("");
+        setPaso("registro");
+      }
+    } catch { setError("No se pudo verificar tus datos."); }
     finally { setCargando(false); }
   };
 
@@ -260,7 +269,7 @@ function Portal() {
     return (
       <div className="min-h-screen bg-neutral-950 text-white px-5 py-12 flex justify-center">
         <div className="w-full max-w-md">
-          <button onClick={() => { setVista("inicio"); setPaso("documento"); }} className="text-sm text-gray-400 hover:text-white transition-colors mb-5">
+          <button onClick={() => { navigate(`/portal/${subdominio}`); setPaso("documento"); }} className="text-sm text-gray-400 hover:text-white transition-colors mb-5">
             ← Volver al inicio
           </button>
           <div className="bg-neutral-900 border border-white/10 rounded-[22px] overflow-hidden">
@@ -284,14 +293,18 @@ function Portal() {
               {error && <div className={`${alert} mb-4`}>{error}</div>}
               {paso === "documento" && (
                 <form onSubmit={identificar} className="flex flex-col gap-4">
-                  <label className="block text-sm text-gray-400">Tu número de documento</label>
-                  <input type="text" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/[^0-9]/g, ""))} placeholder="Ej: 1234567890" className={input} autoFocus />
+                  <label className="block text-sm text-gray-400">Documento, teléfono o nombre</label>
+                  <input type="text" value={documento} onChange={(e) => setDocumento(e.target.value)} placeholder="Ej: 1234567890, tu teléfono o tu nombre" className={input} autoFocus />
                   <button type="submit" disabled={cargando} className={btnPrimary}>{cargando ? "Verificando…" : "Continuar"}</button>
                 </form>
               )}
               {paso === "registro" && (
                 <form onSubmit={registrarCliente} className="flex flex-col gap-4">
                   <p className="text-sm text-gray-400">No te encontramos en el libro de clientes. Registrate:</p>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Documento *</label>
+                    <input type="text" placeholder="Número de documento" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/[^0-9]/g, ""))} className={input} />
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <input type="text" placeholder="Nombre *" value={registro.primer_nombre} onChange={(e) => setRegistro((r) => ({ ...r, primer_nombre: e.target.value }))} className={input} />
                     <input type="text" placeholder="Apellidos *" value={registro.apellidos} onChange={(e) => setRegistro((r) => ({ ...r, apellidos: e.target.value }))} className={input} />
@@ -339,7 +352,7 @@ function Portal() {
                   </div>
                   <h2 className="font-['Fraunces'] text-xl mb-2">Tu solicitud quedó registrada</h2>
                   <p className="text-gray-400 text-sm">Te contactaremos pronto para confirmar el horario exacto.</p>
-                  <button onClick={() => { setVista("inicio"); setPaso("documento"); }} className="text-yellow-400 text-sm mt-6 hover:underline">Volver al inicio</button>
+                  <button onClick={() => { navigate(`/portal/${subdominio}`); setPaso("documento"); }} className="text-yellow-400 text-sm mt-6 hover:underline">Volver al inicio</button>
                 </div>
               )}
             </div>
@@ -375,7 +388,7 @@ function Portal() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button onClick={() => setVista("turno")} className="text-xs font-semibold border border-white/15 rounded-full px-4 py-2 hover:border-yellow-400 hover:text-yellow-400 hover:scale-105 transition-all">Agendar</button>
+          <button onClick={() => navigate(`/portal/${subdominio}/turno`)} className="text-xs font-semibold border border-white/15 rounded-full px-4 py-2 hover:border-yellow-400 hover:text-yellow-400 hover:scale-105 transition-all">Agendar</button>
           <button
             onClick={() => setMenuMobileAbierto((v) => !v)}
             className="md:hidden w-9 h-9 flex items-center justify-center text-white"
@@ -435,7 +448,7 @@ function Portal() {
               {info?.slogan || "Estilo y tradición, con turno asegurado."}
             </p>
             <div className="flex flex-wrap items-center gap-4">
-              <button onClick={() => setVista("turno")} className={`${btnPrimary} px-9 py-4 text-base`}>Pedir turno</button>
+              <button onClick={() => navigate(`/portal/${subdominio}/turno`)} className={`${btnPrimary} px-9 py-4 text-base`}>Pedir turno</button>
               <a href="#trabajos" className="text-sm text-gray-300 hover:text-white transition-colors">Ver trabajos ↓</a>
             </div>
           </div>
@@ -474,7 +487,7 @@ function Portal() {
               <span className="font-['IBM_Plex_Mono'] text-[0.65rem] tracking-[0.08em] uppercase text-gray-500">Horario</span>
               <span className="text-sm mt-0.5">{info?.horario || "Lun a Sáb"}</span>
             </div>
-            <button onClick={() => setVista("turno")} className="flex-none bg-yellow-400 text-neutral-950 font-bold text-sm uppercase tracking-wide px-6 sm:px-9 hover:bg-yellow-300 transition-colors">
+            <button onClick={() => navigate(`/portal/${subdominio}/turno`)} className="flex-none bg-yellow-400 text-neutral-950 font-bold text-sm uppercase tracking-wide px-6 sm:px-9 hover:bg-yellow-300 transition-colors">
               Agendar
             </button>
           </div>
@@ -551,7 +564,7 @@ function Portal() {
               <span className="font-['IBM_Plex_Mono'] text-xs tracking-[0.16em] uppercase text-yellow-400 block mb-3">Lo que hacemos</span>
               <h2 className="font-['Fraunces'] font-semibold text-3xl sm:text-4xl mb-4">Servicios</h2>
               <p className="text-gray-400 mb-8 max-w-sm">Elegí qué te vas a hacer antes de pedir el turno, sin sorpresas de precio.</p>
-              <button onClick={() => setVista("turno")} className={btnPrimary}>Pedir turno</button>
+              <button onClick={() => navigate(`/portal/${subdominio}/turno`)} className={btnPrimary}>Pedir turno</button>
             </Reveal>
             <div className="grid sm:grid-cols-2 gap-3 content-start">
               {servicios.map((s, i) => (
@@ -753,12 +766,12 @@ function Portal() {
             <p className="text-gray-400">Elegí barbero, día y franja horaria en menos de un minuto.</p>
           </Reveal>
           <Reveal delay={100}>
-            <button onClick={() => setVista("turno")} className={`${btnPrimary} px-9 py-4 text-base whitespace-nowrap`}>Pedir turno</button>
+            <button onClick={() => navigate(`/portal/${subdominio}/turno`)} className={`${btnPrimary} px-9 py-4 text-base whitespace-nowrap`}>Pedir turno</button>
           </Reveal>
         </div>
       </section>
 
-      <footer className="bg-neutral-950">
+            <footer className="bg-neutral-950">
         <div className={`${wrap} pt-16 pb-10 border-b border-white/10`}>
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
             <div className="flex items-center gap-3">
@@ -820,6 +833,10 @@ function Portal() {
               <a href="mailto:sansley.tech-sol@outlook.com" className="text-gray-400 hover:text-yellow-400 transition-colors">
                 Sansley Tech Solutions
               </a>
+              {" · "}
+              <Link to="/politicas-de-privacidad" className="text-gray-500 hover:text-yellow-400 transition-colors">
+                Privacidad
+              </Link>
             </span>
           </div>
         </div>

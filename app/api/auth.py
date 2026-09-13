@@ -9,7 +9,9 @@ from app.db.session import get_db
 from app.models.usuario import Usuario
 from app.models.barberia import Barberia
 from app.models.plan import Suscripcion
-from app.core.security import verificar_password, crear_token
+from app.models.permiso_rol import PermisoRol
+from app.core.security import verificar_password, crear_token, hashear_password, hashear_password
+from app.core.dependencies import get_usuario_actual
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
@@ -86,6 +88,7 @@ def login(
             "super_admin": usuario.super_admin,
             "id_barberia": barberia.id_barberia,
             "barberia": barberia.nombre,
+            "subdominio": barberia.subdominio,
             "barberia_nit": barberia.nit,
             "barberia_direccion": barberia.direccion,
             "barberia_telefono": barberia.telefono,
@@ -95,11 +98,9 @@ def login(
             "suscripcion_estado": suscripcion.estado.value if suscripcion else None,
             "suscripcion_fin": suscripcion.fecha_fin.isoformat() if suscripcion and suscripcion.fecha_fin else None,
             "id_plan_actual": suscripcion.id_plan if suscripcion else None,
+            "nombre_plan": suscripcion.plan.nombre if suscripcion and suscripcion.plan else None,
         },
     }
-
-    from app.models.permiso_rol import PermisoRol
-from app.core.dependencies import get_usuario_actual
 
 
 @router.get("/permisos-vigentes")
@@ -118,3 +119,92 @@ def permisos_vigentes(
         }
         for p in permisos
     }
+
+import secrets
+from datetime import timedelta
+from pydantic import BaseModel
+from app.core.email import enviar_email
+
+FRONTEND_URL = "https://barberproapp.online"
+
+
+class SolicitarReset(BaseModel):
+    subdominio: str
+    email: str
+
+
+class ConfirmarReset(BaseModel):
+    token: str
+    password_nueva: str
+
+
+@router.post("/olvide-password")
+def solicitar_reset_password(datos: SolicitarReset, db: Session = Depends(get_db)):
+    """Genera un token temporal y manda un email con el link para resetear
+    la contraseña. Siempre responde igual, exista o no el usuario, para no
+    revelar si un email está registrado."""
+    print(f"DEBUG: subdominio recibido='{datos.subdominio}', email recibido='{datos.email}'")
+
+    barberia = db.query(Barberia).filter(Barberia.subdominio == datos.subdominio.lower().strip()).first()
+    mensaje_generico = {"mensaje": "Si el email existe, te enviamos un link para restablecer tu contraseña."}
+
+    if barberia is None:
+        print("DEBUG: no se encontró ninguna barbería con ese subdominio")
+        return mensaje_generico
+
+    print(f"DEBUG: barbería encontrada, id={barberia.id_barberia}")
+
+    usuario = db.query(Usuario).filter(
+        Usuario.email == datos.email.strip(),
+        Usuario.id_barberia == barberia.id_barberia,
+        Usuario.activo == True,
+    ).first()
+
+    if usuario is None:
+        print("DEBUG: no se encontró ningún usuario con ese email en esa barbería")
+        return mensaje_generico
+
+    print(f"DEBUG: usuario encontrado, id={usuario.id_usuario}, mandando email...")
+
+    token = secrets.token_urlsafe(32)
+    usuario.reset_token = token
+    usuario.reset_token_expira = datetime.now(timezone.utc) + timedelta(hours=1)
+    db.commit()
+
+    link = f"{FRONTEND_URL}/restablecer-password?token={token}"
+    enviar_email(
+        destinatario=usuario.email,
+        asunto="Restablecé tu contraseña — Barber Pro",
+        cuerpo_html=f"""
+            <p>Hola {usuario.nombre_usuario},</p>
+            <p>Recibimos una solicitud para restablecer tu contraseña en Barber Pro.</p>
+            <p><a href="{link}">Hacé clic acá para elegir una contraseña nueva</a></p>
+            <p>Este link vence en 1 hora. Si no pediste esto, podés ignorar el correo.</p>
+        """,
+    )
+
+    return mensaje_generico
+
+
+@router.post("/restablecer-password")
+def confirmar_reset_password(datos: ConfirmarReset, db: Session = Depends(get_db)):
+    """Valida el token y cambia la contraseña."""
+    if len(datos.password_nueva) < 6:
+        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+
+    usuario = db.query(Usuario).filter(Usuario.reset_token == datos.token).first()
+    if usuario is None or usuario.reset_token_expira is None:
+        raise HTTPException(status_code=400, detail="El link no es válido o ya fue usado")
+
+    expira = usuario.reset_token_expira
+    if expira.tzinfo is None:
+        expira = expira.replace(tzinfo=timezone.utc)
+    if expira < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="El link venció, pedí uno nuevo")
+
+    usuario.password_hash = hashear_password(datos.password_nueva)
+    usuario.reset_token = None
+    usuario.reset_token_expira = None
+    db.commit()
+
+    return {"mensaje": "Contraseña actualizada correctamente"}

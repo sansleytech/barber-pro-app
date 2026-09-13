@@ -16,7 +16,7 @@ from app.schemas.turno import (
     TurnoCambiarEstado,
     TurnoActualizar,
 )
-from app.core.dependencies import get_barberia_actual, requiere_rol
+from app.core.dependencies import get_barberia_actual, requiere_rol, get_usuario_actual
 
 router = APIRouter(prefix="/turnos", tags=["Turnos"])
 
@@ -29,7 +29,6 @@ def crear_turno(
 ):
     """Crea un turno validando cliente, barbero, servicios y disponibilidad."""
 
-    # 1. Validar que el cliente exista EN ESTA BARBERÍA
     cliente = (
         db.query(Cliente)
         .filter(
@@ -41,7 +40,6 @@ def crear_turno(
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
 
-    # 2. Validar que el barbero exista EN ESTA BARBERÍA
     barbero = (
         db.query(Barbero)
         .filter(
@@ -53,11 +51,9 @@ def crear_turno(
     if barbero is None:
         raise HTTPException(status_code=404, detail="Barbero no encontrado")
 
-    # 3. Validar que haya al menos un servicio
     if not datos.ids_servicios:
         raise HTTPException(status_code=400, detail="Debe elegir al menos un servicio")
 
-    # 4. Buscar los servicios DE ESTA BARBERÍA y validar que todos existan
     servicios = (
         db.query(Servicio)
         .filter(
@@ -69,16 +65,13 @@ def crear_turno(
     if len(servicios) != len(set(datos.ids_servicios)):
         raise HTTPException(status_code=404, detail="Uno o más servicios no existen")
 
-    # 5. Calcular duración total y precio total sumando los servicios
     duracion_total = sum(s.duracion_minutos for s in servicios)
     precio_total = sum(s.precio for s in servicios)
 
-    # 6. Calcular la hora de fin
     inicio_dt = datetime.combine(datos.fecha, datos.hora_inicio)
     fin_dt = inicio_dt + timedelta(minutes=duracion_total)
     hora_fin = fin_dt.time()
 
-    # 7. Verificar que el barbero no tenga otro turno que se cruce (en esta barbería)
     solapado = (
         db.query(Turno)
         .filter(
@@ -97,7 +90,6 @@ def crear_turno(
             detail="El barbero ya tiene un turno en ese horario",
         )
 
-    # 8. Crear el turno (con su barbería)
     nuevo = Turno(
         id_cliente=datos.id_cliente,
         id_barbero=datos.id_barbero,
@@ -111,7 +103,6 @@ def crear_turno(
     db.add(nuevo)
     db.flush()
 
-    # 9. Asociar los servicios al turno
     for s in servicios:
         db.add(
             TurnoServicio(
@@ -125,6 +116,23 @@ def crear_turno(
 
     db.commit()
     db.refresh(nuevo)
+
+    usuario_barbero = db.query(Usuario).filter(
+        Usuario.id_barbero == barbero.id_barbero,
+        Usuario.id_barberia == id_barberia,
+    ).first()
+    if usuario_barbero and usuario_barbero.email:
+        from app.core.email import enviar_email
+        enviar_email(
+            destinatario=usuario_barbero.email,
+            asunto="Tenés un turno nuevo asignado",
+            cuerpo_html=f"""
+                <p>Hola {barbero.nombre},</p>
+                <p>Te asignaron un turno para el <strong>{nuevo.fecha}</strong> a las <strong>{nuevo.hora_inicio.strftime('%H:%M')}</strong>.</p>
+                <p>Revisá los detalles en tu panel: <a href="https://barberproapp.online/login">Ingresar</a></p>
+            """,
+        )
+
     return nuevo
 
 
@@ -148,7 +156,6 @@ def actualizar_turno(
     if turno is None:
         raise HTTPException(status_code=404, detail="Turno no encontrado")
 
-    # Si cambian el cliente, validar que exista en esta barbería
     if datos.id_cliente is not None:
         cliente = (
             db.query(Cliente)
@@ -162,7 +169,6 @@ def actualizar_turno(
             raise HTTPException(status_code=404, detail="Cliente no encontrado")
         turno.id_cliente = datos.id_cliente
 
-    # Si cambian el barbero, validar
     if datos.id_barbero is not None:
         barbero = (
             db.query(Barbero)
@@ -181,7 +187,6 @@ def actualizar_turno(
     if datos.hora_inicio is not None:
         turno.hora_inicio = datos.hora_inicio
 
-    # Si cambian los servicios, recalcular precio, duración y hora de fin
     if datos.ids_servicios is not None:
         if not datos.ids_servicios:
             raise HTTPException(
@@ -205,7 +210,6 @@ def actualizar_turno(
         precio_total = sum(s.precio for s in servicios)
         turno.precio_total = precio_total
 
-        # Borrar los servicios viejos y poner los nuevos
         db.query(TurnoServicio).filter(
             TurnoServicio.id_turno == turno.id_turno
         ).delete()
@@ -220,10 +224,8 @@ def actualizar_turno(
                 )
             )
     else:
-        # Si no cambian servicios, usar la duración actual para recalcular hora_fin
         duracion_total = sum(item.duracion_aplicada for item in turno.servicios)
 
-    # Recalcular la hora de fin con la fecha/hora/duración actuales
     inicio_dt = datetime.combine(turno.fecha, turno.hora_inicio)
     fin_dt = inicio_dt + timedelta(minutes=duracion_total)
     turno.hora_fin = fin_dt.time()
@@ -231,7 +233,6 @@ def actualizar_turno(
     if datos.observaciones is not None:
         turno.observaciones = datos.observaciones
 
-    # Validar solapamiento con OTROS turnos del barbero (excluyendo este mismo)
     solapado = (
         db.query(Turno)
         .filter(
@@ -289,21 +290,36 @@ def cambiar_estado_turno(
     id_turno: int,
     datos: TurnoCambiarEstado,
     db: Session = Depends(get_db),
-    id_barberia: int = Depends(get_barberia_actual),
+    usuario: Usuario = Depends(get_usuario_actual),
 ):
-    """Cambia el estado de un turno (de la barbería del usuario)."""
+    """Cambia el estado de un turno.
+    Un barbero no puede tocar un turno ya completado (queda bloqueado para él).
+    Administradores y recepcionistas sí pueden seguir modificándolo, igual que
+    antes, para poder corregir errores o volver a emitir la factura."""
     turno = (
         db.query(Turno)
         .filter(
             Turno.id_turno == id_turno,
-            Turno.id_barberia == id_barberia,
+            Turno.id_barberia == usuario.id_barberia,
         )
         .first()
     )
     if turno is None:
         raise HTTPException(status_code=404, detail="Turno no encontrado")
 
+    if turno.estado == EstadoTurnoEnum.completado and usuario.rol == RolEnum.barbero:
+        raise HTTPException(
+            status_code=409,
+            detail="Este turno ya fue completado y no se puede modificar",
+        )
+
     turno.estado = datos.estado
+    if datos.metodo_pago is not None:
+        turno.metodo_pago = datos.metodo_pago
+    if datos.propina is not None:
+        turno.propina = datos.propina
+    if datos.id_barbero_propina is not None:
+        turno.id_barbero_propina = datos.id_barbero_propina
 
     if datos.estado == EstadoTurnoEnum.completado:
         cliente = (
@@ -343,48 +359,3 @@ def cancelar_turno(
     turno.estado = EstadoTurnoEnum.cancelado
     db.commit()
     return {"mensaje": f"Turno {id_turno} cancelado correctamente"}
-
-@router.patch("/{id_turno}/estado", response_model=TurnoRespuesta)
-def cambiar_estado_turno(
-    id_turno: int,
-    datos: TurnoCambiarEstado,
-    db: Session = Depends(get_db),
-    id_barberia: int = Depends(get_barberia_actual),
-):
-    """Cambia el estado de un turno (de la barbería del usuario)."""
-    turno = (
-        db.query(Turno)
-        .filter(
-            Turno.id_turno == id_turno,
-            Turno.id_barberia == id_barberia,
-        )
-        .first()
-    )
-    if turno is None:
-        raise HTTPException(status_code=404, detail="Turno no encontrado")
-
-    # Un turno completado queda bloqueado: no se puede volver a cambiar de estado,
-    # sin importar si el pedido viene de la interfaz o directo a la API.
-    if turno.estado == EstadoTurnoEnum.completado:
-        raise HTTPException(
-            status_code=409,
-            detail="Este turno ya fue completado y no se puede modificar",
-        )
-
-    turno.estado = datos.estado
-
-    if datos.estado == EstadoTurnoEnum.completado:
-        cliente = (
-            db.query(Cliente)
-            .filter(Cliente.id_cliente == turno.id_cliente)
-            .first()
-        )
-        if cliente and (
-            cliente.fecha_ultima_visita is None
-            or turno.fecha > cliente.fecha_ultima_visita
-        ):
-            cliente.fecha_ultima_visita = turno.fecha
-
-    db.commit()
-    db.refresh(turno)
-    return turno

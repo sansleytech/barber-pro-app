@@ -16,7 +16,6 @@ import Recibo from "../components/Recibo";
 function VentaNueva() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
-
   const [productos, setProductos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [carrito, setCarrito] = useState([]);

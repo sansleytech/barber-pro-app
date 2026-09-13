@@ -68,6 +68,7 @@ function Registro() {
     const [enviando, setEnviando] = useState(false);
     const [verPassword, setVerPassword] = useState(false);
     const [completado, setCompletado] = useState(null);
+    const [aceptaTerminos, setAceptaTerminos] = useState(false);
 
     const [form, setForm] = useState({
         nombre_barberia: "",
@@ -112,6 +113,10 @@ function Registro() {
 
     const enviar = async () => {
         setError("");
+        if (!aceptaTerminos) {
+            setError("Tenés que aceptar la Política de Tratamiento de Datos para continuar");
+            return;
+        }
         setEnviando(true);
         try {
             const res = await api.post("/registro", {
@@ -363,11 +368,27 @@ function Registro() {
                                         <span className="text-white font-medium">{form.email_admin}</span>
                                     </div>
                                 </div>
+
+                                <label className="flex items-start gap-2.5 text-sm text-gray-400 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={aceptaTerminos}
+                                        onChange={(e) => setAceptaTerminos(e.target.checked)}
+                                        className="mt-1 accent-yellow-400"
+                                    />
+                                    <span>
+                                        Acepto la{" "}
+                                        <Link to="/politicas-de-privacidad" target="_blank" className="text-yellow-400 hover:underline">
+                                            Política de Tratamiento de Datos Personales
+                                        </Link>
+                                    </span>
+                                </label>
+
                                 <div className="flex gap-3">
                                     <button onClick={volver} disabled={enviando} className="flex-1 border border-white/15 text-white font-semibold rounded-lg py-3 hover:border-white/30 transition-colors disabled:opacity-50">
                                         Atrás
                                     </button>
-                                    <button onClick={enviar} disabled={enviando} className="flex-[2] bg-yellow-400 text-neutral-950 font-semibold rounded-lg py-3 hover:bg-yellow-300 transition-colors disabled:opacity-60">
+                                    <button onClick={enviar} disabled={enviando || !aceptaTerminos} className="flex-[2] bg-yellow-400 text-neutral-950 font-semibold rounded-lg py-3 hover:bg-yellow-300 transition-colors disabled:opacity-60">
                                         {enviando ? "Creando barbería…" : planElegido ? "Crear barbería y pagar" : "Crear mi barbería"}
                                     </button>
                                 </div>
