@@ -1,17 +1,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import React from "react";
-                      <SelectorEstado barberia={b} onCambiar={cambiarEstado} />
-
-                      <button
-                        onClick={() => eliminarBarberia(b)}
-                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        title="Eliminar barbería"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-
-                      <button
-                        onClick={() => toggleExpandir(b)}
+import {
+  LogOut, Building2, Users, TrendingUp, AlertTriangle, XCircle, DollarSign,
+  ChevronDown, Search, ShieldCheck, Receipt, ExternalLink, Check, Filter, Trash2,
+} from "lucide-react";
 import api from "../api/cliente";
 import { useAuth } from "../context/AuthContext";
 import { useUI } from "../context/UIContext";
@@ -138,7 +130,7 @@ function SuperadminPanel() {
     });
   };
 
-    const eliminarBarberia = (barberia) => {
+  const eliminarBarberia = (barberia) => {
     confirmar({
       titulo: `¿Eliminar "${barberia.nombre}" permanentemente?`,
       mensaje: "Esto borra TODOS sus datos (clientes, turnos, historial, pagos). No se puede deshacer. Escribí el nombre exacto para confirmar.",
@@ -155,10 +147,6 @@ function SuperadminPanel() {
       },
     });
   };
-
-  const toggleExpandir = async (barberia) => {
-
-
 
   const toggleExpandir = async (barberia) => {
     if (expandida === barberia.id_barberia) {
