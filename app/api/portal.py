@@ -1,6 +1,7 @@
 """Endpoints PÚBLICOS del portal (sin login). Identifican la barbería por subdominio."""
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional

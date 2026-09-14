@@ -1,6 +1,7 @@
 """Endpoints internos de solicitudes de turno (bandeja del admin) — multi-tenant."""
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.db.session import get_db

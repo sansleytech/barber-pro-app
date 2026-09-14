@@ -1,5 +1,6 @@
 """Endpoints (rutas) del recurso Barbero — multi-tenant."""
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.schemas.barbero import BarberoCrear, BarberoRespuesta, BarberoActualizar
 from app.db.session import get_db

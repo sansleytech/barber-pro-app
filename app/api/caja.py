@@ -3,7 +3,9 @@
 """Endpoints de Caja Diaria: bruto, neto, cierre, historial."""
 
 from datetime import date as date_type
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from fastapi import Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.db.session import get_db

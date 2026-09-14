@@ -1,5 +1,6 @@
 """Endpoints de Categorías de productos — multi-tenant."""
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.categoria_producto import CategoriaProducto

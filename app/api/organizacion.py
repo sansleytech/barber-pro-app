@@ -3,6 +3,7 @@ Usa el mismo login/token que el resto del panel — no hace falta otro usuario."
 
 from datetime import date, timedelta
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 

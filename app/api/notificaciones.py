@@ -1,6 +1,7 @@
 """Endpoints de Notificaciones — multi-tenant."""
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from app.db.session import get_db

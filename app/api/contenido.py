@@ -1,6 +1,7 @@
 """Endpoints de contenido web: carrusel y fotos."""
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db

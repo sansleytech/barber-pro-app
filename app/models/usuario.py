@@ -36,6 +36,10 @@ class Usuario(Base, TenantMixin):
     respuesta_hash = Column(String(255), nullable=True)
     reset_token = Column(String(255), nullable=True)
     reset_token_expira = Column(DateTime, nullable=True)
+    codigo_verificacion = Column(String(10), nullable=True)
+    codigo_verificacion_expira = Column(DateTime, nullable=True)
+    codigo_verificacion = Column(String(10), nullable=True)
+    codigo_verificacion_expira = Column(DateTime, nullable=True)
     fecha_creacion = Column(DateTime, server_default=func.now())
 
     __table_args__ = (

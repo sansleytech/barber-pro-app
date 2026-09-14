@@ -1,6 +1,7 @@
 """Endpoints de Horarios de barbero y disponibilidad — multi-tenant."""
 from datetime import datetime, timedelta, date as date_type
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.horario import HorarioBarbero

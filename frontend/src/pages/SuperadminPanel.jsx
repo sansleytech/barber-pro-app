@@ -92,6 +92,8 @@ function SuperadminPanel() {
   const [cargando, setCargando] = useState(true);
   const [expandida, setExpandida] = useState(null);
   const [pagosPorBarberia, setPagosPorBarberia] = useState({});
+  const [usuariosPorBarberia, setUsuariosPorBarberia] = useState({});
+  const [tabExpandida, setTabExpandida] = useState("pagos"); // "pagos" | "usuarios"
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todos");
 
@@ -148,18 +150,47 @@ function SuperadminPanel() {
     });
   };
 
+  const eliminarUsuario = (usuarioObj, idBarberia) => {
+    confirmar({
+      titulo: `¿Eliminar a "${usuarioObj.nombre_usuario}"?`,
+      mensaje: "Esto borra el usuario permanentemente. No se puede deshacer.",
+      textoConfirmar: "Sí, eliminar",
+      onConfirmar: async () => {
+        try {
+          await api.delete(`/superadmin/usuarios/${usuarioObj.id_usuario}`);
+          avisar("Usuario eliminado", "exito");
+          setUsuariosPorBarberia((prev) => ({
+            ...prev,
+            [idBarberia]: prev[idBarberia].filter((u) => u.id_usuario !== usuarioObj.id_usuario),
+          }));
+        } catch (err) {
+          avisar(err.response?.data?.detail || "No se pudo eliminar", "error");
+        }
+      },
+    });
+  };
+
   const toggleExpandir = async (barberia) => {
     if (expandida === barberia.id_barberia) {
       setExpandida(null);
       return;
     }
     setExpandida(barberia.id_barberia);
+    setTabExpandida("pagos");
     if (!pagosPorBarberia[barberia.id_barberia]) {
       try {
         const res = await api.get(`/superadmin/barberias/${barberia.id_barberia}/pagos`);
         setPagosPorBarberia((prev) => ({ ...prev, [barberia.id_barberia]: res.data }));
       } catch {
         setPagosPorBarberia((prev) => ({ ...prev, [barberia.id_barberia]: [] }));
+      }
+    }
+    if (!usuariosPorBarberia[barberia.id_barberia]) {
+      try {
+        const res = await api.get(`/superadmin/barberias/${barberia.id_barberia}/usuarios`);
+        setUsuariosPorBarberia((prev) => ({ ...prev, [barberia.id_barberia]: res.data }));
+      } catch {
+        setUsuariosPorBarberia((prev) => ({ ...prev, [barberia.id_barberia]: [] }));
       }
     }
   };
@@ -346,33 +377,80 @@ function SuperadminPanel() {
 
                   {expandida === b.id_barberia && (
                     <div className="bg-ink px-6 py-5">
-                      {!pagosPorBarberia[b.id_barberia] ? (
-                        <p className="text-gray-500 text-sm">Cargando...</p>
-                      ) : pagosPorBarberia[b.id_barberia].length === 0 ? (
-                        <div className="flex items-center gap-2 text-gray-500 text-sm py-2">
-                          <Receipt className="w-4 h-4" />
-                          Sin pagos registrados todavía.
-                        </div>
+                      <div className="flex gap-1 p-1 bg-ink-card border border-line rounded-full mb-4 w-fit">
+                        <button
+                          onClick={() => setTabExpandida("pagos")}
+                          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${tabExpandida === "pagos" ? "bg-gold text-ink" : "text-gray-400 hover:text-white"}`}
+                        >
+                          Pagos
+                        </button>
+                        <button
+                          onClick={() => setTabExpandida("usuarios")}
+                          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${tabExpandida === "usuarios" ? "bg-gold text-ink" : "text-gray-400 hover:text-white"}`}
+                        >
+                          Usuarios
+                        </button>
+                      </div>
+
+                      {tabExpandida === "pagos" ? (
+                        !pagosPorBarberia[b.id_barberia] ? (
+                          <p className="text-gray-500 text-sm">Cargando...</p>
+                        ) : pagosPorBarberia[b.id_barberia].length === 0 ? (
+                          <div className="flex items-center gap-2 text-gray-500 text-sm py-2">
+                            <Receipt className="w-4 h-4" />
+                            Sin pagos registrados todavía.
+                          </div>
+                        ) : (
+                          <div className="max-w-2xl space-y-1.5">
+                            {pagosPorBarberia[b.id_barberia].map((p) => (
+                              <div key={p.id_pago} className="flex items-center gap-4 text-sm bg-ink-card border border-line rounded-xl px-4 py-3">
+                                <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
+                                  <Receipt className="w-4 h-4 text-gray-500" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-gray-300">{p.metodo_pago || "Sin método registrado"}</div>
+                                  <div className="text-xs text-gray-500 mt-0.5">{new Date(p.fecha_creacion).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })}</div>
+                                </div>
+                                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                                  p.estado === "aprobado" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
+                                }`}>
+                                  {p.estado}
+                                </span>
+                                <span className="text-white font-semibold w-28 text-right flex-shrink-0">{formatoPrecio(p.monto)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )
                       ) : (
-                        <div className="max-w-2xl space-y-1.5">
-                          {pagosPorBarberia[b.id_barberia].map((p) => (
-                            <div key={p.id_pago} className="flex items-center gap-4 text-sm bg-ink-card border border-line rounded-xl px-4 py-3">
-                              <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                                <Receipt className="w-4 h-4 text-gray-500" />
+                        !usuariosPorBarberia[b.id_barberia] ? (
+                          <p className="text-gray-500 text-sm">Cargando...</p>
+                        ) : usuariosPorBarberia[b.id_barberia].length === 0 ? (
+                          <p className="text-gray-500 text-sm">Sin usuarios.</p>
+                        ) : (
+                          <div className="max-w-2xl space-y-1.5">
+                            {usuariosPorBarberia[b.id_barberia].map((u) => (
+                              <div key={u.id_usuario} className="flex items-center gap-4 text-sm bg-ink-card border border-line rounded-xl px-4 py-3">
+                                <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-400">
+                                  {iniciales(u.nombre_usuario)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-gray-300 truncate">{u.nombre_usuario} {!u.activo && <span className="text-gray-600">(inactivo)</span>}</div>
+                                  <div className="text-xs text-gray-500 mt-0.5 truncate">{u.email || "sin email"}</div>
+                                </div>
+                                <span className="text-xs font-medium text-gray-400 bg-white/5 px-2.5 py-1 rounded-full capitalize">{u.rol}</span>
+                                {!u.super_admin && (
+                                  <button
+                                    onClick={() => eliminarUsuario(u, b.id_barberia)}
+                                    className="text-gray-500 hover:text-red-400 transition-colors flex-shrink-0"
+                                    title="Eliminar usuario"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-gray-300">{p.metodo_pago || "Sin método registrado"}</div>
-                                <div className="text-xs text-gray-500 mt-0.5">{new Date(p.fecha_creacion).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })}</div>
-                              </div>
-                              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                                p.estado === "aprobado" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
-                              }`}>
-                                {p.estado}
-                              </span>
-                              <span className="text-white font-semibold w-28 text-right flex-shrink-0">{formatoPrecio(p.monto)}</span>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )
                       )}
                     </div>
                   )}

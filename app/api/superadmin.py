@@ -3,6 +3,7 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from dateutil.relativedelta import relativedelta
@@ -13,7 +14,7 @@ from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.models.plan import Plan, Suscripcion, EstadoSuscripcionEnum
 from app.models.pago import Pago
 from app.models.permiso_rol import PermisoRol
-from app.core.security import verificar_password, crear_token, hashear_password, hashear_password
+from app.core.security import verificar_password, crear_token, hashear_password
 from app.core.dependencies import requiere_super_admin
 from app.schemas.superadmin import (
     LoginSuperAdmin,
@@ -114,6 +115,24 @@ def cambiar_estado_barberia(
     return resultado
 
 
+@router.delete("/barberias/{id_barberia}")
+def eliminar_barberia(
+    id_barberia: int,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(requiere_super_admin),
+):
+    """Elimina PERMANENTEMENTE una barbería y todos sus datos asociados
+    (usuarios, clientes, turnos, etc., vía CASCADE). Es irreversible."""
+    barberia = db.query(Barberia).filter(Barberia.id_barberia == id_barberia).first()
+    if barberia is None:
+        raise HTTPException(status_code=404, detail="Barbería no encontrada")
+
+    nombre = barberia.nombre
+    db.delete(barberia)
+    db.commit()
+    return {"mensaje": f"Barbería '{nombre}' eliminada permanentemente"}
+
+
 @router.get("/metricas", response_model=MetricasGlobales)
 def metricas_globales(
     db: Session = Depends(get_db),
@@ -199,23 +218,6 @@ def crear_plan(
     db.add(nuevo)
     db.commit()
     db.refresh(nuevo)
-
-    usuario_barbero = db.query(Usuario).filter(
-        Usuario.id_barbero == barbero.id_barbero,
-        Usuario.id_barberia == id_barberia,
-    ).first()
-    if usuario_barbero and usuario_barbero.email:
-        from app.core.email import enviar_email
-        enviar_email(
-            destinatario=usuario_barbero.email,
-            asunto="Tenés un turno nuevo asignado",
-            cuerpo_html=f"""
-                <p>Hola {barbero.nombre},</p>
-                <p>Te asignaron un turno para el <strong>{nuevo.fecha}</strong> a las <strong>{nuevo.hora_inicio.strftime('%H:%M')}</strong>.</p>
-                <p>Revisá los detalles en tu panel: <a href="https://barberproapp.online/login">Ingresar</a></p>
-            """,
-        )
-
     return nuevo
 
 
@@ -309,20 +311,47 @@ def actualizar_permiso(
     db.refresh(permiso)
     return permiso
 
-
-    @router.delete("/barberias/{id_barberia}")
-def eliminar_barberia(
+@router.get("/barberias/{id_barberia}/usuarios")
+def listar_usuarios_barberia(
     id_barberia: int,
     db: Session = Depends(get_db),
     _: Usuario = Depends(requiere_super_admin),
 ):
-    """Elimina PERMANENTEMENTE una barbería y todos sus datos asociados
-    (usuarios, clientes, turnos, etc., vía CASCADE). Es irreversible."""
+    """Lista todos los usuarios de una barbería puntual (para gestión desde superadmin)."""
     barberia = db.query(Barberia).filter(Barberia.id_barberia == id_barberia).first()
     if barberia is None:
         raise HTTPException(status_code=404, detail="Barbería no encontrada")
 
-    nombre = barberia.nombre
-    db.delete(barberia)
+    usuarios = db.query(Usuario).filter(Usuario.id_barberia == id_barberia).all()
+    return [
+        {
+            "id_usuario": u.id_usuario,
+            "nombre_usuario": u.nombre_usuario,
+            "email": u.email,
+            "rol": u.rol.value,
+            "activo": u.activo,
+            "super_admin": u.super_admin,
+        }
+        for u in usuarios
+    ]
+
+
+@router.delete("/usuarios/{id_usuario}")
+def eliminar_usuario_superadmin(
+    id_usuario: int,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(requiere_super_admin),
+):
+    """Elimina PERMANENTEMENTE un usuario. No se puede borrar a un super_admin
+    desde acá, por seguridad."""
+    usuario = db.query(Usuario).filter(Usuario.id_usuario == id_usuario).first()
+    if usuario is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    if usuario.super_admin:
+        raise HTTPException(status_code=403, detail="No se puede eliminar a un superadministrador desde acá")
+
+    nombre = usuario.nombre_usuario
+    db.delete(usuario)
     db.commit()
-    return {"mensaje": f"Barbería '{nombre}' eliminada permanentemente"}
+    return {"mensaje": f"Usuario '{nombre}' eliminado permanentemente"}

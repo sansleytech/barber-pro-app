@@ -7,7 +7,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 from datetime import date
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from fastapi import Request
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db

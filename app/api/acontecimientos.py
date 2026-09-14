@@ -1,6 +1,7 @@
 """Endpoints de Acontecimientos y cumpleaños — multi-tenant."""
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import extract
 from app.db.session import get_db
