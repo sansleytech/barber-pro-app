@@ -1,9 +1,17 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import React from "react";
-import {
-  LogOut, Building2, Users, TrendingUp, AlertTriangle, XCircle, DollarSign,
-  ChevronDown, Search, ShieldCheck, Receipt, ExternalLink, Check, Filter,
-} from "lucide-react";
+                      <SelectorEstado barberia={b} onCambiar={cambiarEstado} />
+
+                      <button
+                        onClick={() => eliminarBarberia(b)}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        title="Eliminar barbería"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={() => toggleExpandir(b)}
 import api from "../api/cliente";
 import { useAuth } from "../context/AuthContext";
 import { useUI } from "../context/UIContext";
@@ -129,6 +137,28 @@ function SuperadminPanel() {
       },
     });
   };
+
+    const eliminarBarberia = (barberia) => {
+    confirmar({
+      titulo: `¿Eliminar "${barberia.nombre}" permanentemente?`,
+      mensaje: "Esto borra TODOS sus datos (clientes, turnos, historial, pagos). No se puede deshacer. Escribí el nombre exacto para confirmar.",
+      textoConfirmar: "Sí, eliminar para siempre",
+      pedirTexto: barberia.nombre,
+      onConfirmar: async () => {
+        try {
+          await api.delete(`/superadmin/barberias/${barberia.id_barberia}`);
+          avisar("Barbería eliminada", "exito");
+          cargar();
+        } catch (err) {
+          avisar(err.response?.data?.detail || "No se pudo eliminar", "error");
+        }
+      },
+    });
+  };
+
+  const toggleExpandir = async (barberia) => {
+
+
 
   const toggleExpandir = async (barberia) => {
     if (expandida === barberia.id_barberia) {
@@ -302,6 +332,14 @@ function SuperadminPanel() {
                       )}
 
                       <SelectorEstado barberia={b} onCambiar={cambiarEstado} />
+
+                      <button
+                        onClick={() => eliminarBarberia(b)}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        title="Eliminar barbería"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
 
                       <button
                         onClick={() => toggleExpandir(b)}

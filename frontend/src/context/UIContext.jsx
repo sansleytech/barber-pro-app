@@ -10,17 +10,22 @@ export function useUI() {
 }
 
 export function UIProvider({ children }) {
-  const [modal, setModal] = useState(null); // { titulo, mensaje, onConfirmar, textoConfirmar, peligroso }
+  const [modal, setModal] = useState(null); // { titulo, mensaje, onConfirmar, textoConfirmar, peligroso, pedirTexto }
+  const [textoEscrito, setTextoEscrito] = useState("");
   const [toasts, setToasts] = useState([]);
   const [aviso, setAviso] = useState(null); // { titulo, mensaje, tipo }
 
-  // Abrir modal de confirmación
+  // Abrir modal de confirmación. Si se pasa "pedirTexto" (ej: el nombre de
+  // una barbería), el botón de confirmar queda deshabilitado hasta que el
+  // usuario escriba ese texto exacto — para acciones irreversibles graves.
   const confirmar = useCallback((opciones) => {
+    setTextoEscrito("");
     setModal({
       titulo: opciones.titulo || "¿Estás seguro?",
       mensaje: opciones.mensaje || "",
       textoConfirmar: opciones.textoConfirmar || "Confirmar",
       peligroso: opciones.peligroso ?? true,
+      pedirTexto: opciones.pedirTexto || null,
       onConfirmar: opciones.onConfirmar || (() => {}),
     });
   }, []);
@@ -39,10 +44,12 @@ export function UIProvider({ children }) {
     }, 3500);
   }, []);
 
-  const cerrarModal = () => setModal(null);
+  const cerrarModal = () => { setModal(null); setTextoEscrito(""); };
   const confirmarAccion = () => {
+    if (modal?.pedirTexto && textoEscrito !== modal.pedirTexto) return;
     if (modal?.onConfirmar) modal.onConfirmar();
     setModal(null);
+    setTextoEscrito("");
   };
 
   const iconoToast = { exito: CheckCircle, error: XCircle, info: Info };
@@ -51,6 +58,8 @@ export function UIProvider({ children }) {
     error: "text-red-400 border-red-500/30 bg-red-500/10",
     info: "text-gold border-gold/30 bg-gold/10",
   };
+
+  const confirmarBloqueado = modal?.pedirTexto && textoEscrito !== modal.pedirTexto;
 
   return (
     <UIContext.Provider value={{ confirmar, toast, avisar }}>
@@ -73,13 +82,31 @@ export function UIProvider({ children }) {
                   {modal.mensaje && <p className="text-gray-400 text-sm mt-1">{modal.mensaje}</p>}
                 </div>
               </div>
+
+              {modal.pedirTexto && (
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 mb-1.5">
+                    Escribí <span className="text-white font-semibold">{modal.pedirTexto}</span> para confirmar:
+                  </p>
+                  <input
+                    type="text"
+                    value={textoEscrito}
+                    onChange={(e) => setTextoEscrito(e.target.value)}
+                    autoFocus
+                    className="w-full bg-ink border border-line rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-red-400"
+                  />
+                </div>
+              )}
+
               <div className="flex gap-3 justify-end">
                 <button onClick={cerrarModal}
                   className="px-4 py-2 rounded-lg border border-line text-gray-300 hover:text-white hover:bg-ink transition-colors text-sm">
                   Cancelar
                 </button>
-                <button onClick={confirmarAccion}
-                  className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
+                <button
+                  onClick={confirmarAccion}
+                  disabled={confirmarBloqueado}
+                  className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                     modal.peligroso
                       ? "bg-red-500 text-white hover:bg-red-600"
                       : "bg-gold text-ink hover:bg-gold-soft"

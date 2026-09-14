@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, Store, User, Lock, ShieldCheck, Calendar } from "lucide-react";
+import { Eye, EyeOff, Store, User, Lock, ShieldCheck, Calendar, ArrowLeft } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/cliente";
 import logo from "../assets/img/logo1.png";
@@ -109,6 +109,9 @@ const Login = () => {
       {/* Panel del formulario */}
       <div className="md:w-1/2 flex items-center justify-center p-8 md:p-16">
         <div className="w-full max-w-md animate-fade-in delay-200">
+          <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gold transition-colors mb-6">
+            <ArrowLeft className="w-4 h-4" /> Volver al inicio
+          </Link>
           <div className="mb-8">
             <h2 className="text-4xl font-bold text-white mb-3">Bienvenido</h2>
             <p className="text-gray-400 text-lg">

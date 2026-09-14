@@ -308,3 +308,21 @@ def actualizar_permiso(
     db.commit()
     db.refresh(permiso)
     return permiso
+
+
+    @router.delete("/barberias/{id_barberia}")
+def eliminar_barberia(
+    id_barberia: int,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(requiere_super_admin),
+):
+    """Elimina PERMANENTEMENTE una barbería y todos sus datos asociados
+    (usuarios, clientes, turnos, etc., vía CASCADE). Es irreversible."""
+    barberia = db.query(Barberia).filter(Barberia.id_barberia == id_barberia).first()
+    if barberia is None:
+        raise HTTPException(status_code=404, detail="Barbería no encontrada")
+
+    nombre = barberia.nombre
+    db.delete(barberia)
+    db.commit()
+    return {"mensaje": f"Barbería '{nombre}' eliminada permanentemente"}
