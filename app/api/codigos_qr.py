@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.codigo_qr import CodigoQR
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.codigo_qr import QRCrear, QRRespuesta
 from app.core.dependencies import get_barberia_actual, requiere_rol
 

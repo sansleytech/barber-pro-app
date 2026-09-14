@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.contenido import CarouselSlide, FotoCliente
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.contenido import (
     SlideCrear, SlideActualizar, SlideRespuesta,
     FotoCrear, FotoRespuesta,

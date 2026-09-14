@@ -11,6 +11,7 @@ from app.db.session import get_db
 from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.models.plan import Plan, Suscripcion, EstadoSuscripcionEnum
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.core.dependencies import requiere_rol, get_barberia_actual
 from app.core.security import hashear_password
 from app.models.organizacion import Organizacion

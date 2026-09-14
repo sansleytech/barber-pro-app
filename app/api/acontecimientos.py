@@ -8,6 +8,7 @@ from app.db.session import get_db
 from app.models.acontecimiento import Acontecimiento
 from app.models.cliente import Cliente
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.acontecimiento import AcontecimientoCrear, AcontecimientoRespuesta, CumpleanosRespuesta
 from app.core.dependencies import get_barberia_actual, requiere_rol
 

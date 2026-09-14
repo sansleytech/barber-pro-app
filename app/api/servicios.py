@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.servicio import Servicio
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.servicio import ServicioCrear, ServicioRespuesta, ServicioActualizar
 from app.core.dependencies import get_barberia_actual, requiere_rol
 

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.producto import Producto
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.producto import ProductoCrear, ProductoRespuesta, ProductoActualizar
 from app.core.dependencies import requiere_rol, requiere_plan
 

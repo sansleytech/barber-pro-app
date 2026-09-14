@@ -6,6 +6,7 @@ from app.schemas.barbero import BarberoCrear, BarberoRespuesta, BarberoActualiza
 from app.db.session import get_db
 from app.models.barbero import Barbero
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.core.dependencies import get_barberia_actual, requiere_rol
 
 

@@ -14,6 +14,7 @@ from app.models.barbero import Barbero
 from app.models.servicio import Servicio
 from app.models.valoracion import Valoracion
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.models.barberia import Barberia
 from app.models.plan import Suscripcion
 from app.core.dependencies import requiere_rol

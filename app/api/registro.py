@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.models.plan import Plan, Suscripcion, EstadoSuscripcionEnum
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.registro import RegistroBarberia, RegistroRespuesta
 from app.core.security import hashear_password
 

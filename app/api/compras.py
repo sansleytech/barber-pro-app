@@ -7,6 +7,7 @@ from app.models.compra import CompraProducto
 from app.models.producto import Producto
 from app.models.proveedor import Proveedor
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.compra import CompraCrear, CompraRespuesta
 from app.core.dependencies import requiere_rol
 

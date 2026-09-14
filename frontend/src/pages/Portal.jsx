@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 
@@ -80,6 +80,60 @@ const pill = (active) =>
   }`;
 const alert = "bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3";
 const alertBrass = "bg-yellow-400/10 border border-yellow-400/40 text-yellow-400 text-sm rounded-lg px-4 py-3";
+
+const ICONOS_RED = {
+  instagram: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...p}>
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  facebook: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...p}>
+      <path d="M15 3h-2a5 5 0 00-5 5v3H6v4h2v6h4v-6h3l1-4h-4V8a1 1 0 011-1h3V3z" />
+    </svg>
+  ),
+  whatsapp: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...p}>
+      <path d="M3 21l1.6-4.8A9 9 0 1112 21a9 9 0 01-4.5-1.2L3 21z" />
+      <path d="M8.5 9.5c0 3.5 2.5 6 6 6l1-2-2.5-1-1 1a5 5 0 01-2.5-2.5l1-1-1-2.5-2 1z" />
+    </svg>
+  ),
+  tiktok: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...p}>
+      <path d="M14 3v10.5a3.5 3.5 0 11-3.5-3.5" />
+      <path d="M14 3a5 5 0 005 5" />
+    </svg>
+  ),
+  youtube: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...p}>
+      <rect x="2.5" y="6" width="19" height="12" rx="3" />
+      <path d="M10.5 9.5l5 2.5-5 2.5z" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  twitter: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...p}>
+      <path d="M4 4l16 16M20 4L4 20" />
+    </svg>
+  ),
+  web: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...p}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18" />
+    </svg>
+  ),
+};
+
+const NOMBRES_RED = {
+  instagram: "Instagram",
+  facebook: "Facebook",
+  whatsapp: "WhatsApp",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+  twitter: "X / Twitter",
+  web: "Sitio web",
+};
 
 function Portal() {
   const { subdominio } = useParams();
@@ -245,11 +299,14 @@ function Portal() {
   const otrasResenas = comentarios.filter((c) => c.id_valoracion !== resenaDestacada?.id_valoracion);
   const PASOS = ["documento", "registro", "solicitar", "listo"];
   const pasoIndex = PASOS.indexOf(paso === "registro" && cliente ? "solicitar" : paso);
+
   const redesSociales = (() => {
     try {
       const raw = JSON.parse(info?.redes_sociales || "[]");
       if (!Array.isArray(raw)) return [];
-      return raw.map((r) => (typeof r === "string" ? { nombre: "Red social", url: r } : { nombre: r.nombre || r.red || "Red social", url: r.url })).filter((r) => r.url);
+      return raw
+        .map((r) => (typeof r === "string" ? { tipo: "web", url: r } : { tipo: r.tipo || "web", url: r.url }))
+        .filter((r) => r.url);
     } catch { return []; }
   })();
 
@@ -771,7 +828,7 @@ function Portal() {
         </div>
       </section>
 
-            <footer className="bg-neutral-950">
+      <footer className="bg-neutral-950">
         <div className={`${wrap} pt-16 pb-10 border-b border-white/10`}>
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
             <div className="flex items-center gap-3">
@@ -786,11 +843,21 @@ function Portal() {
             </div>
             {redesSociales.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {redesSociales.map((r, i) => (
-                  <a key={i} href={r.url} target="_blank" rel="noreferrer" className="text-xs px-3 py-1.5 rounded-full border border-white/15 text-gray-400 hover:text-yellow-400 hover:border-yellow-400 transition-colors">
-                    {r.nombre}
-                  </a>
-                ))}
+                {redesSociales.map((r, i) => {
+                  const Icono = ICONOS_RED[r.tipo] || ICONOS_RED.web;
+                  return React.createElement(
+                    "a",
+                    {
+                      key: i,
+                      href: r.url,
+                      target: "_blank",
+                      rel: "noreferrer",
+                      title: NOMBRES_RED[r.tipo] || "Red social",
+                      className: "w-10 h-10 rounded-full border border-white/15 flex items-center justify-center text-gray-400 hover:text-yellow-400 hover:border-yellow-400 transition-colors",
+                    },
+                    <Icono key="icono" className="w-4.5 h-4.5" />
+                  );
+                })}
               </div>
             )}
           </div>

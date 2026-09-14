@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.categoria_producto import CategoriaProducto
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.categoria_producto import CategoriaCrear, CategoriaRespuesta, CategoriaActualizar
 from app.core.dependencies import get_barberia_actual, requiere_rol
 

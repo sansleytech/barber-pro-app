@@ -8,6 +8,7 @@ from app.models.horario import HorarioBarbero
 from app.models.barbero import Barbero
 from app.models.turno import Turno, EstadoTurnoEnum
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.horario import HorarioCrear, HorarioRespuesta, HorarioActualizar
 from app.core.dependencies import get_barberia_actual, requiere_rol
 

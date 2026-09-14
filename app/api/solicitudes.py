@@ -7,6 +7,7 @@ from typing import Optional
 from app.db.session import get_db
 from app.models.solicitud_turno import SolicitudTurno, EstadoSolicitudEnum
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.solicitud_turno import SolicitudRespuesta, SolicitudActualizarEstado
 from app.core.dependencies import get_barberia_actual, requiere_rol
 

@@ -10,6 +10,7 @@ from app.models.plan import Suscripcion, EstadoSuscripcionEnum, Plan
 from app.models.fuente_pago import FuentePago
 from app.models.barberia import Barberia
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.models.pago import Pago, EstadoPagoEnum
 import time
 import time

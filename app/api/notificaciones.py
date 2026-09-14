@@ -7,6 +7,7 @@ from sqlalchemy import or_
 from app.db.session import get_db
 from app.models.notificacion import Notificacion
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.models.cliente import Cliente
 from app.models.barberia import Barberia
 from app.models.plan import Suscripcion

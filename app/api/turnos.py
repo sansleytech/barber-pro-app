@@ -11,6 +11,7 @@ from app.models.cliente import Cliente
 from app.models.barbero import Barbero
 from app.models.servicio import Servicio
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.turno import (
     TurnoCrear,
     TurnoRespuesta,

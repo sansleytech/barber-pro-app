@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.usuario import UsuarioCrear, UsuarioRespuesta, UsuarioActualizar
 from app.core.security import hashear_password
 from app.core.dependencies import get_usuario_actual, requiere_rol, verificar_barberia_activa

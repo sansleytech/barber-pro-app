@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.categoria_galeria import CategoriaGaleria
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.categoria_galeria import (
     CategoriaGaleriaCrear,
     CategoriaGaleriaRespuesta,

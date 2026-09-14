@@ -10,6 +10,7 @@ from app.models.producto import Producto
 from app.models.cliente import Cliente
 from app.models.configuracion import Configuracion
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.venta import VentaCrear, VentaRespuesta
 from app.core.dependencies import requiere_rol, requiere_plan
 

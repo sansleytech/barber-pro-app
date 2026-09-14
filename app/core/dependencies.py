@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.usuario import Usuario, RolEnum
 from app.models.barberia import Barberia, EstadoBarberiaEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.core.security import decodificar_token
 from app.models.plan import Suscripcion
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")

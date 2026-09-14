@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import React from "react";
 import {
   Store,
   Receipt,
@@ -11,9 +12,14 @@ import {
   Globe,
   MessageCircle,
   Link as LinkIcon,
+  AlertTriangle,
+  MapPin,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/cliente";
 import SubirImagen from "../components/SubirImagen";
+import { useAuth } from "../context/AuthContext";
+import { useUI } from "../context/UIContext";
 
 const MONEDAS = [
   { codigo: "COP", nombre: "Peso colombiano (COP)" },
@@ -46,6 +52,7 @@ const TABS = [
   { id: "facturacion", nombre: "Facturación", icono: Receipt },
   { id: "redes", nombre: "Redes", icono: Share2 },
   { id: "mensajes", nombre: "Mensajes", icono: MessageSquare },
+  { id: "cuenta", nombre: "Cuenta", icono: AlertTriangle },
 ];
 
 function Configuracion() {
@@ -61,6 +68,11 @@ function Configuracion() {
 
   const [nuevaRedTipo, setNuevaRedTipo] = useState("instagram");
   const [nuevaRedUrl, setNuevaRedUrl] = useState("");
+
+  const { usuario, logout } = useAuth();
+  const { confirmar, avisar } = useUI();
+  const navigate = useNavigate();
+  const [cancelando, setCancelando] = useState(false);
 
   useEffect(() => {
     const cargar = async () => {
@@ -114,6 +126,21 @@ function Configuracion() {
   const infoRed = (tipo) =>
     TIPOS_RED.find((t) => t.tipo === tipo) || TIPOS_RED[6];
 
+  const usarUbicacionActual = () => {
+    if (!navigator.geolocation) {
+      avisar("Tu navegador no soporta obtener la ubicación", "error");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        cambiar("latitud", String(pos.coords.latitude));
+        cambiar("longitud", String(pos.coords.longitude));
+        avisar("Ubicación capturada correctamente", "exito");
+      },
+      () => avisar("No se pudo obtener tu ubicación. Revisá los permisos del navegador.", "error")
+    );
+  };
+
   const guardar = async () => {
     setGuardando(true);
     setError("");
@@ -147,6 +174,29 @@ function Configuracion() {
       setGuardadoOk(true);
     }
     setGuardando(false);
+  };
+
+  const cancelarCuenta = () => {
+    confirmar({
+      titulo: "¿Cancelar tu cuenta?",
+      mensaje: `Tu barbería "${usuario?.barberia}" quedará congelada de inmediato: nadie va a poder entrar ni tus clientes van a poder agendar. Tus datos NO se borran — podés reactivarla contactando soporte. Escribí el nombre exacto para confirmar.`,
+      textoConfirmar: "Sí, cancelar mi cuenta",
+      pedirTexto: usuario?.barberia,
+      onConfirmar: async () => {
+        setCancelando(true);
+        try {
+          await api.post("/configuracion/cancelar-cuenta");
+          avisar("Tu cuenta fue cancelada. Te mandamos un correo con los detalles.", "info");
+          setTimeout(() => {
+            logout();
+            navigate("/login");
+          }, 2000);
+        } catch (err) {
+          avisar(err.response?.data?.detail || "No se pudo cancelar la cuenta", "error");
+          setCancelando(false);
+        }
+      },
+    });
   };
 
   const hayCambios =
@@ -188,7 +238,9 @@ function Configuracion() {
               onClick={() => setTab(t.id)}
               className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                 tab === t.id
-                  ? "bg-gold text-ink"
+                  ? t.id === "cuenta"
+                    ? "bg-red-500 text-white"
+                    : "bg-gold text-ink"
                   : "text-gray-400 hover:text-white"
               }`}
             >
@@ -313,6 +365,91 @@ function Configuracion() {
           </div>
         )}
 
+        {/* PORTAL */}
+        {tab === "portal" && (
+          <div className="space-y-5">
+            <SubirImagen
+              valor={valores.logo_url ?? ""}
+              onCambio={(url) => cambiar("logo_url", url)}
+              etiqueta="Logo de tu barbería (aparece en el portal público)"
+            />
+
+            <div>
+              <label className="block text-sm text-gray-300 mb-1.5">
+                Nuestra historia
+              </label>
+              <textarea
+                value={valores.historia ?? ""}
+                onChange={(e) => cambiar("historia", e.target.value)}
+                rows={4}
+                placeholder="Contá cómo empezó tu barbería, qué la hace especial..."
+                className={inputClase}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-300 mb-1.5">
+                  Misión
+                </label>
+                <textarea
+                  value={valores.mision ?? ""}
+                  onChange={(e) => cambiar("mision", e.target.value)}
+                  rows={3}
+                  placeholder="¿Cuál es tu propósito?"
+                  className={inputClase}
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-300 mb-1.5">
+                  Visión
+                </label>
+                <textarea
+                  value={valores.vision ?? ""}
+                  onChange={(e) => cambiar("vision", e.target.value)}
+                  rows={3}
+                  placeholder="¿A dónde querés llegar?"
+                  className={inputClase}
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-line pt-4">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm text-gray-300">
+                  Ubicación (para el mapa "Cómo llegar" del portal)
+                </label>
+                <button
+                  type="button"
+                  onClick={usarUbicacionActual}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-gold hover:text-gold-soft transition-colors"
+                >
+                  <MapPin className="w-3.5 h-3.5" /> Usar mi ubicación actual
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={valores.latitud ?? ""}
+                  onChange={(e) => cambiar("latitud", e.target.value.replace(/[^0-9.\-]/g, ""))}
+                  placeholder="Latitud (ej: 6.244203)"
+                  className={inputClase}
+                />
+                <input
+                  type="text"
+                  value={valores.longitud ?? ""}
+                  onChange={(e) => cambiar("longitud", e.target.value.replace(/[^0-9.\-]/g, ""))}
+                  placeholder="Longitud (ej: -75.581211)"
+                  className={inputClase}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Con esto activado, tu portal público muestra un mapa con la ubicación exacta y un botón "Cómo llegar".
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* FACTURACIÓN */}
         {tab === "facturacion" && (
           <div className="space-y-5">
@@ -400,14 +537,16 @@ function Configuracion() {
                         <div className="text-white text-sm font-medium">
                           {info.nombre}
                         </div>
-                        <a
-                          href={r.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs text-gray-500 hover:text-gold truncate block"
-                        >
-                          {r.url}
-                        </a>
+                        {React.createElement(
+                          "a",
+                          {
+                            href: r.url,
+                            target: "_blank",
+                            rel: "noreferrer",
+                            className: "text-xs text-gray-500 hover:text-gold truncate block",
+                          },
+                          r.url
+                        )}
                       </div>
                       <button
                         onClick={() => quitarRed(i)}
@@ -486,29 +625,66 @@ function Configuracion() {
             </div>
           </div>
         )}
+
+        {/* CUENTA — ZONA DE PELIGRO */}
+        {tab === "cuenta" && (
+          <div>
+            <div className="flex items-start gap-3 mb-6">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold text-lg">Zona de peligro</h3>
+                <p className="text-gray-400 text-sm mt-1">
+                  Acá podés cancelar tu cuenta. No perdés tus datos — quedan guardados
+                  de forma segura por si en algún momento querés volver.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-red-500/5 border border-red-500/25 rounded-xl p-5">
+              <h4 className="text-white font-medium mb-1">Cancelar mi cuenta</h4>
+              <p className="text-gray-400 text-sm mb-4">
+                Tu barbería quedará congelada de inmediato: nadie (ni vos, ni tu equipo, ni
+                tus clientes desde el portal) va a poder usarla hasta que la reactives
+                contactando soporte.
+              </p>
+              <button
+                onClick={cancelarCuenta}
+                disabled={cancelando}
+                className="inline-flex items-center gap-2 bg-red-500 text-white font-semibold rounded-lg px-5 py-2.5 hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                {cancelando ? "Cancelando..." : "Cancelar mi cuenta"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Barra de guardar */}
-      <div className="sticky bottom-0 bg-ink/80 backdrop-blur py-4 flex items-center gap-3">
-        <button
-          onClick={guardar}
-          disabled={guardando || !hayCambios}
-          className="inline-flex items-center gap-2 bg-gold text-ink font-semibold rounded-lg px-6 py-3 hover:bg-gold-soft transition-colors disabled:opacity-50"
-        >
-          <Save className="w-5 h-5" />
-          {guardando ? "Guardando..." : "Guardar cambios"}
-        </button>
-        {guardadoOk && (
-          <span className="inline-flex items-center gap-1.5 text-emerald-400 text-sm font-medium">
-            <Check className="w-4 h-4" /> Guardado correctamente
-          </span>
-        )}
-        {hayCambios && !guardadoOk && (
-          <span className="text-gray-500 text-sm">
-            Tenés cambios sin guardar
-          </span>
-        )}
-      </div>
+      {/* Barra de guardar — no aplica en la pestaña de cuenta */}
+      {tab !== "cuenta" && (
+        <div className="sticky bottom-0 bg-ink/80 backdrop-blur py-4 flex items-center gap-3">
+          <button
+            onClick={guardar}
+            disabled={guardando || !hayCambios}
+            className="inline-flex items-center gap-2 bg-gold text-ink font-semibold rounded-lg px-6 py-3 hover:bg-gold-soft transition-colors disabled:opacity-50"
+          >
+            <Save className="w-5 h-5" />
+            {guardando ? "Guardando..." : "Guardar cambios"}
+          </button>
+          {guardadoOk && (
+            <span className="inline-flex items-center gap-1.5 text-emerald-400 text-sm font-medium">
+              <Check className="w-4 h-4" /> Guardado correctamente
+            </span>
+          )}
+          {hayCambios && !guardadoOk && (
+            <span className="text-gray-500 text-sm">
+              Tenés cambios sin guardar
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

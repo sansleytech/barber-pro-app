@@ -10,6 +10,7 @@ from sqlalchemy import func
 from app.db.session import SessionLocal
 from app.models.turno import Turno, EstadoTurnoEnum
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.models.barbero import Barbero
 from app.models.cliente import Cliente
 from app.models.barberia import Barberia

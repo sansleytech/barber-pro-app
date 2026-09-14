@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.usuario import Usuario, RolEnum
+from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.models.plan import Plan, Suscripcion, EstadoSuscripcionEnum
 from app.models.pago import Pago, EstadoPagoEnum
 from app.schemas.plan import PlanRespuesta
