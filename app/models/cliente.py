@@ -1,7 +1,7 @@
 """Modelo para representar un cliente de la barbería."""
 
 import enum
-from sqlalchemy import Column, Integer, String, Text, Date, DateTime, Boolean, Enum, func
+from sqlalchemy import Column, Integer, String, Text, Date, DateTime, Boolean, Enum, UniqueConstraint, func
 from app.db.session import Base
 from app.models.mixins import TenantMixin
 
@@ -21,11 +21,11 @@ class Cliente(Base, TenantMixin):
     segundo_nombre = Column(String(50), nullable=True)
     apellidos = Column(String(100), nullable=False)
     tipo_documento = Column(String(20), nullable=True)
-    documento = Column(String(30), unique=True, nullable=True)
+    documento = Column(String(30), nullable=True)
     direccion = Column(String(200), nullable=True)
     fecha_nacimiento = Column(Date, nullable=False)
     genero = Column(Enum(GeneroEnum), nullable=True)
-    email = Column(String(100), unique=True, nullable=True)
+    email = Column(String(100), nullable=True)
     telefono = Column(String(20), nullable=False)
     foto = Column(String(255), nullable=True)
     notas = Column(Text, nullable=True)
@@ -34,3 +34,10 @@ class Cliente(Base, TenantMixin):
     es_vip = Column(Boolean, default=False)
     activo = Column(Boolean, default=True)
     fecha_ultima_reactivacion = Column(DateTime, nullable=True)
+
+    # El documento y el email son únicos DENTRO de cada barbería, no globalmente.
+    # Así, la misma persona puede ser cliente de varias barberías distintas.
+    __table_args__ = (
+        UniqueConstraint("documento", "id_barberia", name="uq_cliente_documento_barberia"),
+        UniqueConstraint("email", "id_barberia", name="uq_cliente_email_barberia"),
+    )

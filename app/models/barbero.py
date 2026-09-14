@@ -1,6 +1,6 @@
 """Modelo para representar un barbero en la base de datos."""
 
-from sqlalchemy import Column, Integer, String, Date, Boolean
+from sqlalchemy import Column, Integer, String, Date, Boolean, UniqueConstraint
 from app.db.session import Base
 from app.models.mixins import TenantMixin
 
@@ -13,8 +13,14 @@ class Barbero(Base, TenantMixin):
     apellido = Column(String(50), nullable=False)
     fecha_nacimiento = Column(Date, nullable=False)
     telefono = Column(String(20), nullable=False)
-    email = Column(String(100), nullable=False, unique=True)
+    email = Column(String(100), nullable=False)
     especialidad = Column(String(100), nullable=True)
     foto = Column(String(255), nullable=True)
     fecha_ingreso = Column(Date, nullable=False)
     activo = Column(Boolean, default=True)
+
+    # El email es único DENTRO de cada barbería, no globalmente — así el
+    # mismo barbero puede trabajar (o coincidir el email) en varias barberías.
+    __table_args__ = (
+        UniqueConstraint("email", "id_barberia", name="uq_barbero_email_barberia"),
+    )

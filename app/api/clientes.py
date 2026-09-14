@@ -17,11 +17,12 @@ def listar_clientes(
     db: Session = Depends(get_db),
     id_barberia: int = Depends(get_barberia_actual),
 ):
-    """Devuelve los clientes activos DE LA BARBERÍA del usuario."""
-    return db.query(Cliente).filter(
-        Cliente.activo == True,
-        Cliente.id_barberia == id_barberia,
-    ).all()
+    """Devuelve los clientes activos de la barbería del usuario."""
+    return (
+        db.query(Cliente)
+        .filter(Cliente.activo == True, Cliente.id_barberia == id_barberia)
+        .all()
+    )
 
 
 @router.get("/{id_cliente}", response_model=ClienteRespuesta)
@@ -30,11 +31,12 @@ def obtener_cliente(
     db: Session = Depends(get_db),
     id_barberia: int = Depends(get_barberia_actual),
 ):
-    """Devuelve un cliente por su id (solo si es de la barbería del usuario)."""
-    cliente = db.query(Cliente).filter(
-        Cliente.id_cliente == id_cliente,
-        Cliente.id_barberia == id_barberia,
-    ).first()
+    """Devuelve un cliente por su id (solo de la barbería del usuario)."""
+    cliente = (
+        db.query(Cliente)
+        .filter(Cliente.id_cliente == id_cliente, Cliente.id_barberia == id_barberia)
+        .first()
+    )
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     return cliente
@@ -44,30 +46,13 @@ def obtener_cliente(
 def crear_cliente(
     cliente: ClienteCrear,
     db: Session = Depends(get_db),
-    id_barberia: int = Depends(get_barberia_actual),
+    usuario: Usuario = Depends(requiere_rol(RolEnum.administrador, RolEnum.recepcionista)),
 ):
-    """Crea un nuevo cliente EN LA BARBERÍA del usuario."""
-    nuevo = Cliente(**cliente.model_dump(), id_barberia=id_barberia)
+    """Crea un nuevo cliente en la barbería del usuario."""
+    nuevo = Cliente(**cliente.model_dump(), id_barberia=usuario.id_barberia)
     db.add(nuevo)
     db.commit()
     db.refresh(nuevo)
-
-    usuario_barbero = db.query(Usuario).filter(
-        Usuario.id_barbero == barbero.id_barbero,
-        Usuario.id_barberia == id_barberia,
-    ).first()
-    if usuario_barbero and usuario_barbero.email:
-        from app.core.email import enviar_email
-        enviar_email(
-            destinatario=usuario_barbero.email,
-            asunto="Tenés un turno nuevo asignado",
-            cuerpo_html=f"""
-                <p>Hola {barbero.nombre},</p>
-                <p>Te asignaron un turno para el <strong>{nuevo.fecha}</strong> a las <strong>{nuevo.hora_inicio.strftime('%H:%M')}</strong>.</p>
-                <p>Revisá los detalles en tu panel: <a href="https://barberproapp.online/login">Ingresar</a></p>
-            """,
-        )
-
     return nuevo
 
 
@@ -76,17 +61,19 @@ def actualizar_cliente(
     id_cliente: int,
     datos: ClienteActualizar,
     db: Session = Depends(get_db),
-    id_barberia: int = Depends(get_barberia_actual),
+    usuario: Usuario = Depends(requiere_rol(RolEnum.administrador, RolEnum.recepcionista)),
 ):
-    """Actualiza un cliente (solo si es de la barbería del usuario)."""
-    cliente = db.query(Cliente).filter(
-        Cliente.id_cliente == id_cliente,
-        Cliente.id_barberia == id_barberia,
-    ).first()
+    """Actualiza los datos de un cliente existente (solo de la barbería del usuario)."""
+    cliente = (
+        db.query(Cliente)
+        .filter(Cliente.id_cliente == id_cliente, Cliente.id_barberia == usuario.id_barberia)
+        .first()
+    )
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
 
-    for campo, valor in datos.model_dump(exclude_unset=True).items():
+    datos_a_cambiar = datos.model_dump(exclude_unset=True)
+    for campo, valor in datos_a_cambiar.items():
         setattr(cliente, campo, valor)
 
     db.commit()
@@ -98,13 +85,14 @@ def actualizar_cliente(
 def desactivar_cliente(
     id_cliente: int,
     db: Session = Depends(get_db),
-    id_barberia: int = Depends(get_barberia_actual),
+    usuario: Usuario = Depends(requiere_rol(RolEnum.administrador)),
 ):
-    """Desactiva un cliente (solo si es de la barbería del usuario)."""
-    cliente = db.query(Cliente).filter(
-        Cliente.id_cliente == id_cliente,
-        Cliente.id_barberia == id_barberia,
-    ).first()
+    """Desactiva un cliente (borrado lógico), solo de la barbería del usuario."""
+    cliente = (
+        db.query(Cliente)
+        .filter(Cliente.id_cliente == id_cliente, Cliente.id_barberia == usuario.id_barberia)
+        .first()
+    )
     if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
 
