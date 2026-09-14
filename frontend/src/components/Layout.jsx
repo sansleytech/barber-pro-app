@@ -94,12 +94,18 @@ function Layout() {
 
     return (
         <div className="min-h-screen bg-ink">
-            <Sidebar
-                abierta={barraAbierta}
-                cerrar={() => setBarraAbierta(false)}
-                rol={usuario?.rol}
-                nombrePlan={usuario?.nombre_plan}
-            />
+           <Sidebar
+    abierta={barraAbierta}
+    cerrar={() => setBarraAbierta(false)}
+    rol={usuario?.rol}
+    nombrePlan={usuario?.nombre_plan}
+    permisosPlan={{
+        permite_inventario: usuario?.permite_inventario,
+        permite_qr: usuario?.permite_qr,
+        permite_whatsapp: usuario?.permite_whatsapp,
+        permite_reportes: usuario?.permite_reportes,
+    }}
+/>
 
             <div className="md:ml-64 flex flex-col min-h-screen">
                 <header className="h-16 border-b border-line bg-ink-soft/50 backdrop-blur sticky top-0 z-20 flex items-center gap-4 px-4 md:px-6">

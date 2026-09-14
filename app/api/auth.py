@@ -99,8 +99,14 @@ def login(
             "suscripcion_fin": suscripcion.fecha_fin.isoformat() if suscripcion and suscripcion.fecha_fin else None,
             "id_plan_actual": suscripcion.id_plan if suscripcion else None,
             "nombre_plan": suscripcion.plan.nombre if suscripcion and suscripcion.plan else None,
+            "permite_inventario": suscripcion.plan.permite_inventario if suscripcion and suscripcion.plan else False,
+            "permite_qr": suscripcion.plan.permite_qr if suscripcion and suscripcion.plan else False,
+            "permite_whatsapp": suscripcion.plan.permite_whatsapp if suscripcion and suscripcion.plan else False,
+            "permite_reportes": suscripcion.plan.permite_reportes if suscripcion and suscripcion.plan else False,
+            "permite_pagos_online": suscripcion.plan.permite_pagos_online if suscripcion and suscripcion.plan else False,
         },
     }
+
 
 
 @router.get("/permisos-vigentes")
@@ -185,6 +191,49 @@ def solicitar_reset_password(datos: SolicitarReset, db: Session = Depends(get_db
 
     return mensaje_generico
 
+@router.get("/me")
+def obtener_usuario_actual(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_usuario_actual),
+):
+    """Devuelve los datos frescos del usuario logueado (mismo formato que el
+    login), para refrescar el plan/vencimiento sin tener que loguearse de nuevo."""
+    barberia = db.query(Barberia).filter(Barberia.id_barberia == usuario.id_barberia).first()
+
+    suscripcion = None
+    if barberia:
+        suscripcion = (
+            db.query(Suscripcion)
+            .filter(Suscripcion.id_barberia == barberia.id_barberia)
+            .order_by(Suscripcion.fecha_creacion.desc())
+            .first()
+        )
+
+    return {
+        "id_usuario": usuario.id_usuario,
+        "nombre_usuario": usuario.nombre_usuario,
+        "rol": usuario.rol.value,
+        "id_barbero": usuario.id_barbero,
+        "super_admin": usuario.super_admin,
+        "id_barberia": barberia.id_barberia if barberia else None,
+        "barberia": barberia.nombre if barberia else None,
+        "subdominio": barberia.subdominio if barberia else None,
+        "barberia_nit": barberia.nit if barberia else None,
+        "barberia_direccion": barberia.direccion if barberia else None,
+        "barberia_telefono": barberia.telefono if barberia else None,
+        "barberia_logo": barberia.logo if barberia else None,
+        "barberia_estado": barberia.estado.value if barberia else None,
+        "trial_hasta": barberia.trial_hasta.isoformat() if barberia and barberia.trial_hasta else None,
+        "suscripcion_estado": suscripcion.estado.value if suscripcion else None,
+        "suscripcion_fin": suscripcion.fecha_fin.isoformat() if suscripcion and suscripcion.fecha_fin else None,
+        "id_plan_actual": suscripcion.id_plan if suscripcion else None,
+        "nombre_plan": suscripcion.plan.nombre if suscripcion and suscripcion.plan else None,
+        "permite_inventario": suscripcion.plan.permite_inventario if suscripcion and suscripcion.plan else False,
+        "permite_qr": suscripcion.plan.permite_qr if suscripcion and suscripcion.plan else False,
+        "permite_whatsapp": suscripcion.plan.permite_whatsapp if suscripcion and suscripcion.plan else False,
+        "permite_reportes": suscripcion.plan.permite_reportes if suscripcion and suscripcion.plan else False,
+        "permite_pagos_online": suscripcion.plan.permite_pagos_online if suscripcion and suscripcion.plan else False,
+    }
 
 @router.post("/restablecer-password")
 def confirmar_reset_password(datos: ConfirmarReset, db: Session = Depends(get_db)):

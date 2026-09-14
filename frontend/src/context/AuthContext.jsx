@@ -47,8 +47,22 @@ export function AuthProvider({ children }) {
     setUsuario(null);
   };
 
+  // Trae los datos frescos del usuario (plan, vencimiento, etc.) sin
+  // necesitar loguearse de nuevo. Se usa, por ejemplo, justo después
+  // de que un pago se aprueba, para que el plan/banner queden al día.
+  const refrescarUsuario = async () => {
+    try {
+      const res = await api.get("/auth/me");
+      localStorage.setItem("usuario", JSON.stringify(res.data));
+      setUsuario(res.data);
+      return res.data;
+    } catch {
+      return null;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ usuario, login, logout, permisosListos }}>
+    <AuthContext.Provider value={{ usuario, login, logout, permisosListos, refrescarUsuario }}>
       {children}
     </AuthContext.Provider>
   );

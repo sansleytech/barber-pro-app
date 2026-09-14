@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import api from "../api/cliente";
+import { useAuth } from "../context/AuthContext";
 
 function PagoResultado() {
     const [params] = useSearchParams();
     const navigate = useNavigate();
+    const { refrescarUsuario } = useAuth();
     const [estado, setEstado] = useState("consultando");
 
     useEffect(() => {
@@ -15,7 +17,11 @@ function PagoResultado() {
             if (!referencia) { setEstado("desconocido"); return; }
             try {
                 const res = await api.get(`/pagos/estado/${referencia}`);
-                if (res.data.estado === "aprobado") { setEstado("aprobado"); return; }
+                if (res.data.estado === "aprobado") {
+                    await refrescarUsuario();
+                    setEstado("aprobado");
+                    return;
+                }
                 if (res.data.estado === "rechazado" || res.data.estado === "error") { setEstado("rechazado"); return; }
                 intentos++;
                 if (intentos < 8) setTimeout(consultar, 2000);
@@ -25,6 +31,7 @@ function PagoResultado() {
             }
         };
         consultar();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [params]);
 
     const mensajes = {
@@ -40,10 +47,14 @@ function PagoResultado() {
             <p className="text-white text-lg">{mensajes[estado]}</p>
             {estado !== "consultando" && (
                 <button onClick={() => navigate("/dashboard")} className="bg-gold text-ink font-semibold rounded-lg px-6 py-3">
-                    Ir al panel
+                    Volver al panel
                 </button>
             )}
+
+            
         </div>
+    
+
     );
 }
 

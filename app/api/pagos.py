@@ -50,6 +50,27 @@ def iniciar_pago(
     if plan is None:
         raise HTTPException(status_code=404, detail="Plan no encontrado")
 
+    suscripcion_actual = (
+        db.query(Suscripcion)
+        .filter(Suscripcion.id_barberia == id_barberia)
+        .order_by(Suscripcion.fecha_creacion.desc())
+        .first()
+    )
+    if (
+        suscripcion_actual
+        and suscripcion_actual.estado == EstadoSuscripcionEnum.activa
+        and suscripcion_actual.id_plan == plan.id_plan
+    ):
+        fecha_txt = (
+            suscripcion_actual.fecha_fin.strftime("%d/%m/%Y")
+            if suscripcion_actual.fecha_fin
+            else "sin vencimiento"
+        )
+        raise HTTPException(
+            status_code=409,
+            detail=f"Ya tenés el plan {plan.nombre} activo (vence el {fecha_txt}). No hace falta pagarlo de nuevo.",
+        )
+
     if not WOMPI_PUBLIC_KEY or not WOMPI_INTEGRITY_SECRET:
         raise HTTPException(
             status_code=500,
@@ -158,13 +179,14 @@ async def webhook_pago(request: Request, db: Session = Depends(get_db)):
     db.commit()
 
     if pago.estado == EstadoPagoEnum.aprobado and pago.id_plan:
+        from datetime import timedelta
         hoy = date.today()
         suscripcion = Suscripcion(
             id_barberia=pago.id_barberia,
             id_plan=pago.id_plan,
             estado=EstadoSuscripcionEnum.activa,
             fecha_inicio=hoy,
-            fecha_fin=None,
+            fecha_fin=hoy + timedelta(days=30),
         )
         db.add(suscripcion)
         db.flush()
