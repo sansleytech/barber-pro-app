@@ -50,8 +50,6 @@ function PagoResultado() {
                     Volver al panel
                 </button>
             )}
-
-            
         </div>
     
 

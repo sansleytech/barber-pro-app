@@ -242,12 +242,12 @@ function Dashboard() {
         <p className="text-gray-400">Resumen de los últimos 30 días</p>
       </div>
 
-      {esAdmin && diasRestantes !== null && diasRestantes <= 30 && (
-        <div className={`mb-6 flex items-center justify-between gap-4 rounded-2xl px-5 py-4 border ${diasRestantes <= 3 ? "bg-red-500/5 border-red-500/25" : "bg-gold/5 border-gold/20"
+      {esAdmin && diasRestantes !== null && diasRestantes <= 3 && (
+        <div className={`mb-6 flex items-center justify-between gap-4 rounded-2xl px-5 py-4 border ${diasRestantes <= 1 ? "bg-red-500/5 border-red-500/25" : "bg-gold/5 border-gold/20"
           }`}>
           <p className="text-sm text-gray-200">
             {esTrial ? "Tu prueba gratuita" : "Tu plan actual"} vence en{" "}
-            <strong className={diasRestantes <= 3 ? "text-red-400" : "text-gold"}>
+            <strong className={diasRestantes <= 1 ? "text-red-400" : "text-gold"}>
               {diasRestantes <= 0 ? "hoy" : `${diasRestantes} día${diasRestantes !== 1 ? "s" : ""}`}
             </strong>
             {diasRestantes <= 0 && " — actualizá tu plan para seguir usando el sistema"}
