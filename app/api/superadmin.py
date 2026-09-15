@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from dateutil.relativedelta import relativedelta
-
+from app.core.auditoria_helper import registrar_auditoria
 from app.db.session import get_db
 from app.models.usuario import Usuario
 from app.models.barberia import Barberia, EstadoBarberiaEnum
@@ -100,15 +100,22 @@ def cambiar_estado_barberia(
     id_barberia: int,
     datos: CambiarEstadoBarberia,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(requiere_super_admin),
+    usuario: Usuario = Depends(requiere_super_admin),
 ):
     barberia = db.query(Barberia).filter(Barberia.id_barberia == id_barberia).first()
     if barberia is None:
         raise HTTPException(status_code=404, detail="Barbería no encontrada")
 
+    estado_anterior = barberia.estado.value
     barberia.estado = datos.estado
     db.commit()
     db.refresh(barberia)
+
+    registrar_auditoria(
+        db, usuario.nombre_usuario, "cambiar_estado_barberia",
+        f"Cambió '{barberia.nombre}' de '{estado_anterior}' a '{datos.estado.value}'",
+        id_barberia_afectada=id_barberia,
+    )
 
     resultado = BarberiaResumen.model_validate(barberia).model_dump()
     resultado["plan_actual"] = _plan_actual_de(db, id_barberia)
@@ -119,7 +126,7 @@ def cambiar_estado_barberia(
 def eliminar_barberia(
     id_barberia: int,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(requiere_super_admin),
+    usuario: Usuario = Depends(requiere_super_admin),
 ):
     """Elimina PERMANENTEMENTE una barbería y todos sus datos asociados
     (usuarios, clientes, turnos, etc., vía CASCADE). Es irreversible."""
@@ -128,6 +135,11 @@ def eliminar_barberia(
         raise HTTPException(status_code=404, detail="Barbería no encontrada")
 
     nombre = barberia.nombre
+    registrar_auditoria(
+        db, usuario.nombre_usuario, "eliminar_barberia",
+        f"Eliminó permanentemente la barbería '{nombre}' (id {id_barberia})",
+        id_barberia_afectada=id_barberia,
+    )
     db.delete(barberia)
     db.commit()
     return {"mensaje": f"Barbería '{nombre}' eliminada permanentemente"}
@@ -226,15 +238,21 @@ def actualizar_plan(
     id_plan: int,
     datos: PlanActualizar,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(requiere_super_admin),
+    usuario: Usuario = Depends(requiere_super_admin),
 ):
     plan = db.query(Plan).filter(Plan.id_plan == id_plan).first()
     if plan is None:
         raise HTTPException(status_code=404, detail="Plan no encontrado")
-    for campo, valor in datos.model_dump(exclude_unset=True).items():
+    cambios = datos.model_dump(exclude_unset=True)
+    for campo, valor in cambios.items():
         setattr(plan, campo, valor)
     db.commit()
     db.refresh(plan)
+
+    registrar_auditoria(
+        db, usuario.nombre_usuario, "actualizar_plan",
+        f"Editó el plan '{plan.nombre}': {cambios}",
+    )
     return plan
 
 
@@ -341,19 +359,25 @@ def listar_usuarios_barberia(
 def eliminar_usuario_superadmin(
     id_usuario: int,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(requiere_super_admin),
+    usuario: Usuario = Depends(requiere_super_admin),
 ):
     """Elimina PERMANENTEMENTE un usuario. No se puede borrar a un super_admin
     desde acá, por seguridad."""
-    usuario = db.query(Usuario).filter(Usuario.id_usuario == id_usuario).first()
-    if usuario is None:
+    objetivo = db.query(Usuario).filter(Usuario.id_usuario == id_usuario).first()
+    if objetivo is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-    if usuario.super_admin:
+    if objetivo.super_admin:
         raise HTTPException(status_code=403, detail="No se puede eliminar a un superadministrador desde acá")
 
-    nombre = usuario.nombre_usuario
-    db.delete(usuario)
+    nombre = objetivo.nombre_usuario
+    id_barberia_objetivo = objetivo.id_barberia
+    registrar_auditoria(
+        db, usuario.nombre_usuario, "eliminar_usuario",
+        f"Eliminó permanentemente al usuario '{nombre}'",
+        id_barberia_afectada=id_barberia_objetivo,
+    )
+    db.delete(objetivo)
     db.commit()
     return {"mensaje": f"Usuario '{nombre}' eliminado permanentemente"}
 
@@ -385,3 +409,30 @@ def listar_todos_los_pagos(
             "fecha_creacion": p.fecha_creacion,
         })
     return resultado
+
+
+@router.get("/auditoria")
+def listar_auditoria(
+    limite: int = 100,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(requiere_super_admin),
+):
+    """Devuelve las últimas acciones registradas en el historial."""
+    from app.models.historial_auditoria import HistorialAuditoria
+    registros = (
+        db.query(HistorialAuditoria)
+        .order_by(HistorialAuditoria.fecha.desc())
+        .limit(limite)
+        .all()
+    )
+    return [
+        {
+            "id_registro": r.id_registro,
+            "nombre_usuario": r.nombre_usuario,
+            "accion": r.accion,
+            "detalle": r.detalle,
+            "id_barberia_afectada": r.id_barberia_afectada,
+            "fecha": r.fecha,
+        }
+        for r in registros
+    ]
