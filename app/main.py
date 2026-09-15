@@ -102,7 +102,7 @@ def inicio():
     return {"mensaje": "Barber Pro App funcionando 💈"}
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def salud(db: Session = Depends(get_db)):
     """Endpoint para monitoreo externo: confirma que el backend Y la base
     de datos estén respondiendo, no solo que el proceso esté vivo."""
