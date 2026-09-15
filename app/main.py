@@ -1,12 +1,13 @@
 """Punto de entrada de la aplicación FastAPI."""
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.api import caja, gastos
-import os
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 import os
 
+from app.db.session import get_db
 from app.api import (
     registro,
     barberos,
@@ -25,6 +26,7 @@ from app.api import (
     compras,
     ventas,
     caja,
+    gastos,
     valoraciones,
     notificaciones,
     contenido,
@@ -37,7 +39,7 @@ from app.api import (
     pagos,
     directorio,
     superadmin,
-    organizacion
+    organizacion,
 )
 
 app = FastAPI(
@@ -84,17 +86,28 @@ app.include_router(estadisticas.router)
 app.include_router(solicitudes.router)
 app.include_router(uploads.router)
 app.include_router(pagos.router)
+
 # Servir las imágenes subidas como archivos estáticos
 os.makedirs("app/uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="app/uploads"), name="uploads")
+
 app.include_router(portal.router)
-app.include_router(caja.router)
-app.include_router(gastos.router)
-app.include_router(caja.router)
-app.include_router(gastos.router)
 app.include_router(directorio.router)
 app.include_router(superadmin.router)
 app.include_router(organizacion.router)
+
+
 @app.get("/")
 def inicio():
     return {"mensaje": "Barber Pro App funcionando 💈"}
+
+
+@app.get("/health")
+def salud(db: Session = Depends(get_db)):
+    """Endpoint para monitoreo externo: confirma que el backend Y la base
+    de datos estén respondiendo, no solo que el proceso esté vivo."""
+    try:
+        db.execute(text("SELECT 1"))
+        return {"status": "ok", "db": "ok"}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Base de datos no disponible: {str(e)}")
