@@ -900,9 +900,14 @@ function Portal() {
               <a href="mailto:sansley.tech-sol@outlook.com" className="text-gray-400 hover:text-yellow-400 transition-colors">
                 Sansley Tech Solutions
               </a>
-              {" · "}
+                
+                {" · "}
               <Link to="/politicas-de-privacidad" className="text-gray-500 hover:text-yellow-400 transition-colors">
                 Privacidad
+              </Link>
+              {" · "}
+              <Link to="/terminos-de-servicio" className="text-gray-500 hover:text-yellow-400 transition-colors">
+                Términos
               </Link>
             </span>
           </div>

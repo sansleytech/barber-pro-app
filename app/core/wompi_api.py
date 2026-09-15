@@ -77,3 +77,18 @@ def consultar_transaccion(id_transaccion: str) -> dict:
     )
     respuesta.raise_for_status()
     return respuesta.json()["data"]
+
+
+def obtener_detalle_tarjeta(token_tarjeta: str) -> dict:
+    """Consulta los detalles de una tarjeta tokenizada (marca, últimos 4
+    dígitos, mes/año de vencimiento) usando el token generado por el widget.
+    Este endpoint se autentica con la llave PÚBLICA, no la privada."""
+    respuesta = requests.get(
+        f"{WOMPI_BASE_URL}/tokens/cards/{token_tarjeta}",
+        headers={"Authorization": f"Bearer {WOMPI_PUBLIC_KEY}"},
+        timeout=15,
+    )
+    if not respuesta.ok:
+        print("ERROR WOMPI tokens/cards (detalle):", respuesta.status_code, respuesta.text)
+        return {}
+    return respuesta.json().get("data", {})

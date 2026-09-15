@@ -55,6 +55,8 @@ import MisSedes from "./pages/MisSedes";
 import PoliticaPrivacidad from "./pages/PoliticaPrivacidad";
 import OlvidePassword from "./pages/OlvidePassword";
 import RestablecerPassword from "./pages/RestablecerPassword";
+import TerminosServicio from "./pages/TerminosServicio";
+import SuperadminPagos from "./pages/SuperadminPagos";
 
 // Protege una ruta según el rol. Si no tiene permiso, lo manda al dashboard.
 function RutaPorRol({ ruta, children }) {
@@ -102,10 +104,12 @@ function App() {
         <Route path="/register" element={<Registro />} />
         <Route path="/planes" element={<Planes />} />
         <Route path="/superadmin/login" element={<SuperadminLogin />} />
+        
         <Route
           path="/politicas-de-privacidad"
           element={<PoliticaPrivacidad />}
         />
+        <Route path="/terminos-de-servicio" element={<TerminosServicio />} />
         
         <Route
           element={
@@ -118,6 +122,7 @@ function App() {
           <Route path="/superadmin/barberias" element={<SuperadminPanel />} />
           <Route path="/superadmin/planes" element={<SuperadminPlanes />} />
           <Route path="/superadmin/permisos" element={<SuperadminPermisos />} />
+          <Route path="/superadmin/pagos" element={<SuperadminPagos />} />
         </Route>
 
         <Route path="/directorio" element={<Directorio />} />

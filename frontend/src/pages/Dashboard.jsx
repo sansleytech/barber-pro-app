@@ -28,6 +28,10 @@ import {
   Truck,
   ShieldCheck,
   Briefcase,
+  Sparkles,
+  Check,
+  X,
+  ChevronRight,
 } from "lucide-react";
 import api from "../api/cliente";
 import { useAuth } from "../context/AuthContext";
@@ -76,6 +80,9 @@ function Dashboard() {
   const [conteos, setConteos] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
+  const [onboardingCerrado, setOnboardingCerrado] = useState(
+    () => localStorage.getItem("onboarding_cerrado") === "true"
+  );
 
   useEffect(() => {
     const cargar = async () => {
@@ -126,6 +133,11 @@ function Dashboard() {
     };
     cargar();
   }, []);
+
+  const cerrarOnboarding = () => {
+    localStorage.setItem("onboarding_cerrado", "true");
+    setOnboardingCerrado(true);
+  };
 
   const formatoPrecio = (valor) =>
     new Intl.NumberFormat("es-CO", {
@@ -235,12 +247,66 @@ function Dashboard() {
     ingresos: b.ingresos,
   }));
 
+  // Pasos del onboarding: cada uno se marca "hecho" según datos reales que
+  // ya tenemos cargados, sin necesitar un endpoint nuevo.
+  const pasosOnboarding = conteos
+    ? [
+        { texto: "Agregá tu primer servicio", hecho: conteos.servicios > 0, irA: "/servicios" },
+        { texto: "Agregá tu primer barbero", hecho: conteos.barberos_total > 0, irA: "/barberos" },
+        { texto: "Cargá tu logo y datos en Configuración", hecho: !!usuario?.barberia_logo, irA: "/configuracion" },
+        { texto: "Personalizá tu portal público", hecho: false, irA: "/configuracion" },
+        { texto: "Compartí tu link con tus clientes", hecho: false, irA: "/configuracion" },
+      ]
+    : [];
+  const pasosCompletados = pasosOnboarding.filter((p) => p.hecho).length;
+  const mostrarOnboarding =
+    esAdmin && !onboardingCerrado && pasosCompletados < pasosOnboarding.length;
+
   return (
     <div>
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-white mb-1">Dashboard</h1>
         <p className="text-gray-400">Resumen de los últimos 30 días</p>
       </div>
+
+      {mostrarOnboarding && (
+        <div className="mb-6 bg-gold/5 border border-gold/25 rounded-2xl p-5 relative">
+          <button
+            onClick={cerrarOnboarding}
+            className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
+            title="Cerrar"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="w-4 h-4 text-gold" />
+            <h2 className="text-white font-semibold">Primeros pasos en Barber Pro</h2>
+          </div>
+          <p className="text-xs text-gray-500 mb-4">
+            {pasosCompletados} de {pasosOnboarding.length} completados
+          </p>
+          <div className="space-y-2">
+            {pasosOnboarding.map((p, i) => (
+              <button
+                key={i}
+                onClick={() => navigate(p.irA)}
+                className="w-full flex items-center gap-3 text-left px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                <span
+                  className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${p.hecho ? "bg-emerald-500 text-white" : "bg-ink border border-line text-transparent"
+                    }`}
+                >
+                  <Check className="w-3 h-3" />
+                </span>
+                <span className={`text-sm flex-1 ${p.hecho ? "text-gray-500 line-through" : "text-gray-200"}`}>
+                  {p.texto}
+                </span>
+                {!p.hecho && <ChevronRight className="w-4 h-4 text-gray-600" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {esAdmin && diasRestantes !== null && diasRestantes <= 3 && (
         <div className={`mb-6 flex items-center justify-between gap-4 rounded-2xl px-5 py-4 border ${diasRestantes <= 1 ? "bg-red-500/5 border-red-500/25" : "bg-gold/5 border-gold/20"

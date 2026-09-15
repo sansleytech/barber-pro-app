@@ -377,9 +377,13 @@ function Registro() {
                                         className="mt-1 accent-yellow-400"
                                     />
                                     <span>
-                                        Acepto la{" "}
+                                        Acepto los{" "}
+                                        <Link to="/terminos-de-servicio" target="_blank" className="text-yellow-400 hover:underline">
+                                            Términos de Servicio
+                                        </Link>
+                                        {" "}y la{" "}
                                         <Link to="/politicas-de-privacidad" target="_blank" className="text-yellow-400 hover:underline">
-                                            Política de Tratamiento de Datos Personales
+                                            Política de Tratamiento de Datos
                                         </Link>
                                     </span>
                                 </label>

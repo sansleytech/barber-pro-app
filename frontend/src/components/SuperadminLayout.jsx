@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Building2, CreditCard, Lock, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, Building2, CreditCard, Lock, LogOut, Menu, X, Receipt } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import logo from "../assets/img/logo1.png";
 
 const ITEMS = [
   { a: "/superadmin", texto: "Resumen", icono: LayoutDashboard, exacto: true },
   { a: "/superadmin/barberias", texto: "Barberías", icono: Building2 },
+  { a: "/superadmin/pagos", texto: "Pagos", icono: Receipt },
   { a: "/superadmin/planes", texto: "Planes", icono: CreditCard },
   { a: "/superadmin/permisos", texto: "Permisos", icono: Lock },
 ];

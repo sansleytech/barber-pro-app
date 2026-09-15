@@ -220,6 +220,10 @@ def guardar_fuente_pago(
     if not usuario.email:
         raise HTTPException(status_code=400, detail="Tu usuario necesita un email cargado para guardar la tarjeta")
 
+    from app.core.wompi_api import obtener_detalle_tarjeta
+
+    detalle = obtener_detalle_tarjeta(datos.token_tarjeta)
+
     try:
         fuente_wompi = crear_fuente_pago(datos.token_tarjeta, usuario.email)
     except Exception:
@@ -231,8 +235,10 @@ def guardar_fuente_pago(
     nueva = FuentePago(
         id_barberia=id_barberia,
         id_fuente_wompi=str(fuente_wompi["id"]),
-        ultimos_4_digitos=fuente_wompi.get("last_four"),
-        franquicia=fuente_wompi.get("brand"),
+        ultimos_4_digitos=detalle.get("last_four"),
+        franquicia=detalle.get("brand"),
+        exp_mes=detalle.get("exp_month"),
+        exp_anio=detalle.get("exp_year"),
         activa=True,
     )
     db.add(nueva)
@@ -262,3 +268,5 @@ def mi_fuente_pago(
 @router.get("/pagos/public-key")
 def obtener_public_key():
     return {"public_key": WOMPI_PUBLIC_KEY}
+
+

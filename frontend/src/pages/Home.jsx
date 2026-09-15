@@ -181,17 +181,17 @@ function Home() {
           )}
           {" · "}
           <Link
-            to="/superadmin/login"
-            className="text-gray-600 hover:text-gray-400 transition-colors"
-          >
-            Soporte
-          </Link>
-          {" · "}
-          <Link
             to="/politicas-de-privacidad"
             className="text-gray-600 hover:text-gray-400 transition-colors"
           >
             Políticas de privacidad
+          </Link>
+          {" · "}
+          <Link
+            to="/terminos-de-servicio"
+            className="text-gray-600 hover:text-gray-400 transition-colors"
+          >
+            Términos de servicio
           </Link>
         </p>
       </footer>

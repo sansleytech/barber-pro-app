@@ -311,6 +311,7 @@ def actualizar_permiso(
     db.refresh(permiso)
     return permiso
 
+
 @router.get("/barberias/{id_barberia}/usuarios")
 def listar_usuarios_barberia(
     id_barberia: int,
@@ -355,3 +356,32 @@ def eliminar_usuario_superadmin(
     db.delete(usuario)
     db.commit()
     return {"mensaje": f"Usuario '{nombre}' eliminado permanentemente"}
+
+
+@router.get("/pagos")
+def listar_todos_los_pagos(
+    limite: int = 100,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(requiere_super_admin),
+):
+    """Lista los pagos más recientes de TODAS las barberías juntas."""
+    pagos = (
+        db.query(Pago)
+        .order_by(Pago.fecha_creacion.desc())
+        .limit(limite)
+        .all()
+    )
+    resultado = []
+    for p in pagos:
+        barberia = db.query(Barberia).filter(Barberia.id_barberia == p.id_barberia).first()
+        resultado.append({
+            "id_pago": p.id_pago,
+            "id_barberia": p.id_barberia,
+            "nombre_barberia": barberia.nombre if barberia else "—",
+            "monto": float(p.monto),
+            "estado": p.estado.value,
+            "metodo_pago": p.metodo_pago,
+            "referencia": p.referencia,
+            "fecha_creacion": p.fecha_creacion,
+        })
+    return resultado
