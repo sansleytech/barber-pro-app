@@ -250,7 +250,7 @@ function Registro() {
                                     <label className={labelCls}>Nombre de tu barbería</label>
                                     <div className="relative">
                                         <IconTienda className={iconCls} />
-                                        <input type="text" placeholder="Barber Kobe" value={form.nombre_barberia}
+                                        <input type="text" placeholder="Ingresa nombre de barbería" value={form.nombre_barberia}
                                             onChange={set("nombre_barberia")} className={inputCls} autoFocus />
                                     </div>
                                 </div>
@@ -269,7 +269,7 @@ function Registro() {
                                     <label className={labelCls}>Email de contacto <span className="text-gray-500 font-normal">(opcional)</span></label>
                                     <div className="relative">
                                         <IconMail className={iconCls} />
-                                        <input type="email" placeholder="contacto@barberkobe.com" value={form.email_contacto}
+                                        <input type="email" placeholder="ingresa tu email" value={form.email_contacto}
                                             onChange={set("email_contacto")} className={inputCls} />
                                     </div>
                                 </div>
@@ -277,7 +277,7 @@ function Registro() {
                                     <label className={labelCls}>Teléfono <span className="text-gray-500 font-normal">(opcional)</span></label>
                                     <div className="relative">
                                         <IconTelefono className={iconCls} />
-                                        <input type="text" placeholder="1800-404040" value={form.telefono}
+                                        <input type="text" placeholder="ingresa tu teléfono" value={form.telefono}
                                             onChange={set("telefono")} className={inputCls} />
                                     </div>
                                 </div>
@@ -290,7 +290,7 @@ function Registro() {
                         {paso === 2 && (
                             <div className="space-y-5">
                                 <div>
-                                    <label className={labelCls}>Tu nombre</label>
+                                    <label className={labelCls}>Nombre de usuario</label>
                                     <div className="relative">
                                         <IconUsuario className={iconCls} />
                                         <input type="text" placeholder="Kobe Pérez" value={form.nombre_admin}
@@ -301,7 +301,7 @@ function Registro() {
                                     <label className={labelCls}>Tu email</label>
                                     <div className="relative">
                                         <IconMail className={iconCls} />
-                                        <input type="email" placeholder="kobe@barberkobe.com" value={form.email_admin}
+                                        <input type="email" placeholder="ingresa tu email" value={form.email_admin}
                                             onChange={set("email_admin")} className={inputCls} />
                                     </div>
                                 </div>
