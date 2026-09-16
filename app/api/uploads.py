@@ -41,5 +41,7 @@ async def subir_imagen(
 
     # URL pública (servida como estático)
     base_url = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000")
+    if not base_url.startswith("http"):
+        base_url = f"https://{base_url}"
     url = f"{base_url}/uploads/{nombre_unico}"
     return {"url": url, "nombre": nombre_unico}

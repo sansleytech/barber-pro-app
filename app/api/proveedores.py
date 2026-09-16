@@ -38,23 +38,6 @@ def crear(
     db.add(nuevo)
     db.commit()
     db.refresh(nuevo)
-
-    usuario_barbero = db.query(Usuario).filter(
-        Usuario.id_barbero == barbero.id_barbero,
-        Usuario.id_barberia == id_barberia,
-    ).first()
-    if usuario_barbero and usuario_barbero.email:
-        from app.core.email import enviar_email
-        enviar_email(
-            destinatario=usuario_barbero.email,
-            asunto="Tenés un turno nuevo asignado",
-            cuerpo_html=f"""
-                <p>Hola {barbero.nombre},</p>
-                <p>Te asignaron un turno para el <strong>{nuevo.fecha}</strong> a las <strong>{nuevo.hora_inicio.strftime('%H:%M')}</strong>.</p>
-                <p>Revisá los detalles en tu panel: <a href="https://barberproapp.online/login">Ingresar</a></p>
-            """,
-        )
-
     return nuevo
 
 
