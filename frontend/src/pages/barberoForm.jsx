@@ -198,14 +198,13 @@ const BarberoForm = () => {
           </div>
           <div>
             <label className="block text-sm text-gray-300 mb-1.5">
-              Fecha de nacimiento *
+              Fecha de nacimiento
             </label>
             <input
               type="date"
               value={form.fecha_nacimiento}
               onChange={(e) => cambiar("fecha_nacimiento", e.target.value)}
               className={inputClase}
-              required
             />
           </div>
           <div>

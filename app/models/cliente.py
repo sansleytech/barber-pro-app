@@ -23,7 +23,7 @@ class Cliente(Base, TenantMixin):
     tipo_documento = Column(String(20), nullable=True)
     documento = Column(String(30), nullable=True)
     direccion = Column(String(200), nullable=True)
-    fecha_nacimiento = Column(Date, nullable=False)
+    fecha_nacimiento = Column(Date, nullable=True)
     genero = Column(Enum(GeneroEnum), nullable=True)
     email = Column(String(100), nullable=True)
     telefono = Column(String(20), nullable=False)

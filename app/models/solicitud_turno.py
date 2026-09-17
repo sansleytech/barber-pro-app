@@ -1,7 +1,7 @@
 """Modelo de solicitudes de turno desde el portal público."""
 
 import enum
-from sqlalchemy import Column, Integer, String, Text, Date, DateTime, ForeignKey, Enum, func
+from sqlalchemy import Column, Integer, String, Text, Date, Time, DateTime, ForeignKey, Enum, func
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 from app.models.mixins import TenantMixin
@@ -29,7 +29,9 @@ class SolicitudTurno(Base, TenantMixin):
     telefono = Column(String(30), nullable=False)
     documento = Column(String(30), nullable=True)
     fecha_preferida = Column(Date, nullable=True)
+    hora_preferida = Column(Time, nullable=True)
     franja_preferida = Column(Enum(FranjaEnum), default=FranjaEnum.cualquiera)
+    ids_servicios = Column(String(255), nullable=True)  # ej: "1,3,5"
     comentario = Column(Text, nullable=True)
     estado = Column(Enum(EstadoSolicitudEnum), default=EstadoSolicitudEnum.pendiente)
     fecha_creacion = Column(DateTime, server_default=func.now())

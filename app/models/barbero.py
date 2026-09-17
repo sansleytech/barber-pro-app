@@ -11,7 +11,7 @@ class Barbero(Base, TenantMixin):
     id_barbero = Column(Integer, primary_key=True, autoincrement=True)
     nombre = Column(String(50), nullable=False)
     apellido = Column(String(50), nullable=False)
-    fecha_nacimiento = Column(Date, nullable=False)
+    fecha_nacimiento = Column(Date, nullable=True)
     telefono = Column(String(20), nullable=False)
     email = Column(String(100), nullable=False)
     especialidad = Column(String(100), nullable=True)

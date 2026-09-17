@@ -1,5 +1,4 @@
 """Endpoints PÚBLICOS del portal (sin login). Identifican la barbería por subdominio."""
-
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -13,7 +12,6 @@ from app.models.solicitud_turno import SolicitudTurno
 from app.schemas.solicitud_turno import SolicitudCrear
 
 router = APIRouter(prefix="/portal", tags=["Portal público"])
-
 
 def _barberia_por_subdominio(subdominio: str, db: Session) -> Barberia:
     """Busca la barbería activa por su subdominio. Rechaza si no existe o está inactiva."""
@@ -40,9 +38,10 @@ class ClientePublico(BaseModel):
 
 @router.get("/{subdominio}/cliente/{documento}", response_model=ClientePublico)
 def identificar_cliente(subdominio: str, documento: str, db: Session = Depends(get_db)):
-    """Busca al cliente por documento, teléfono o nombre (lo que haya escrito
-    en el campo del portal). No expone datos sensibles."""
-    from sqlalchemy import or_, func
+    """Busca al cliente por documento o teléfono (identificadores únicos,
+    sin ambigüedad). Ya no busca por nombre, porque puede haber varias
+    personas con el mismo nombre. No expone datos sensibles."""
+    from sqlalchemy import or_
 
     barberia = _barberia_por_subdominio(subdominio, db)
     texto = documento.strip()
@@ -54,7 +53,6 @@ def identificar_cliente(subdominio: str, documento: str, db: Session = Depends(g
             or_(
                 Cliente.documento == texto,
                 Cliente.telefono == texto,
-                func.concat(Cliente.primer_nombre, " ", Cliente.apellidos).ilike(f"%{texto}%"),
             ),
         )
         .first()
@@ -97,7 +95,9 @@ def crear_solicitud(
         telefono=datos.telefono.strip(),
         documento=datos.documento.strip() if datos.documento else None,
         fecha_preferida=datos.fecha_preferida,
+        hora_preferida=datos.hora_preferida or None,
         franja_preferida=datos.franja_preferida,
+        ids_servicios=",".join(str(i) for i in datos.ids_servicios) if datos.ids_servicios else None,
         comentario=datos.comentario.strip() if datos.comentario else None,
     )
     db.add(solicitud)
@@ -156,40 +156,49 @@ def listar_barberos_publico(subdominio: str, db: Session = Depends(get_db)):
     ]
 
 class ClienteRegistro(BaseModel):
-    documento: str
+    documento: Optional[str] = None
     tipo_documento: Optional[str] = "CC"
     primer_nombre: str
+    segundo_nombre: Optional[str] = None
     apellidos: str
     telefono: str
-    fecha_nacimiento: str
+    fecha_nacimiento: Optional[str] = None
+    genero: Optional[str] = None
     email: Optional[str] = None
+    direccion: Optional[str] = None
 
 
 @router.post("/{subdominio}/cliente", status_code=201)
 def registrar_cliente(subdominio: str, datos: ClienteRegistro, db: Session = Depends(get_db)):
-    """Registra un cliente nuevo en la barbería. Documento obligatorio y único."""
+    """Registra un cliente nuevo en la barbería. Nombre, apellidos y
+    teléfono son obligatorios; el resto queda a elección del cliente."""
     barberia = _barberia_por_subdominio(subdominio, db)
-    if not datos.documento.strip():
-        raise HTTPException(status_code=400, detail="El documento es obligatorio")
     if not datos.primer_nombre.strip() or not datos.apellidos.strip():
         raise HTTPException(status_code=400, detail="Nombre y apellidos son obligatorios")
     if not datos.telefono.strip() or len(datos.telefono.strip()) < 6:
         raise HTTPException(status_code=400, detail="Teléfono inválido")
-    existe = db.query(Cliente).filter(
-        Cliente.documento == datos.documento.strip(),
-        Cliente.id_barberia == barberia.id_barberia,
-    ).first()
-    if existe is not None:
-        raise HTTPException(status_code=409, detail="Ya estás registrado con ese documento")
+
+    documento_limpio = datos.documento.strip() if datos.documento else None
+    if documento_limpio:
+        existe = db.query(Cliente).filter(
+            Cliente.documento == documento_limpio,
+            Cliente.id_barberia == barberia.id_barberia,
+        ).first()
+        if existe is not None:
+            raise HTTPException(status_code=409, detail="Ya estás registrado con ese documento")
+
     cliente = Cliente(
         id_barberia=barberia.id_barberia,
-        documento=datos.documento.strip(),
+        documento=documento_limpio,
         tipo_documento=datos.tipo_documento or "CC",
         primer_nombre=datos.primer_nombre.strip(),
+        segundo_nombre=datos.segundo_nombre.strip() if datos.segundo_nombre else None,
         apellidos=datos.apellidos.strip(),
         telefono=datos.telefono.strip(),
-        fecha_nacimiento=datos.fecha_nacimiento,
+        fecha_nacimiento=datos.fecha_nacimiento or None,
+        genero=datos.genero or None,
         email=datos.email.strip() if datos.email else None,
+        direccion=datos.direccion.strip() if datos.direccion else None,
     )
     db.add(cliente)
     db.commit()
@@ -250,7 +259,7 @@ def info_barberia(subdominio: str, db: Session = Depends(get_db)):
 
 
 class ComentarioCrear(BaseModel):
-    documento: str
+    telefono: str
     id_barbero: Optional[int] = None
     estrellas: int
     comentario: Optional[str] = None
@@ -292,13 +301,13 @@ def crear_comentario(subdominio: str, datos: ComentarioCrear, db: Session = Depe
     if datos.estrellas < 1 or datos.estrellas > 5:
         raise HTTPException(status_code=400, detail="Las estrellas deben ser entre 1 y 5")
 
-    # Buscar el cliente por documento
+    # Buscar el cliente por teléfono
     cliente = db.query(Cliente).filter(
-        Cliente.documento == datos.documento.strip(),
+        Cliente.telefono == datos.telefono.strip(),
         Cliente.id_barberia == barberia.id_barberia,
     ).first()
     if cliente is None:
-        raise HTTPException(status_code=404, detail="No encontramos un cliente con ese documento. Registrate primero pidiendo un turno.")
+        raise HTTPException(status_code=404, detail="No encontramos un cliente con ese teléfono. Registrate primero pidiendo un turno.")
 
     valoracion = Valoracion(
         id_barberia=barberia.id_barberia,
@@ -342,3 +351,35 @@ def categorias_galeria_publica(subdominio: str, db: Session = Depends(get_db)):
         {"id_categoria_galeria": c.id_categoria_galeria, "nombre": c.nombre}
         for c in cats
     ]
+
+
+@router.get("/{subdominio}/disponibilidad")
+def chequear_disponibilidad(
+    subdominio: str,
+    id_barbero: int,
+    fecha: str,
+    hora: str,
+    db: Session = Depends(get_db),
+):
+    """Dice si un barbero ya tiene un turno confirmado a esa hora exacta ese
+    día. Es solo informativo — la solicitud se puede enviar igual."""
+    from datetime import date as date_type, time as time_type
+    from app.models.turno import Turno, EstadoTurnoEnum
+
+    barberia = _barberia_por_subdominio(subdominio, db)
+    fecha_obj = date_type.fromisoformat(fecha)
+    hora_obj = time_type.fromisoformat(hora)
+
+    ocupado = (
+        db.query(Turno)
+        .filter(
+            Turno.id_barberia == barberia.id_barberia,
+            Turno.id_barbero == id_barbero,
+            Turno.fecha == fecha_obj,
+            Turno.estado != EstadoTurnoEnum.cancelado,
+            Turno.hora_inicio <= hora_obj,
+            Turno.hora_fin > hora_obj,
+        )
+        .first()
+    )
+    return {"disponible": ocupado is None}

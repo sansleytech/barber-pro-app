@@ -9,7 +9,6 @@ from app.db.session import get_db
 from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.models.plan import Plan, Suscripcion, EstadoSuscripcionEnum
 from app.models.usuario import Usuario, RolEnum
-from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.registro import RegistroBarberia, RegistroRespuesta
 from app.core.security import hashear_password
 
@@ -50,7 +49,7 @@ def registrar_barberia(datos: RegistroBarberia, db: Session = Depends(get_db)):
 
         # 4. Crear el usuario admin de esa barbería
         admin = Usuario(
-            nombre_usuario=datos.nombre_admin,
+            nombre_usuario=datos.nombre_usuario,
             email=datos.email_admin,
             password_hash=hashear_password(datos.password_admin),
             rol=RolEnum.administrador,
@@ -80,10 +79,11 @@ def registrar_barberia(datos: RegistroBarberia, db: Session = Depends(get_db)):
     if admin.email:
         enviar_email(
             destinatario=admin.email,
-            asunto=f"¡Bienvenido a Barber Pro, {admin.nombre_usuario}! 💈",
+            asunto=f"¡Bienvenido a Barber Pro, {datos.nombre_admin}! 💈",
             cuerpo_html=f"""
                 <h2>¡Tu barbería ya está lista!</h2>
-                <p>Hola {admin.nombre_usuario}, creamos <strong>{barberia.nombre}</strong> con éxito.</p>
+                <p>Hola {datos.nombre_admin}, creamos <strong>{barberia.nombre}</strong> con éxito.</p>
+                <p>Tu usuario para ingresar es: <strong>{admin.nombre_usuario}</strong></p>
                 <p>Tenés 14 días de prueba gratis. Para arrancar con el pie derecho:</p>
                 <ol>
                     <li>Cargá tus servicios y precios</li>

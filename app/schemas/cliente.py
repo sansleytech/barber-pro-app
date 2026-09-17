@@ -8,10 +8,10 @@ from app.models.cliente import GeneroEnum
 
 
 class ClienteBase(BaseModel):
-    primer_nombre: str
+    primer_nombre: Optional[str] = None
     segundo_nombre: Optional[str] = None
-    apellidos: str
-    fecha_nacimiento: date
+    apellidos: Optional[str] = None
+    fecha_nacimiento: Optional[date] = None
     genero: Optional[GeneroEnum] = None
     email: Optional[str] = None
     telefono: str

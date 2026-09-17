@@ -4,7 +4,6 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from datetime import datetime, timedelta
 
 
-
 class RegistroBarberia(BaseModel):
     """Datos para registrar una barbería nueva con su admin inicial."""
     # Datos de la barbería
@@ -13,7 +12,8 @@ class RegistroBarberia(BaseModel):
     email_contacto: str | None = None
     telefono: str | None = None
     # Datos del usuario administrador inicial
-    nombre_admin: str
+    nombre_admin: str  # nombre real, se usa para personalizar (ej: el correo de bienvenida)
+    nombre_usuario: str  # con esto se loguea, sin espacios
     email_admin: str
     password_admin: str
 
@@ -22,9 +22,21 @@ class RegistroBarberia(BaseModel):
     def validar_subdominio(cls, v):
         v = v.lower().strip()
         if not v.isalnum():
-            raise ValueError("El subdominio solo puede tener letras y números")
+            raise ValueError("El subdominio solo puede tener letras y números, sin espacios ni símbolos")
         if len(v) < 3:
             raise ValueError("El subdominio debe tener al menos 3 caracteres")
+        return v
+
+    @field_validator("nombre_usuario")
+    @classmethod
+    def validar_nombre_usuario(cls, v):
+        v = v.strip()
+        if " " in v:
+            raise ValueError("El nombre de usuario no puede tener espacios")
+        if not v.isalnum():
+            raise ValueError("El nombre de usuario solo puede tener letras y números")
+        if len(v) < 3:
+            raise ValueError("El nombre de usuario debe tener al menos 3 caracteres")
         return v
 
     @field_validator("password_admin")
@@ -32,6 +44,12 @@ class RegistroBarberia(BaseModel):
     def validar_password(cls, v):
         if len(v) < 6:
             raise ValueError("La contraseña debe tener al menos 6 caracteres")
+        if not any(c.isupper() for c in v):
+            raise ValueError("La contraseña debe tener al menos una mayúscula")
+        if not any(c.islower() for c in v):
+            raise ValueError("La contraseña debe tener al menos una minúscula")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("La contraseña debe tener al menos un número")
         return v
 
 

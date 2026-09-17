@@ -161,10 +161,12 @@ function Portal() {
   const [error, setError] = useState("");
   const [documento, setDocumento] = useState("");
   const [cliente, setCliente] = useState(null);
-  const [registro, setRegistro] = useState({ primer_nombre: "", apellidos: "", telefono: "", fecha_nacimiento: "", email: "" });
-  const [solicitud, setSolicitud] = useState({ id_barbero: "", fecha_preferida: "", franja_preferida: "cualquiera", comentario: "" });
+  const [registro, setRegistro] = useState({ tipo_documento: "CC", primer_nombre: "", segundo_nombre: "", apellidos: "", telefono: "", fecha_nacimiento: "", genero: "", email: "", direccion: "" });
+  const [solicitud, setSolicitud] = useState({ id_barbero: "", fecha_preferida: "", hora_preferida: "", franja_preferida: "cualquiera", ids_servicios: [], comentario: "" });
+  const [disponibilidad, setDisponibilidad] = useState(null); // null | true | false
+  const [chequeandoDisp, setChequeandoDisp] = useState(false);
 
-  const [resenia, setResenia] = useState({ documento: "", id_barbero: "", estrellas: 5, comentario: "" });
+  const [resenia, setResenia] = useState({ telefono: "", id_barbero: "", estrellas: 5, comentario: "" });
   const [enviandoResenia, setEnviandoResenia] = useState(false);
   const [msgResenia, setMsgResenia] = useState("");
 
@@ -219,7 +221,7 @@ function Portal() {
   const identificar = async (e) => {
     e.preventDefault();
     setError("");
-    if (!documento.trim()) { setError("Ingresá tu documento, teléfono o nombre"); return; }
+    if (!documento.trim()) { setError("Ingresá tu documento o teléfono"); return; }
     setCargando(true);
     try {
       const res = await portalApi.get(`/portal/${subdominio}/cliente/${encodeURIComponent(documento.trim())}`);
@@ -238,14 +240,25 @@ function Portal() {
   const registrarCliente = async (e) => {
     e.preventDefault();
     setError("");
-    if (!registro.primer_nombre.trim() || !registro.apellidos.trim() || !registro.telefono.trim() || !registro.fecha_nacimiento) {
-      setError("Completá todos los campos obligatorios"); return;
+    if (!registro.telefono.trim() || registro.telefono.trim().length < 6) {
+      setError("Ingresá un teléfono válido"); return;
+    }
+    if (!registro.primer_nombre.trim() || !registro.apellidos.trim()) {
+      setError("Nombre y apellidos son obligatorios"); return;
     }
     setCargando(true);
     try {
       const res = await portalApi.post(`/portal/${subdominio}/cliente`, {
-        documento: documento.trim(), primer_nombre: registro.primer_nombre, apellidos: registro.apellidos,
-        telefono: registro.telefono, fecha_nacimiento: registro.fecha_nacimiento, email: registro.email || null,
+        documento: documento.trim() || null,
+        tipo_documento: registro.tipo_documento || "CC",
+        primer_nombre: registro.primer_nombre || null,
+        segundo_nombre: registro.segundo_nombre || null,
+        apellidos: registro.apellidos || null,
+        telefono: registro.telefono,
+        fecha_nacimiento: registro.fecha_nacimiento || null,
+        genero: registro.genero || null,
+        email: registro.email || null,
+        direccion: registro.direccion || null,
       });
       setCliente({ primer_nombre: res.data.primer_nombre });
       setPaso("solicitar");
@@ -259,9 +272,12 @@ function Portal() {
     setCargando(true);
     try {
       await portalApi.post(`/portal/${subdominio}/solicitar`, {
-        nombre_cliente: cliente.primer_nombre, telefono: registro.telefono || "0000000", documento: documento.trim(),
+        nombre_cliente: cliente.primer_nombre, telefono: registro.telefono || documento || "0000000", documento: documento.trim(),
         id_barbero: solicitud.id_barbero ? Number(solicitud.id_barbero) : null,
-        fecha_preferida: solicitud.fecha_preferida || null, franja_preferida: solicitud.franja_preferida,
+        fecha_preferida: solicitud.fecha_preferida || null,
+        hora_preferida: solicitud.hora_preferida || null,
+        franja_preferida: solicitud.franja_preferida,
+        ids_servicios: solicitud.ids_servicios,
         comentario: solicitud.comentario || null,
       });
       setPaso("listo");
@@ -269,20 +285,48 @@ function Portal() {
     finally { setCargando(false); }
   };
 
+  // Revisa si la hora elegida ya está ocupada — solo informativo, no bloquea el envío.
+  useEffect(() => {
+    if (!solicitud.id_barbero || !solicitud.fecha_preferida || !solicitud.hora_preferida) {
+      setDisponibilidad(null);
+      return;
+    }
+    setChequeandoDisp(true);
+    const t = setTimeout(() => {
+      portalApi
+        .get(`/portal/${subdominio}/disponibilidad`, {
+          params: { id_barbero: solicitud.id_barbero, fecha: solicitud.fecha_preferida, hora: solicitud.hora_preferida },
+        })
+        .then((r) => setDisponibilidad(r.data.disponible))
+        .catch(() => setDisponibilidad(null))
+        .finally(() => setChequeandoDisp(false));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [solicitud.id_barbero, solicitud.fecha_preferida, solicitud.hora_preferida, subdominio]);
+
+  const toggleServicio = (idServicio) => {
+    setSolicitud((s) => ({
+      ...s,
+      ids_servicios: s.ids_servicios.includes(idServicio)
+        ? s.ids_servicios.filter((i) => i !== idServicio)
+        : [...s.ids_servicios, idServicio],
+    }));
+  };
+
   const enviarResenia = async (e) => {
     e.preventDefault();
     setMsgResenia("");
-    if (!resenia.documento.trim()) { setMsgResenia("Ingresá tu documento para comentar"); return; }
+    if (!resenia.telefono.trim()) { setMsgResenia("Ingresá tu teléfono para comentar"); return; }
     setEnviandoResenia(true);
     try {
       const res = await portalApi.post(`/portal/${subdominio}/comentarios`, {
-        documento: resenia.documento.trim(),
+        telefono: resenia.telefono.trim(),
         id_barbero: resenia.id_barbero ? Number(resenia.id_barbero) : null,
         estrellas: resenia.estrellas,
         comentario: resenia.comentario || null,
       });
       setMsgResenia(`¡Gracias ${res.data.nombre_cliente}! Tu comentario fue publicado.`);
-      setResenia({ documento: "", id_barbero: "", estrellas: 5, comentario: "" });
+      setResenia({ telefono: "", id_barbero: "", estrellas: 5, comentario: "" });
       portalApi.get(`/portal/${subdominio}/comentarios`).then((r) => setComentarios(r.data)).catch(() => { });
     } catch (err) {
       setMsgResenia(err.response?.data?.detail || "No se pudo publicar el comentario.");
@@ -349,35 +393,112 @@ function Portal() {
             <div className="p-7">
               {error && <div className={`${alert} mb-4`}>{error}</div>}
               {paso === "documento" && (
-                <form onSubmit={identificar} className="flex flex-col gap-4">
-                  <label className="block text-sm text-gray-400">Documento, teléfono o nombre</label>
-                  <input type="text" value={documento} onChange={(e) => setDocumento(e.target.value)} placeholder="Ej: 1234567890, tu teléfono o tu nombre" className={input} autoFocus />
-                  <button type="submit" disabled={cargando} className={btnPrimary}>{cargando ? "Verificando…" : "Continuar"}</button>
-                </form>
+                <div className="flex flex-col gap-5">
+                  <div className="flex gap-3 bg-yellow-400/[0.06] border border-yellow-400/20 rounded-xl px-4 py-3">
+                    <span className="text-yellow-400 text-base leading-none mt-0.5">✦</span>
+                    <p className="text-xs text-gray-400 leading-relaxed">
+                      Si es tu primera vez en <strong className="text-gray-200">{info?.nombre || "esta barbería"}</strong>, te
+                      pedimos algunos datos por única vez — la próxima vez, solo necesitás identificarte.
+                    </p>
+                  </div>
+
+                  <form onSubmit={identificar} className="flex flex-col gap-3">
+                    <label className="block text-sm text-gray-400">Documento o teléfono</label>
+                    <input type="text" value={documento} onChange={(e) => setDocumento(e.target.value)} placeholder="Ej: 1234567890 o tu teléfono" className={input} autoFocus />
+                    <button type="submit" disabled={cargando} className={btnPrimary}>{cargando ? "Verificando…" : "Continuar"}</button>
+                  </form>
+
+                  <div className="flex items-center gap-3 text-gray-700">
+                    <div className="flex-1 h-px bg-white/10" />
+                    <span className="font-['IBM_Plex_Mono'] text-[0.65rem] tracking-[0.14em] uppercase">o</span>
+                    <div className="flex-1 h-px bg-white/10" />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => { setDocumento(""); setError(""); setPaso("registro"); }}
+                    className="group flex items-center justify-between gap-3 w-full border border-dashed border-white/15 rounded-xl px-4 py-3.5 hover:border-yellow-400/50 transition-colors"
+                  >
+                    <span className="text-left">
+                      <span className="block text-sm font-semibold text-white group-hover:text-yellow-400 transition-colors">
+                        Soy nuevo acá
+                      </span>
+                      <span className="block text-xs text-gray-500 mt-0.5">
+                        Registrate en menos de un minuto
+                      </span>
+                    </span>
+                    <span className="text-yellow-400 text-lg group-hover:translate-x-0.5 transition-transform">→</span>
+                  </button>
+                </div>
               )}
               {paso === "registro" && (
                 <form onSubmit={registrarCliente} className="flex flex-col gap-4">
-                  <p className="text-sm text-gray-400">No te encontramos en el libro de clientes. Registrate:</p>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Documento *</label>
-                    <input type="text" placeholder="Número de documento" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/[^0-9]/g, ""))} className={input} />
+                  <div className={`${alertBrass} !text-left`}>
+                    No te encontramos en el libro de clientes. Este registro es <strong>único</strong> — la próxima vez que pidas un turno, solo vas a necesitar tu documento o teléfono para identificarte.
                   </div>
+
+                  <input type="text" placeholder="Teléfono *" value={registro.telefono} onChange={(e) => setRegistro((r) => ({ ...r, telefono: e.target.value.replace(/[^0-9]/g, "") }))} className={input} autoFocus />
+
                   <div className="grid grid-cols-2 gap-3">
                     <input type="text" placeholder="Nombre *" value={registro.primer_nombre} onChange={(e) => setRegistro((r) => ({ ...r, primer_nombre: e.target.value }))} className={input} />
-                    <input type="text" placeholder="Apellidos *" value={registro.apellidos} onChange={(e) => setRegistro((r) => ({ ...r, apellidos: e.target.value }))} className={input} />
+                    <input type="text" placeholder="Segundo nombre (opcional)" value={registro.segundo_nombre} onChange={(e) => setRegistro((r) => ({ ...r, segundo_nombre: e.target.value }))} className={input} />
                   </div>
-                  <input type="text" placeholder="Teléfono *" value={registro.telefono} onChange={(e) => setRegistro((r) => ({ ...r, telefono: e.target.value }))} className={input} />
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Fecha de nacimiento *</label>
-                    <input type="date" value={registro.fecha_nacimiento} onChange={(e) => setRegistro((r) => ({ ...r, fecha_nacimiento: e.target.value }))} className={input} />
+                  <input type="text" placeholder="Apellidos *" value={registro.apellidos} onChange={(e) => setRegistro((r) => ({ ...r, apellidos: e.target.value }))} className={input} />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <select value={registro.tipo_documento} onChange={(e) => setRegistro((r) => ({ ...r, tipo_documento: e.target.value }))} className={input}>
+                      <option value="CC">Cédula (CC)</option>
+                      <option value="TI">Tarjeta de identidad (TI)</option>
+                      <option value="CE">Cédula de extranjería (CE)</option>
+                      <option value="PASAPORTE">Pasaporte</option>
+                    </select>
+                    <input type="text" placeholder="Documento (opcional)" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/[^0-9]/g, ""))} className={input} />
                   </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Fecha de nacimiento (opcional)</label>
+                      <input type="date" value={registro.fecha_nacimiento} onChange={(e) => setRegistro((r) => ({ ...r, fecha_nacimiento: e.target.value }))} className={input} />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Género (opcional)</label>
+                      <select value={registro.genero} onChange={(e) => setRegistro((r) => ({ ...r, genero: e.target.value }))} className={input}>
+                        <option value="">Seleccionar</option>
+                        <option value="masculino">Masculino</option>
+                        <option value="femenino">Femenino</option>
+                        <option value="otro">Otro</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <input type="email" placeholder="Email (opcional)" value={registro.email} onChange={(e) => setRegistro((r) => ({ ...r, email: e.target.value }))} className={input} />
+                  <input type="text" placeholder="Dirección (opcional)" value={registro.direccion} onChange={(e) => setRegistro((r) => ({ ...r, direccion: e.target.value }))} className={input} />
+
                   <button type="submit" disabled={cargando} className={btnPrimary}>{cargando ? "Registrando…" : "Registrarme y continuar"}</button>
                 </form>
               )}
               {paso === "solicitar" && (
                 <form onSubmit={enviarSolicitud} className="flex flex-col gap-4">
                   <p className="font-['Fraunces'] text-xl">Hola, <span className="text-yellow-400">{cliente?.primer_nombre}</span></p>
+
+                  {servicios.length > 0 && (
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">¿Qué te vas a hacer? (opcional)</label>
+                      <div className="flex flex-wrap gap-2">
+                        {servicios.map((s) => (
+                          <button
+                            key={s.id_servicio}
+                            type="button"
+                            onClick={() => toggleServicio(s.id_servicio)}
+                            className={pill(solicitud.ids_servicios.includes(s.id_servicio))}
+                          >
+                            {s.nombre}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-sm text-gray-400 mb-2">Barbero (opcional)</label>
                     <select value={solicitud.id_barbero} onChange={(e) => setSolicitud((s) => ({ ...s, id_barbero: e.target.value }))} className={input}>
@@ -385,10 +506,42 @@ function Portal() {
                       {barberos.map((b) => <option key={b.id_barbero} value={b.id_barbero}>{b.nombre} {b.apellido}</option>)}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Día preferido (opcional)</label>
-                    <input type="date" value={solicitud.fecha_preferida} onChange={(e) => setSolicitud((s) => ({ ...s, fecha_preferida: e.target.value }))} className={input} />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Día preferido</label>
+                      <input type="date" value={solicitud.fecha_preferida} onChange={(e) => setSolicitud((s) => ({ ...s, fecha_preferida: e.target.value }))} className={input} />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Hora en punto</label>
+                      <select value={solicitud.hora_preferida} onChange={(e) => setSolicitud((s) => ({ ...s, hora_preferida: e.target.value }))} className={input}>
+                        <option value="">Sin preferencia</option>
+                        {Array.from({ length: 13 }, (_, i) => i + 7).map((h) => (
+                          <option key={h} value={`${String(h).padStart(2, "0")}:00`}>
+                            {String(h).padStart(2, "0")}:00
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
+
+                  {solicitud.hora_preferida && solicitud.id_barbero && solicitud.fecha_preferida && (
+                    <div className={`text-sm rounded-lg px-4 py-2.5 ${
+                      chequeandoDisp ? "bg-white/5 text-gray-400"
+                        : disponibilidad === true ? "bg-emerald-500/10 text-emerald-400"
+                        : disponibilidad === false ? "bg-amber-500/10 text-amber-400"
+                        : "bg-white/5 text-gray-400"
+                    }`}>
+                      {chequeandoDisp
+                        ? "Revisando disponibilidad…"
+                        : disponibilidad === true
+                          ? "✓ Esa hora está libre"
+                          : disponibilidad === false
+                            ? "Esa hora ya está ocupada — igual podés enviar tu solicitud y te proponemos otra"
+                            : ""}
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-sm text-gray-400 mb-2">Franja preferida</label>
                     <div className="grid grid-cols-2 gap-2">
@@ -419,7 +572,6 @@ function Portal() {
     );
   }
 
-  // ============ VISTA INICIO ============
   return (
     <div className="min-h-screen bg-neutral-950 text-white overflow-x-hidden">
 
@@ -795,7 +947,7 @@ function Portal() {
             <h3 className="font-['Fraunces'] font-semibold text-xl mb-4">Dejá tu comentario</h3>
             {msgResenia && <div className={`${alertBrass} mb-4`}>{msgResenia}</div>}
             <form onSubmit={enviarResenia} className="flex flex-col gap-4">
-              <input type="text" placeholder="Tu documento (cédula)" value={resenia.documento} onChange={(e) => setResenia((r) => ({ ...r, documento: e.target.value.replace(/[^0-9]/g, "") }))} className={input} />
+              <input type="text" placeholder="Tu teléfono" value={resenia.telefono} onChange={(e) => setResenia((r) => ({ ...r, telefono: e.target.value.replace(/[^0-9]/g, "") }))} className={input} />
               <select value={resenia.id_barbero} onChange={(e) => setResenia((r) => ({ ...r, id_barbero: e.target.value }))} className={input}>
                 <option value="">¿Qué barbero te atendió? (opcional)</option>
                 {barberos.map((b) => <option key={b.id_barbero} value={b.id_barbero}>{b.nombre} {b.apellido}</option>)}

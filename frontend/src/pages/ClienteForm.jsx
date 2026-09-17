@@ -17,6 +17,7 @@ function ClienteForm() {
     apellidos: "",
     fecha_nacimiento: "",
     genero: "",
+    email: "",
     telefono: "",
     direccion: "",
     notas: "",
@@ -28,7 +29,6 @@ function ClienteForm() {
   const [error, setError] = useState("");
 
   // Si estamos editando, carga los datos del cliente
-
   useEffect(() => {
     if (!editando) return;
     const cargar = async () => {
@@ -167,7 +167,7 @@ function ClienteForm() {
 
           <div>
             <label className="block text-sm text-gray-300 mb-1.5">
-              Primer nombre *
+              Primer nombre
             </label>
             <input
               type="text"
@@ -198,7 +198,7 @@ function ClienteForm() {
 
           <div>
             <label className="block text-sm text-gray-300 mb-1.5">
-              Apellidos *
+              Apellidos
             </label>
             <input
               type="text"
@@ -212,7 +212,7 @@ function ClienteForm() {
 
           <div>
             <label className="block text-sm text-gray-300 mb-1.5">
-              Teléfono *
+              Teléfono
             </label>
             <input
               type="text"
@@ -228,14 +228,13 @@ function ClienteForm() {
 
           <div>
             <label className="block text-sm text-gray-300 mb-1.5">
-              Fecha de nacimiento *
+              Fecha de nacimiento
             </label>
             <input
               type="date"
               value={form.fecha_nacimiento}
               onChange={(e) => cambiar("fecha_nacimiento", e.target.value)}
               className={inputClase}
-              required
             />
           </div>
 

@@ -12,7 +12,9 @@ class SolicitudCrear(BaseModel):
     documento: Optional[str] = None
     id_barbero: Optional[int] = None
     fecha_preferida: Optional[date] = None
+    hora_preferida: Optional[str] = None
     franja_preferida: FranjaEnum = FranjaEnum.cualquiera
+    ids_servicios: Optional[list[int]] = None
     comentario: Optional[str] = None
 
 

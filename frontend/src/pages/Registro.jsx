@@ -76,6 +76,7 @@ function Registro() {
         email_contacto: "",
         telefono: "",
         nombre_admin: "",
+        nombre_usuario: "",
         email_admin: "",
         password_admin: "",
         password_confirmar: "",
@@ -88,6 +89,11 @@ function Registro() {
         setForm((f) => ({ ...f, subdominio: limpio }));
     };
 
+    const setNombreUsuario = (e) => {
+        const limpio = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "");
+        setForm((f) => ({ ...f, nombre_usuario: limpio }));
+    };
+
     const validarPaso1 = () => {
         if (!form.nombre_barberia.trim()) return "Ingresá el nombre de tu barbería";
         if (form.subdominio.length < 3) return "El subdominio debe tener al menos 3 caracteres";
@@ -96,8 +102,12 @@ function Registro() {
 
     const validarPaso2 = () => {
         if (!form.nombre_admin.trim()) return "Ingresá tu nombre";
+        if (form.nombre_usuario.length < 3) return "El nombre de usuario debe tener al menos 3 caracteres";
         if (!form.email_admin.trim() || !form.email_admin.includes("@")) return "Ingresá un email válido";
         if (form.password_admin.length < 6) return "La contraseña debe tener al menos 6 caracteres";
+        if (!/[A-Z]/.test(form.password_admin)) return "La contraseña debe tener al menos una mayúscula";
+        if (!/[a-z]/.test(form.password_admin)) return "La contraseña debe tener al menos una minúscula";
+        if (!/[0-9]/.test(form.password_admin)) return "La contraseña debe tener al menos un número";
         if (form.password_admin !== form.password_confirmar) return "Las contraseñas no coinciden";
         return "";
     };
@@ -125,6 +135,7 @@ function Registro() {
                 email_contacto: form.email_contacto.trim() || null,
                 telefono: form.telefono.trim() || null,
                 nombre_admin: form.nombre_admin.trim(),
+                nombre_usuario: form.nombre_usuario,
                 email_admin: form.email_admin.trim(),
                 password_admin: form.password_admin,
             });
@@ -132,7 +143,7 @@ function Registro() {
             if (planElegido) {
                 try {
                     const datosLogin = new URLSearchParams();
-                    datosLogin.append("username", form.nombre_admin.trim());
+                    datosLogin.append("username", form.nombre_usuario);
                     datosLogin.append("password", form.password_admin);
                     datosLogin.append("client_id", form.subdominio);
                     const resLogin = await api.post("/auth/login", datosLogin);
@@ -166,8 +177,8 @@ function Registro() {
                 <span>Inventario</span><span className="text-yellow-400">•</span>
                 <span>Reportes</span>
             </div>
-            <div className="inline-flex items-center gap-2 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-sm font-medium rounded-lg px-4 py-2.5 w-fit">
-                14 días de prueba gratis, sin tarjeta
+            <div className="inline-flex items-center gap-2 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-sm font-semibold rounded-lg px-4 py-2.5 w-fit">
+                <span className="text-base">🎁</span> 14 días gratis de regalo — sin tarjeta, sin compromiso
             </div>
         </div>
     );
@@ -183,7 +194,10 @@ function Registro() {
                                 <IconCheck className="w-8 h-8 text-neutral-950" />
                             </div>
                             <h2 className="text-2xl font-bold text-white mb-2">¡Listo, {completado.nombre_usuario_admin}!</h2>
-                            <p className="text-gray-400 mb-8">{completado.mensaje}</p>
+                            <p className="text-gray-400 mb-2">{completado.mensaje}</p>
+                            <p className="text-gray-500 text-sm mb-8">
+                                Tenés 14 días para explorar todo sin apuro. Cuando estés listo, elegís el plan que mejor le quede a tu barbería.
+                            </p>
                             <div className="bg-neutral-900 border border-white/10 rounded-xl p-5 text-left mb-8">
                                 <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Tu barbería</p>
                                 <p className="text-white font-semibold mb-3">{completado.subdominio}</p>
@@ -212,7 +226,7 @@ function Registro() {
                     <div className="w-full max-w-md">
                         <h2 className="text-3xl font-bold text-white mb-1">Registrá tu barbería</h2>
                         <p className="text-gray-400 mb-8">
-                            {planElegido ? "Un último paso antes de activar tu plan" : "Empezá tu prueba gratuita de 14 días"}
+                            {planElegido ? "Un último paso antes de activar tu plan" : "Probá todo gratis por 14 días. Si te enamorás de Barber Pro (va a pasar), elegís tu plan cuando quieras."}
                         </p>
 
                         <div className="flex items-center mb-8">
@@ -250,7 +264,7 @@ function Registro() {
                                     <label className={labelCls}>Nombre de tu barbería</label>
                                     <div className="relative">
                                         <IconTienda className={iconCls} />
-                                        <input type="text" placeholder="Ingresa nombre de barbería" value={form.nombre_barberia}
+                                        <input type="text" placeholder="La Barbería del Centro" value={form.nombre_barberia}
                                             onChange={set("nombre_barberia")} className={inputCls} autoFocus />
                                     </div>
                                 </div>
@@ -258,18 +272,18 @@ function Registro() {
                                     <label className={labelCls}>Subdominio</label>
                                     <div className="relative">
                                         <IconTienda className={iconCls} />
-                                        <input type="text" placeholder="barberkobe" value={form.subdominio}
+                                        <input type="text" placeholder="labarberiadelcentro" value={form.subdominio}
                                             onChange={setSubdominio} className={inputCls} />
                                     </div>
                                     <p className="text-xs text-gray-500 mt-1.5">
-                                        Tu portal quedará en: <span className="text-yellow-400">barberproapp.online/portal/{form.subdominio || "..."}</span>
+                                        Solo letras y números, sin espacios. Tu portal quedará en: <span className="text-yellow-400">barberproapp.online/portal/{form.subdominio || "..."}</span>
                                     </p>
                                 </div>
                                 <div>
                                     <label className={labelCls}>Email de contacto <span className="text-gray-500 font-normal">(opcional)</span></label>
                                     <div className="relative">
                                         <IconMail className={iconCls} />
-                                        <input type="email" placeholder="ingresa tu email" value={form.email_contacto}
+                                        <input type="email" placeholder="contacto@mibarberia.com" value={form.email_contacto}
                                             onChange={set("email_contacto")} className={inputCls} />
                                     </div>
                                 </div>
@@ -277,7 +291,7 @@ function Registro() {
                                     <label className={labelCls}>Teléfono <span className="text-gray-500 font-normal">(opcional)</span></label>
                                     <div className="relative">
                                         <IconTelefono className={iconCls} />
-                                        <input type="text" placeholder="ingresa tu teléfono" value={form.telefono}
+                                        <input type="text" placeholder="300-404-0040" value={form.telefono}
                                             onChange={set("telefono")} className={inputCls} />
                                     </div>
                                 </div>
@@ -290,18 +304,29 @@ function Registro() {
                         {paso === 2 && (
                             <div className="space-y-5">
                                 <div>
-                                    <label className={labelCls}>Nombre de usuario</label>
+                                    <label className={labelCls}>Tu nombre</label>
                                     <div className="relative">
                                         <IconUsuario className={iconCls} />
-                                        <input type="text" placeholder="Kobe Pérez" value={form.nombre_admin}
+                                        <input type="text" placeholder="Carlos Ramírez" value={form.nombre_admin}
                                             onChange={set("nombre_admin")} className={inputCls} autoFocus />
                                     </div>
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Nombre de usuario (para ingresar)</label>
+                                    <div className="relative">
+                                        <IconUsuario className={iconCls} />
+                                        <input type="text" placeholder="carlosr" value={form.nombre_usuario}
+                                            onChange={setNombreUsuario} className={inputCls} />
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1.5">
+                                        Solo letras y números, sin espacios ni símbolos.
+                                    </p>
                                 </div>
                                 <div>
                                     <label className={labelCls}>Tu email</label>
                                     <div className="relative">
                                         <IconMail className={iconCls} />
-                                        <input type="email" placeholder="ingresa tu email" value={form.email_admin}
+                                        <input type="email" placeholder="carlos@mibarberia.com" value={form.email_admin}
                                             onChange={set("email_admin")} className={inputCls} />
                                     </div>
                                 </div>
@@ -316,6 +341,43 @@ function Registro() {
                                             {verPassword ? <IconOjoTachado className="w-5 h-5" /> : <IconOjo className="w-5 h-5" />}
                                         </button>
                                     </div>
+                                    {form.password_admin.length > 0 && (() => {
+                                        const requisitos = [
+                                            { ok: form.password_admin.length >= 6, texto: "Al menos 6 caracteres" },
+                                            { ok: /[A-Z]/.test(form.password_admin), texto: "Una letra mayúscula" },
+                                            { ok: /[a-z]/.test(form.password_admin), texto: "Una letra minúscula" },
+                                            { ok: /[0-9]/.test(form.password_admin), texto: "Un número" },
+                                        ];
+                                        const cumplidos = requisitos.filter((r) => r.ok).length;
+                                        const completa = cumplidos === requisitos.length;
+                                        return (
+                                            <div className={`mt-3 rounded-lg border p-3.5 transition-colors ${completa ? "bg-emerald-500/5 border-emerald-500/25" : "bg-neutral-900 border-white/10"}`}>
+                                                <div className="flex items-center justify-between mb-2.5">
+                                                    <span className="text-xs font-medium text-gray-400">
+                                                        {completa ? "Contraseña segura" : "Seguridad de la contraseña"}
+                                                    </span>
+                                                    <div className="flex gap-1">
+                                                        {requisitos.map((_, i) => (
+                                                            <span
+                                                                key={i}
+                                                                className={`w-5 h-1 rounded-full transition-colors ${i < cumplidos ? (completa ? "bg-emerald-400" : "bg-yellow-400") : "bg-white/10"}`}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                                                    {requisitos.map((req, i) => (
+                                                        <span key={i} className={`inline-flex items-center gap-1.5 text-xs transition-colors ${req.ok ? "text-emerald-400" : "text-gray-500"}`}>
+                                                            <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 ${req.ok ? "bg-emerald-500/20" : "bg-white/5"}`}>
+                                                                {req.ok && <IconCheck className="w-2.5 h-2.5" />}
+                                                            </span>
+                                                            {req.texto}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                                 <div>
                                     <label className={labelCls}>Confirmar contraseña</label>
@@ -362,6 +424,10 @@ function Registro() {
                                     <div className="border-t border-white/10 pt-3 flex justify-between text-sm">
                                         <span className="text-gray-500">Administrador</span>
                                         <span className="text-white font-medium">{form.nombre_admin}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Usuario de ingreso</span>
+                                        <span className="text-white font-medium">{form.nombre_usuario}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-500">Email de acceso</span>
