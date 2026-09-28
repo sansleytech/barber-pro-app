@@ -1049,7 +1049,7 @@ function Portal() {
             <span>© {new Date().getFullYear()} {info?.nombre || "Barbería"}. Todos los derechos reservados.</span>
             <span>
               Plataforma desarrollada por{" "}
-              <a href="mailto:sansley.tech-sol@outlook.com" className="text-gray-400 hover:text-yellow-400 transition-colors">
+              <a href="https://sansleytechsolutions.site/" className="text-gray-400 hover:text-yellow-400 transition-colors">
                 Sansley Tech Solutions
               </a>
                 
