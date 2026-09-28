@@ -58,9 +58,7 @@ import RestablecerPassword from "./pages/RestablecerPassword";
 import TerminosServicio from "./pages/TerminosServicio";
 import SuperadminPagos from "./pages/SuperadminPagos";
 import SuperadminAuditoria from "./pages/SuperadminAuditoria";
-
-
-
+import Soporte from "./pages/Soporte";
 
 // Protege una ruta según el rol. Si no tiene permiso, lo manda al dashboard.
 function RutaPorRol({ ruta, children }) {
@@ -108,13 +106,13 @@ function App() {
         <Route path="/register" element={<Registro />} />
         <Route path="/planes" element={<Planes />} />
         <Route path="/superadmin/login" element={<SuperadminLogin />} />
-        
+
         <Route
           path="/politicas-de-privacidad"
           element={<PoliticaPrivacidad />}
         />
         <Route path="/terminos-de-servicio" element={<TerminosServicio />} />
-        
+
         <Route
           element={
             <RutaSuperAdmin>
@@ -127,7 +125,10 @@ function App() {
           <Route path="/superadmin/planes" element={<SuperadminPlanes />} />
           <Route path="/superadmin/permisos" element={<SuperadminPermisos />} />
           <Route path="/superadmin/pagos" element={<SuperadminPagos />} />
-          <Route path="/superadmin/auditoria" element={<SuperadminAuditoria />} />
+          <Route
+            path="/superadmin/auditoria"
+            element={<SuperadminAuditoria />}
+          />
         </Route>
 
         <Route path="/directorio" element={<Directorio />} />
@@ -486,7 +487,9 @@ function App() {
               </RutaPorRol>
             }
           />
-          
+
+          {/* Soporte: cualquier usuario logueado (sin RutaPorRol, así no depende de la tabla de permisos) */}
+          <Route path="/soporte" element={<Soporte />} />
         </Route>
         <Route path="/olvide-password" element={<OlvidePassword />} />
         <Route path="/restablecer-password" element={<RestablecerPassword />} />

@@ -40,6 +40,7 @@ from app.api import (
     directorio,
     superadmin,
     organizacion,
+    soporte,
 )
 
 app = FastAPI(
@@ -95,6 +96,7 @@ app.include_router(portal.router)
 app.include_router(directorio.router)
 app.include_router(superadmin.router)
 app.include_router(organizacion.router)
+app.include_router(soporte.router)
 
 
 @app.get("/")

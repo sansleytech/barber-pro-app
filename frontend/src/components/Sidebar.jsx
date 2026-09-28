@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { useUI } from "../context/UIContext";
 import logoSidebar from "../assets/img/logo1.png";
 import {
   ImagePlus,
@@ -24,10 +25,13 @@ import {
   X,
   CreditCard,
   Building2,
+  Lock,
+  LifeBuoy,
 } from "lucide-react";
 
-// Cada módulo indica qué roles lo pueden ver.
-// "todos" = admin, recepcionista y barbero. Si no, se listan los roles.
+// Cada módulo indica qué roles lo pueden ver, y opcionalmente qué función
+// del plan necesita (requierePlan). Si el plan no la tiene, el ítem se
+// muestra igual pero bloqueado, con candado y mensaje al hacer clic.
 const secciones = [
   {
     titulo: "PRINCIPAL",
@@ -104,12 +108,12 @@ const secciones = [
         icono: Star,
         roles: "todos",
       },
-
       {
         a: "/reportes",
         texto: "Reportes",
         icono: BarChart3,
         roles: ["administrador"],
+        requierePlan: "permite_reportes",
       },
       {
         a: "/galeria",
@@ -117,7 +121,6 @@ const secciones = [
         icono: ImagePlus,
         roles: ["administrador"],
       },
-
       {
         a: "/acontecimientos",
         texto: "Acontecimientos",
@@ -140,24 +143,28 @@ const secciones = [
         texto: "Productos",
         icono: Package,
         roles: ["administrador"],
+        requierePlan: "permite_inventario",
       },
       {
         a: "/categorias",
         texto: "Categorías",
         icono: Tags,
         roles: ["administrador"],
+        requierePlan: "permite_inventario",
       },
       {
         a: "/proveedores",
         texto: "Proveedores",
         icono: Truck,
         roles: ["administrador"],
+        requierePlan: "permite_inventario",
       },
       {
         a: "/compras",
         texto: "Compras",
         icono: ShoppingBag,
         roles: ["administrador"],
+        requierePlan: "permite_inventario",
       },
     ],
   },
@@ -169,6 +176,7 @@ const secciones = [
         texto: "Ventas",
         icono: ShoppingCart,
         roles: ["administrador", "recepcionista"],
+        requierePlan: "permite_inventario",
       },
       { a: "/caja", texto: "Caja", icono: Wallet, roles: ["administrador"] },
     ],
@@ -176,14 +184,14 @@ const secciones = [
   {
     titulo: "SISTEMA",
     items: [
-        {
+      {
         a: "/mis-sedes",
         texto: "Mis sedes",
         icono: Building2,
         roles: ["administrador"],
         soloPremium: true,
       },
-      {  
+      {
         a: "/facturacion",
         texto: "Facturación",
         icono: CreditCard,
@@ -194,25 +202,35 @@ const secciones = [
         texto: "Códigos QR",
         icono: QrCode,
         roles: ["administrador"],
+        requierePlan: "permite_qr",
       },
-
       {
         a: "/configuracion",
         texto: "Configuración",
         icono: Settings,
         roles: ["administrador"],
-      },      
+      },
+      { a: "/soporte", texto: "Soporte", icono: LifeBuoy, roles: "todos" },
     ],
   },
 ];
 
-function puedeVer(item, rol, esPremium) {
-  if (item.soloPremium && !esPremium) return false;
+function puedeVer(item, rol) {
   if (item.roles === "todos") return true;
   return item.roles.includes(rol);
 }
 
-function Sidebar({ abierta, cerrar, rol, nombrePlan }) {
+function Sidebar({ abierta, cerrar, rol, nombrePlan, permisosPlan = {} }) {
+  const { avisar } = useUI();
+
+  const clickBloqueado = (e, textoItem) => {
+    e.preventDefault();
+    avisar(
+      `"${textoItem}" no está disponible en tu plan actual. Mejorá tu plan para acceder.`,
+      "info",
+    );
+  };
+
   return (
     <>
       {abierta && (
@@ -227,7 +245,6 @@ function Sidebar({ abierta, cerrar, rol, nombrePlan }) {
           abierta ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Logo */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-line shrink-0">
           <div className="flex items-center gap-2">
             <img
@@ -247,34 +264,46 @@ function Sidebar({ abierta, cerrar, rol, nombrePlan }) {
           </button>
         </div>
 
-        {/* Navegación con scroll */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
           {secciones.map((seccion) => {
-            const visibles = seccion.items.filter((it) => puedeVer(it, rol, nombrePlan === "Premium"));
+            const visibles = seccion.items.filter((it) => {
+              if (it.soloPremium && nombrePlan !== "Premium") return false;
+              return puedeVer(it, rol);
+            });
             if (visibles.length === 0) return null;
+
             return (
               <div key={seccion.titulo}>
                 <p className="px-3 mb-2 text-xs font-semibold text-gray-600 tracking-wider">
                   {seccion.titulo}
                 </p>
                 <div className="space-y-1">
-                  {visibles.map(({ a, texto, icono: Icono }) => (
-                    <NavLink
-                      key={a}
-                      to={a}
-                      onClick={cerrar}
-                      className={({ isActive }) =>
-                        `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                          isActive
-                            ? "bg-gold/10 text-gold"
-                            : "text-gray-400 hover:text-white hover:bg-ink-card"
-                        }`
-                      }
-                    >
-                      <Icono className="w-5 h-5 shrink-0" />
-                      {texto}
-                    </NavLink>
-                  ))}
+                  {visibles.map(({ a, texto, icono: Icono, requierePlan }) => {
+                    const bloqueado =
+                      requierePlan && !permisosPlan[requierePlan];
+                    return (
+                      <NavLink
+                        key={a}
+                        to={a}
+                        onClick={(e) =>
+                          bloqueado ? clickBloqueado(e, texto) : cerrar()
+                        }
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                            bloqueado
+                              ? "text-gray-600 cursor-not-allowed"
+                              : isActive
+                                ? "bg-gold/10 text-gold"
+                                : "text-gray-400 hover:text-white hover:bg-ink-card"
+                          }`
+                        }
+                      >
+                        <Icono className="w-5 h-5 shrink-0" />
+                        <span className="flex-1">{texto}</span>
+                        {bloqueado && <Lock className="w-3.5 h-3.5 shrink-0" />}
+                      </NavLink>
+                    );
+                  })}
                 </div>
               </div>
             );
