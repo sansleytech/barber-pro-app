@@ -59,6 +59,7 @@ import TerminosServicio from "./pages/TerminosServicio";
 import SuperadminPagos from "./pages/SuperadminPagos";
 import SuperadminAuditoria from "./pages/SuperadminAuditoria";
 import Soporte from "./pages/Soporte";
+import BotonWhatsApp from "./components/BotonWhatsApp";
 
 // Protege una ruta según el rol. Si no tiene permiso, lo manda al dashboard.
 function RutaPorRol({ ruta, children }) {
@@ -497,6 +498,9 @@ function App() {
         <Route path="/pago/resultado" element={<PagoResultado />} />
         <Route path="/" element={<Home />} />
       </Routes>
+
+      {/* Botón flotante de WhatsApp: se muestra en todo el sitio (menos en /soporte y /superadmin) */}
+      <BotonWhatsApp />
     </BrowserRouter>
   );
 }
