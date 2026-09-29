@@ -7,6 +7,7 @@ from app.models.usuario import Usuario, RolEnum
 from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.schemas.configuracion import ConfiguracionRespuesta, ConfiguracionActualizar
 from app.core.dependencies import get_barberia_actual, requiere_rol
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/configuracion", tags=["Configuración"])
 class UbicacionActualizar(BaseModel):
