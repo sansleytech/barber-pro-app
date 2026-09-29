@@ -60,7 +60,7 @@ function Home() {
           </h1>
           <p className="text-gray-400 text-lg max-w-xl mx-auto mb-10">
             Turnos, clientes, inventario, caja y un portal público para cada
-            barbería. Todo en un solo lugar, con 14 días de prueba gratis.
+            barbería. Todo en un solo lugar, con 7 días de prueba gratis.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link
@@ -157,7 +157,7 @@ function Home() {
           ¿Listo para modernizar tu barbería?
         </h2>
         <p className="text-gray-400 mb-8">
-          14 días de prueba gratis, sin tarjeta de crédito.
+          7 días de prueba gratis, sin tarjeta de crédito.
         </p>
         <Link
           to="/registro"

@@ -11,6 +11,11 @@ const ROLES = [
   { valor: "recepcionista", label: "Recepcionista", icono: Calendar },
 ];
 
+// Clave de localStorage para el token de "dispositivo recordado", por
+// subdominio+usuario (así un mismo navegador puede recordar varias cuentas).
+const claveDispositivo = (subdominio, usuario) =>
+  `bp_device_${subdominio.toLowerCase()}_${usuario.toLowerCase()}`;
+
 const Login = () => {
   const [rolSeleccionado, setRolSeleccionado] = useState("administrador");
   const [subdominio, setSubdominio] = useState("");
@@ -35,10 +40,16 @@ const Login = () => {
     setError("");
     setCargando(true);
     try {
+      const tokenDispositivo = localStorage.getItem(claveDispositivo(subdominio, usuario)) || "";
+
       const datos = new URLSearchParams();
       datos.append("username", usuario);
       datos.append("password", password);
       datos.append("client_id", subdominio);
+      // Reutilizamos el campo estándar "client_secret" del formulario OAuth2
+      // para viajar el token de dispositivo recordado, sin agregar un campo nuevo.
+      if (tokenDispositivo) datos.append("client_secret", tokenDispositivo);
+
       const respuesta = await api.post("/auth/login", datos);
 
       if (respuesta.data.requiere_verificacion) {
@@ -71,6 +82,13 @@ const Login = () => {
         id_usuario: idUsuarioPendiente,
         codigo: codigo.trim(),
       });
+
+      // Guardamos el token de dispositivo para no volver a pedir el código
+      // en este mismo navegador, con esta misma barbería y usuario.
+      if (respuesta.data.device_token) {
+        localStorage.setItem(claveDispositivo(subdominio, usuario), respuesta.data.device_token);
+      }
+
       completarLogin(respuesta.data, rolPendiente);
     } catch (err) {
       setError(err.response?.data?.detail || "No se pudo verificar el código");

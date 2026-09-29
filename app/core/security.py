@@ -34,6 +34,16 @@ def crear_token(datos: dict) -> str:
     return jwt.encode(a_codificar, settings.SECRET_KEY, algorithm=ALGORITMO)
 
 
+def crear_token_dispositivo(datos: dict, dias: int = 1) -> str:
+    """Token de larga duración para 'recordar' un dispositivo ya verificado
+    con el código de email. Mientras sea válido, el login no vuelve a pedir
+    el código en ese mismo navegador."""
+    a_codificar = datos.copy()
+    expira = datetime.now(timezone.utc) + timedelta(days=dias)
+    a_codificar.update({"exp": expira})
+    return jwt.encode(a_codificar, settings.SECRET_KEY, algorithm=ALGORITMO)
+
+
 def decodificar_token(token: str) -> dict | None:
     """Decodifica un token JWT. Devuelve el contenido o None si es inválido."""
     try:

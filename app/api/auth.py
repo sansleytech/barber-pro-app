@@ -11,7 +11,7 @@ from app.models.usuario import Usuario
 from app.models.barberia import Barberia
 from app.models.plan import Suscripcion
 from app.models.permiso_rol import PermisoRol
-from app.core.security import verificar_password, crear_token, hashear_password, hashear_password
+from app.core.security import verificar_password, crear_token, hashear_password, crear_token_dispositivo, hashear_password
 from app.core.dependencies import get_usuario_actual
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
@@ -102,6 +102,21 @@ def login(
     if not usuario.activo:
         raise HTTPException(status_code=403, detail="Usuario inactivo")
 
+    # Si el navegador ya tiene un token de "dispositivo recordado" válido para
+    # este mismo usuario, nos saltamos el código de verificación por email.
+    token_dispositivo = (datos.client_secret or "").strip()
+    if token_dispositivo:
+        datos_dispositivo = decodificar_token(token_dispositivo)
+        if (
+            datos_dispositivo
+            and datos_dispositivo.get("dispositivo") is True
+            and str(datos_dispositivo.get("sub")) == str(usuario.id_usuario)
+        ):
+            usuario.ultimo_acceso = datetime.now(timezone.utc)
+            usuario.cantidad_logins = (usuario.cantidad_logins or 0) + 1
+            db.commit()
+            return _armar_respuesta_login(db, usuario, barberia)
+
     # Si tiene email, exigimos el código de verificación antes de entregar el token.
     if usuario.email:
         import random
@@ -162,7 +177,11 @@ def verificar_codigo(datos: VerificarCodigo, db: Session = Depends(get_db)):
     usuario.cantidad_logins = (usuario.cantidad_logins or 0) + 1
     db.commit()
 
-    return _armar_respuesta_login(db, usuario, barberia)
+    respuesta = _armar_respuesta_login(db, usuario, barberia)
+    respuesta["device_token"] = crear_token_dispositivo(
+        {"sub": str(usuario.id_usuario), "dispositivo": True}
+    )
+    return respuesta
     """
     Login multi-tenant. Requiere el subdominio de la barbería.
     En el formulario OAuth2, el subdominio va en el campo 'client_id'.

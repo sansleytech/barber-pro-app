@@ -178,7 +178,7 @@ function Registro() {
                 <span>Reportes</span>
             </div>
             <div className="inline-flex items-center gap-2 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-sm font-semibold rounded-lg px-4 py-2.5 w-fit">
-                <span className="text-base">🎁</span> 14 días gratis de regalo — sin tarjeta, sin compromiso
+                <span className="text-base">🎁</span> 7 días gratis de regalo — sin tarjeta, sin compromiso
             </div>
         </div>
     );
@@ -196,7 +196,7 @@ function Registro() {
                             <h2 className="text-2xl font-bold text-white mb-2">¡Listo, {completado.nombre_usuario_admin}!</h2>
                             <p className="text-gray-400 mb-2">{completado.mensaje}</p>
                             <p className="text-gray-500 text-sm mb-8">
-                                Tenés 14 días para explorar todo sin apuro. Cuando estés listo, elegís el plan que mejor le quede a tu barbería.
+                                Tenés 7 días para explorar todo sin apuro. Cuando estés listo, elegís el plan que mejor le quede a tu barbería.
                             </p>
                             <div className="bg-neutral-900 border border-white/10 rounded-xl p-5 text-left mb-8">
                                 <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Tu barbería</p>
@@ -226,7 +226,7 @@ function Registro() {
                     <div className="w-full max-w-md">
                         <h2 className="text-3xl font-bold text-white mb-1">Registrá tu barbería</h2>
                         <p className="text-gray-400 mb-8">
-                            {planElegido ? "Un último paso antes de activar tu plan" : "Probá todo gratis por 14 días. Si te enamorás de Barber Pro (va a pasar), elegís tu plan cuando quieras."}
+                            {planElegido ? "Un último paso antes de activar tu plan" : "Probá todo gratis por 7 días. Si te enamorás de Barber Pro (va a pasar), elegís tu plan cuando quieras."}
                         </p>
 
                         <div className="flex items-center mb-8">

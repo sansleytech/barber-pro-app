@@ -14,7 +14,7 @@ from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.models.plan import Plan, Suscripcion, EstadoSuscripcionEnum
 from app.models.pago import Pago
 from app.models.permiso_rol import PermisoRol
-from app.core.security import verificar_password, crear_token, hashear_password
+from app.core.security import verificar_password, crear_token, hashear_password, crear_token_dispositivo
 from app.core.dependencies import requiere_super_admin
 from app.schemas.superadmin import (
     LoginSuperAdmin,

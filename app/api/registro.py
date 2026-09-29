@@ -14,7 +14,7 @@ from app.core.security import hashear_password
 
 router = APIRouter(prefix="/registro", tags=["Registro SaaS"])
 
-DIAS_TRIAL = 14  # duración de la prueba gratuita
+DIAS_TRIAL = 7  # duración de la prueba gratuita
 
 
 @router.post("", response_model=RegistroRespuesta, status_code=201)
@@ -84,7 +84,7 @@ def registrar_barberia(datos: RegistroBarberia, db: Session = Depends(get_db)):
                 <h2>¡Tu barbería ya está lista!</h2>
                 <p>Hola {datos.nombre_admin}, creamos <strong>{barberia.nombre}</strong> con éxito.</p>
                 <p>Tu usuario para ingresar es: <strong>{admin.nombre_usuario}</strong></p>
-                <p>Tenés 14 días de prueba gratis. Para arrancar con el pie derecho:</p>
+                <p>Tenés 7 días de prueba gratis. Para arrancar con el pie derecho:</p>
                 <ol>
                     <li>Cargá tus servicios y precios</li>
                     <li>Agregá a tus barberos</li>
@@ -96,7 +96,7 @@ def registrar_barberia(datos: RegistroBarberia, db: Session = Depends(get_db)):
         )
 
     return RegistroRespuesta(
-        mensaje="Barbería registrada con éxito. Tu prueba gratuita es de 14 días.",
+        mensaje="Barbería registrada con éxito. Tu prueba gratuita es de 7 días de prueba gratis, sin tarjeta.",
         id_barberia=barberia.id_barberia,
         subdominio=barberia.subdominio,
         nombre_usuario_admin=admin.nombre_usuario,
