@@ -20,7 +20,7 @@ from app.models.fuente_pago import FuentePago
 from app.schemas.plan import PlanRespuesta
 from app.schemas.pago import PagoIniciar, PagoRespuesta
 from app.core.dependencies import requiere_rol, get_barberia_actual
-from app.core.wompi_api import crear_fuente_pago, obtener_detalle_tarjeta, consultar_transaccion_por_referencia
+from app.core.wompi_api import crear_fuente_pago, obtener_detalle_tarjeta, consultar_transaccion
 
 router = APIRouter(tags=["Planes y Pagos"])
 
@@ -121,6 +121,7 @@ def iniciar_pago(
     monto_en_centavos = int(plan.precio_mensual * 100)
     moneda = "COP"
 
+    # Firma de integridad: SHA256(referencia + monto_en_centavos + moneda + secreto)
     cadena_firma = f"{referencia}{monto_en_centavos}{moneda}{WOMPI_INTEGRITY_SECRET}"
     firma_integridad = hashlib.sha256(cadena_firma.encode("utf-8")).hexdigest()
 
@@ -135,6 +136,7 @@ def iniciar_pago(
     db.commit()
     db.refresh(nuevo_pago)
 
+    # Datos que el frontend necesita para armar el formulario de checkout de Wompi
     respuesta = PagoRespuesta.model_validate(nuevo_pago).model_dump()
     respuesta["checkout"] = {
         "public_key": WOMPI_PUBLIC_KEY,
@@ -150,13 +152,17 @@ def iniciar_pago(
 @router.get("/pagos/estado/{referencia}", response_model=PagoRespuesta)
 def estado_pago(
     referencia: str,
+    id_transaccion: str | None = None,
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(requiere_rol(RolEnum.administrador)),
     id_barberia: int = Depends(get_barberia_actual),
 ):
-    """Consulta el estado actual de un pago. Si todavía figura 'pendiente',
-    le preguntamos directamente a Wompi por si el webhook nunca llegó — así
-    el sistema no se queda esperando un aviso que puede no llegar nunca."""
+    """Consulta el estado actual de un pago. Si todavía figura 'pendiente' y
+    nos pasaron el id de transacción de Wompi (el que viene en la URL al
+    volver del checkout), le preguntamos directamente a Wompi por si el
+    webhook nunca llegó — así el sistema no se queda esperando un aviso que
+    puede no llegar nunca. Wompi solo permite consultar por id, no por
+    referencia, por eso este dato es imprescindible para el respaldo."""
     pago = (
         db.query(Pago)
         .filter(Pago.referencia == referencia, Pago.id_barberia == id_barberia)
@@ -165,9 +171,9 @@ def estado_pago(
     if pago is None:
         raise HTTPException(status_code=404, detail="Pago no encontrado")
 
-    if pago.estado == EstadoPagoEnum.pendiente:
-        transaccion = consultar_transaccion_por_referencia(referencia)
-        if transaccion:
+    if pago.estado == EstadoPagoEnum.pendiente and id_transaccion:
+        transaccion = consultar_transaccion(id_transaccion)
+        if transaccion and transaccion.get("reference") == referencia:
             _procesar_transaccion(db, pago, transaccion)
 
     return pago
@@ -191,6 +197,8 @@ async def webhook_pago(request: Request, db: Session = Depends(get_db)):
     if not transaccion or not timestamp or not firma_recibida:
         raise HTTPException(status_code=400, detail="Payload de webhook incompleto")
 
+    # Arma la cadena concatenando los valores de las propiedades que Wompi indica,
+    # en el orden que Wompi indica (normalmente id, status, amount_in_cents).
     valores = []
     for prop in propiedades:
         clave = prop.split(".")[-1]
@@ -234,6 +242,7 @@ def guardar_fuente_pago(
     except Exception:
         raise HTTPException(status_code=502, detail="No se pudo registrar la tarjeta con la pasarela de pago")
 
+    # Desactivamos cualquier fuente anterior: solo una tarjeta activa por barbería.
     db.query(FuentePago).filter(FuentePago.id_barberia == id_barberia).update({"activa": False})
 
     nueva = FuentePago(
