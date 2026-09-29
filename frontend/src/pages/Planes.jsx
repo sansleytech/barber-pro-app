@@ -94,6 +94,15 @@ function Planes() {
   return (
     <div className="min-h-screen bg-neutral-950 px-6 py-16">
       <div className="max-w-6xl mx-auto">
+        {usuario && (
+          <button
+            onClick={() => navigate(usuario.rol === "barbero" ? "/mi-dia" : "/dashboard")}
+            className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors mb-8"
+          >
+            ← Volver al panel
+          </button>
+        )}
+
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-3">Elegí tu plan</h1>
           <p className="text-gray-400">Cambiá de plan cuando quieras, sin contratos forzosos.</p>
