@@ -9,18 +9,53 @@ from app.schemas.configuracion import ConfiguracionRespuesta, ConfiguracionActua
 from app.core.dependencies import get_barberia_actual, requiere_rol
 
 router = APIRouter(prefix="/configuracion", tags=["Configuración"])
+class UbicacionActualizar(BaseModel):
+    direccion: str
+    latitud: str
+    longitud: str
 
+
+@router.put("/ubicacion")
+def actualizar_ubicacion(
+    datos: UbicacionActualizar,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(requiere_rol(RolEnum.administrador)),
+):
+    """Actualiza la dirección y coordenadas reales de la barbería (usadas por
+    el mapa del portal propio y el directorio público), y sincroniza el texto
+    'negocio_direccion' que se muestra en el portal, para que la dirección
+    mostrada y el pin del mapa nunca queden desalineados."""
+    barberia = db.query(Barberia).filter(Barberia.id_barberia == usuario.id_barberia).first()
+    if barberia is None:
+        raise HTTPException(status_code=404, detail="Barbería no encontrada")
+
+    barberia.direccion = datos.direccion
+    barberia.latitud = datos.latitud
+    barberia.longitud = datos.longitud
+
+    fila_config = db.query(Configuracion).filter(
+        Configuracion.id_barberia == usuario.id_barberia,
+        Configuracion.clave == "negocio_direccion",
+    ).first()
+    if fila_config is None:
+        fila_config = Configuracion(id_barberia=usuario.id_barberia, clave="negocio_direccion", valor=datos.direccion)
+        db.add(fila_config)
+    else:
+        fila_config.valor = datos.direccion
+
+    db.commit()
+    return {"mensaje": "Ubicación actualizada correctamente"}
 
 @router.get("", response_model=list[ConfiguracionRespuesta])
 def listar_configuracion(db: Session = Depends(get_db),
-                         id_barberia: int = Depends(get_barberia_actual)):
+    id_barberia: int = Depends(get_barberia_actual)):
     """Devuelve la configuración de la barbería."""
     return db.query(Configuracion).filter(Configuracion.id_barberia == id_barberia).all()
 
 
 @router.get("/{clave}", response_model=ConfiguracionRespuesta)
 def obtener_configuracion(clave: str, db: Session = Depends(get_db),
-                          id_barberia: int = Depends(get_barberia_actual)):
+    id_barberia: int = Depends(get_barberia_actual)):
     """Devuelve un ajuste por su clave."""
     item = db.query(Configuracion).filter(
         Configuracion.clave == clave, Configuracion.id_barberia == id_barberia

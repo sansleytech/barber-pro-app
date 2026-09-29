@@ -87,7 +87,7 @@ app.include_router(estadisticas.router)
 app.include_router(solicitudes.router)
 app.include_router(uploads.router)
 app.include_router(pagos.router)
-
+app.include_router(geocodificar.router)
 # Servir las imágenes subidas como archivos estáticos
 os.makedirs("app/uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="app/uploads"), name="uploads")

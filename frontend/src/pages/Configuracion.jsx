@@ -73,6 +73,51 @@ function Configuracion() {
   const { confirmar, avisar } = useUI();
   const navigate = useNavigate();
   const [cancelando, setCancelando] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
+
+  const [busquedaDireccion, setBusquedaDireccion] = useState("");
+  const [resultadosDireccion, setResultadosDireccion] = useState([]);
+  const [buscandoDireccion, setBuscandoDireccion] = useState(false);
+  const [ubicacionConfirmada, setUbicacionConfirmada] = useState(null);
+
+  useEffect(() => {
+    if (usuario?.barberia_direccion)
+      setBusquedaDireccion(usuario.barberia_direccion);
+  }, [usuario]);
+
+  useEffect(() => {
+    if (busquedaDireccion.trim().length < 4 || ubicacionConfirmada) {
+      setResultadosDireccion([]);
+      return;
+    }
+    setBuscandoDireccion(true);
+    const t = setTimeout(() => {
+      api
+        .get(`/geocodificar?q=${encodeURIComponent(busquedaDireccion.trim())}`)
+        .then((r) => setResultadosDireccion(r.data))
+        .catch(() => setResultadosDireccion([]))
+        .finally(() => setBuscandoDireccion(false));
+    }, 500);
+    return () => clearTimeout(t);
+  }, [busquedaDireccion, ubicacionConfirmada]);
+
+  const elegirDireccion = async (resultado) => {
+    setUbicacionConfirmada(resultado);
+    setResultadosDireccion([]);
+    setBusquedaDireccion(resultado.direccion);
+    try {
+      await api.put("/configuracion/ubicacion", {
+        direccion: resultado.direccion,
+        latitud: resultado.latitud,
+        longitud: resultado.longitud,
+      });
+      setValores((v) => ({ ...v, negocio_direccion: resultado.direccion }));
+      setOriginal((o) => ({ ...o, negocio_direccion: resultado.direccion }));
+      avisar("Ubicación guardada correctamente", "exito");
+    } catch {
+      avisar("No se pudo guardar la ubicación", "error");
+    }
+  };
 
   useEffect(() => {
     const cargar = async () => {
@@ -137,7 +182,11 @@ function Configuracion() {
         cambiar("longitud", String(pos.coords.longitude));
         avisar("Ubicación capturada correctamente", "exito");
       },
-      () => avisar("No se pudo obtener tu ubicación. Revisá los permisos del navegador.", "error")
+      () =>
+        avisar(
+          "No se pudo obtener tu ubicación. Revisá los permisos del navegador.",
+          "error",
+        ),
     );
   };
 
@@ -186,13 +235,19 @@ function Configuracion() {
         setCancelando(true);
         try {
           await api.post("/configuracion/cancelar-cuenta");
-          avisar("Tu cuenta fue cancelada. Te mandamos un correo con los detalles.", "info");
+          avisar(
+            "Tu cuenta fue cancelada. Te mandamos un correo con los detalles.",
+            "info",
+          );
           setTimeout(() => {
             logout();
             navigate("/login");
           }, 2000);
         } catch (err) {
-          avisar(err.response?.data?.detail || "No se pudo cancelar la cuenta", "error");
+          avisar(
+            err.response?.data?.detail || "No se pudo cancelar la cuenta",
+            "error",
+          );
           setCancelando(false);
         }
       },
@@ -415,36 +470,50 @@ function Configuracion() {
             </div>
 
             <div className="border-t border-line pt-4">
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm text-gray-300">
-                  Ubicación (para el mapa "Cómo llegar" del portal)
-                </label>
-                <button
-                  type="button"
-                  onClick={usarUbicacionActual}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-gold hover:text-gold-soft transition-colors"
-                >
-                  <MapPin className="w-3.5 h-3.5" /> Usar mi ubicación actual
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="block text-sm text-gray-300 mb-2">
+                Dirección exacta (para el mapa "Cómo llegar" y el directorio
+                público)
+              </label>
+              <div className="relative">
                 <input
                   type="text"
-                  value={valores.latitud ?? ""}
-                  onChange={(e) => cambiar("latitud", e.target.value.replace(/[^0-9.\-]/g, ""))}
-                  placeholder="Latitud (ej: 6.244203)"
+                  value={busquedaDireccion}
+                  onChange={(e) => {
+                    setBusquedaDireccion(e.target.value);
+                    setUbicacionConfirmada(null);
+                  }}
+                  placeholder="Escribí tu dirección (ej: Calle 50 #20-30, Medellín)"
                   className={inputClase}
+                  autoComplete="off"
                 />
-                <input
-                  type="text"
-                  value={valores.longitud ?? ""}
-                  onChange={(e) => cambiar("longitud", e.target.value.replace(/[^0-9.\-]/g, ""))}
-                  placeholder="Longitud (ej: -75.581211)"
-                  className={inputClase}
-                />
+                {resultadosDireccion.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full bg-ink border border-line rounded-lg overflow-hidden shadow-xl">
+                    {resultadosDireccion.map((r, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => elegirDireccion(r)}
+                        className="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-ink-soft transition-colors border-b border-line last:border-0"
+                      >
+                        {r.direccion}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+              {buscandoDireccion && (
+                <p className="text-xs text-gray-500 mt-1.5">Buscando...</p>
+              )}
+              {ubicacionConfirmada && (
+                <p className="text-xs text-emerald-400 mt-1.5 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5" /> Ubicación guardada
+                  correctamente
+                </p>
+              )}
               <p className="text-xs text-gray-500 mt-2">
-                Con esto activado, tu portal público muestra un mapa con la ubicación exacta y un botón "Cómo llegar".
+                Escribí tu dirección y elegí la opción correcta de la lista —
+                calculamos la ubicación exacta sin que necesites saber
+                coordenadas.
               </p>
             </div>
           </div>
@@ -543,9 +612,10 @@ function Configuracion() {
                             href: r.url,
                             target: "_blank",
                             rel: "noreferrer",
-                            className: "text-xs text-gray-500 hover:text-gold truncate block",
+                            className:
+                              "text-xs text-gray-500 hover:text-gold truncate block",
                           },
-                          r.url
+                          r.url,
                         )}
                       </div>
                       <button
@@ -634,20 +704,25 @@ function Configuracion() {
                 <AlertTriangle className="w-5 h-5 text-red-400" />
               </div>
               <div>
-                <h3 className="text-white font-semibold text-lg">Zona de peligro</h3>
+                <h3 className="text-white font-semibold text-lg">
+                  Zona de peligro
+                </h3>
                 <p className="text-gray-400 text-sm mt-1">
-                  Acá podés cancelar tu cuenta. No perdés tus datos — quedan guardados
-                  de forma segura por si en algún momento querés volver.
+                  Acá podés cancelar tu cuenta. No perdés tus datos — quedan
+                  guardados de forma segura por si en algún momento querés
+                  volver.
                 </p>
               </div>
             </div>
 
             <div className="bg-red-500/5 border border-red-500/25 rounded-xl p-5">
-              <h4 className="text-white font-medium mb-1">Cancelar mi cuenta</h4>
+              <h4 className="text-white font-medium mb-1">
+                Cancelar mi cuenta
+              </h4>
               <p className="text-gray-400 text-sm mb-4">
-                Tu barbería quedará congelada de inmediato: nadie (ni vos, ni tu equipo, ni
-                tus clientes desde el portal) va a poder usarla hasta que la reactives
-                contactando soporte.
+                Tu barbería quedará congelada de inmediato: nadie (ni vos, ni tu
+                equipo, ni tus clientes desde el portal) va a poder usarla hasta
+                que la reactives contactando soporte.
               </p>
               <button
                 onClick={cancelarCuenta}

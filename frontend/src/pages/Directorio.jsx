@@ -36,6 +36,7 @@ function Directorio() {
   const [cargando, setCargando] = useState(true);
   const [ubicacionUsuario, setUbicacionUsuario] = useState(null);
   const [errorUbicacion, setErrorUbicacion] = useState("");
+  const [busqueda, setBusqueda] = useState("");
 
   useEffect(() => {
     api.get("/directorio/barberias")
@@ -58,7 +59,14 @@ function Directorio() {
   // Centro del mapa: Colombia en general, o el promedio de las barberías si hay datos.
   const centroDefault = [4.5709, -74.2973]; // Colombia, centrado
 
-  const barberiasConDistancia = barberias
+  const barberiasFiltradas = barberias.filter(
+    (b) =>
+      !busqueda ||
+      b.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+      (b.direccion || "").toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const barberiasConDistancia = barberiasFiltradas
     .map((b) => ({
       ...b,
       distanciaKm: ubicacionUsuario
@@ -88,6 +96,14 @@ function Directorio() {
             </button>
           )}
         </div>
+
+        <input
+          type="text"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar por nombre o dirección..."
+          className="w-full max-w-md bg-neutral-900 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 text-sm outline-none focus:border-yellow-400 transition-colors mb-6"
+        />
 
         {errorUbicacion && (
           <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3 mb-6">
