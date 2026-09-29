@@ -11,7 +11,7 @@ from app.models.usuario import Usuario
 from app.models.barberia import Barberia
 from app.models.plan import Suscripcion
 from app.models.permiso_rol import PermisoRol
-from app.core.security import verificar_password, crear_token, hashear_password, crear_token_dispositivo, hashear_password
+from app.core.security import verificar_password, crear_token, hashear_password, crear_token_dispositivo, decodificar_token
 from app.core.dependencies import get_usuario_actual
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
