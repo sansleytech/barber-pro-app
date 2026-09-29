@@ -27,6 +27,7 @@ import {
   Building2,
   Lock,
   LifeBuoy,
+  Sparkles,
 } from "lucide-react";
 
 // Cada módulo indica qué roles lo pueden ver, y opcionalmente qué función
@@ -190,6 +191,12 @@ const secciones = [
         icono: Building2,
         roles: ["administrador"],
         soloPremium: true,
+      },
+      {
+        a: "/planes",
+        texto: "Planes",
+        icono: Sparkles,
+        roles: ["administrador"],
       },
       {
         a: "/facturacion",
