@@ -78,6 +78,22 @@ def consultar_transaccion(id_transaccion: str) -> dict:
     respuesta.raise_for_status()
     return respuesta.json()["data"]
 
+def consultar_transaccion_por_referencia(referencia: str) -> dict | None:
+    """Busca la transacción más reciente asociada a una referencia. Es el
+    respaldo para cuando el webhook de Wompi nunca llega (o tarda)."""
+    respuesta = requests.get(
+        f"{WOMPI_BASE_URL}/transactions",
+        params={"reference": referencia},
+        headers={"Authorization": f"Bearer {WOMPI_PRIVATE_KEY}"},
+        timeout=15,
+    )
+    if not respuesta.ok:
+        return None
+    datos = respuesta.json().get("data", [])
+    if not datos:
+        return None
+    return datos[0]
+
 
 def obtener_detalle_tarjeta(token_tarjeta: str) -> dict:
     """Consulta los detalles de una tarjeta tokenizada (marca, últimos 4

@@ -3,13 +3,12 @@
 import hashlib
 import os
 import uuid
+from datetime import date, timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
-from datetime import date
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from fastapi import Request
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -17,9 +16,11 @@ from app.models.usuario import Usuario, RolEnum
 from app.models.barberia import Barberia, EstadoBarberiaEnum
 from app.models.plan import Plan, Suscripcion, EstadoSuscripcionEnum
 from app.models.pago import Pago, EstadoPagoEnum
+from app.models.fuente_pago import FuentePago
 from app.schemas.plan import PlanRespuesta
 from app.schemas.pago import PagoIniciar, PagoRespuesta
 from app.core.dependencies import requiere_rol, get_barberia_actual
+from app.core.wompi_api import crear_fuente_pago, obtener_detalle_tarjeta, consultar_transaccion_por_referencia
 
 router = APIRouter(tags=["Planes y Pagos"])
 
@@ -27,6 +28,42 @@ WOMPI_PUBLIC_KEY = os.getenv("WOMPI_PUBLIC_KEY", "")
 WOMPI_INTEGRITY_SECRET = os.getenv("WOMPI_INTEGRITY_SECRET", "")
 WOMPI_EVENTS_SECRET = os.getenv("WOMPI_EVENTS_SECRET", "")
 WOMPI_REDIRECT_URL = os.getenv("WOMPI_REDIRECT_URL", "http://localhost:5173/pago/resultado")
+
+
+def _procesar_transaccion(db: Session, pago: Pago, transaccion: dict):
+    """Aplica el resultado de una transacción de Wompi a un Pago: actualiza
+    su estado y, si fue aprobado, crea la suscripción correspondiente. La
+    usan tanto el webhook como la consulta activa de respaldo, así el
+    comportamiento es siempre el mismo sin importar por qué camino llegó."""
+    estado_wompi = transaccion.get("status")
+    mapa_estados = {
+        "APPROVED": EstadoPagoEnum.aprobado,
+        "DECLINED": EstadoPagoEnum.rechazado,
+        "VOIDED": EstadoPagoEnum.rechazado,
+        "ERROR": EstadoPagoEnum.error,
+    }
+    nuevo_estado = mapa_estados.get(estado_wompi)
+    if nuevo_estado is None or pago.estado == nuevo_estado:
+        return  # sigue pendiente en Wompi, o ya lo habíamos procesado antes
+
+    pago.estado = nuevo_estado
+    pago.id_transaccion_wompi = transaccion.get("id")
+    pago.metodo_pago = transaccion.get("payment_method_type")
+    db.commit()
+
+    if pago.estado == EstadoPagoEnum.aprobado and pago.id_plan and pago.id_suscripcion is None:
+        hoy = date.today()
+        suscripcion = Suscripcion(
+            id_barberia=pago.id_barberia,
+            id_plan=pago.id_plan,
+            estado=EstadoSuscripcionEnum.activa,
+            fecha_inicio=hoy,
+            fecha_fin=hoy + timedelta(days=30),
+        )
+        db.add(suscripcion)
+        db.flush()
+        pago.id_suscripcion = suscripcion.id_suscripcion
+        db.commit()
 
 
 @router.get("/planes", response_model=list[PlanRespuesta])
@@ -84,7 +121,6 @@ def iniciar_pago(
     monto_en_centavos = int(plan.precio_mensual * 100)
     moneda = "COP"
 
-    # Firma de integridad: SHA256(referencia + monto_en_centavos + moneda + secreto)
     cadena_firma = f"{referencia}{monto_en_centavos}{moneda}{WOMPI_INTEGRITY_SECRET}"
     firma_integridad = hashlib.sha256(cadena_firma.encode("utf-8")).hexdigest()
 
@@ -99,7 +135,6 @@ def iniciar_pago(
     db.commit()
     db.refresh(nuevo_pago)
 
-    # Datos que el frontend necesita para armar el formulario de checkout de Wompi
     respuesta = PagoRespuesta.model_validate(nuevo_pago).model_dump()
     respuesta["checkout"] = {
         "public_key": WOMPI_PUBLIC_KEY,
@@ -119,9 +154,9 @@ def estado_pago(
     usuario: Usuario = Depends(requiere_rol(RolEnum.administrador)),
     id_barberia: int = Depends(get_barberia_actual),
 ):
-    """Consulta el estado actual de un pago por su referencia.
-    El frontend usa esto tras volver del checkout, ya que el webhook puede
-    tardar unos segundos en procesarse."""
+    """Consulta el estado actual de un pago. Si todavía figura 'pendiente',
+    le preguntamos directamente a Wompi por si el webhook nunca llegó — así
+    el sistema no se queda esperando un aviso que puede no llegar nunca."""
     pago = (
         db.query(Pago)
         .filter(Pago.referencia == referencia, Pago.id_barberia == id_barberia)
@@ -129,6 +164,12 @@ def estado_pago(
     )
     if pago is None:
         raise HTTPException(status_code=404, detail="Pago no encontrado")
+
+    if pago.estado == EstadoPagoEnum.pendiente:
+        transaccion = consultar_transaccion_por_referencia(referencia)
+        if transaccion:
+            _procesar_transaccion(db, pago, transaccion)
+
     return pago
 
 
@@ -150,8 +191,6 @@ async def webhook_pago(request: Request, db: Session = Depends(get_db)):
     if not transaccion or not timestamp or not firma_recibida:
         raise HTTPException(status_code=400, detail="Payload de webhook incompleto")
 
-    # Arma la cadena concatenando los valores de las propiedades que Wompi indica,
-    # en el orden que Wompi indica (normalmente id, status, amount_in_cents).
     valores = []
     for prop in propiedades:
         clave = prop.split(".")[-1]
@@ -163,44 +202,12 @@ async def webhook_pago(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail="Firma del webhook inválida")
 
     referencia = transaccion.get("reference")
-    estado_wompi = transaccion.get("status")  # APPROVED | DECLINED | VOIDED | ERROR
-    id_transaccion = transaccion.get("id")
-
     pago = db.query(Pago).filter(Pago.referencia == referencia).first()
     if pago is None:
         raise HTTPException(status_code=404, detail="Pago no encontrado")
 
-    mapa_estados = {
-        "APPROVED": EstadoPagoEnum.aprobado,
-        "DECLINED": EstadoPagoEnum.rechazado,
-        "VOIDED": EstadoPagoEnum.rechazado,
-        "ERROR": EstadoPagoEnum.error,
-    }
-    pago.estado = mapa_estados.get(estado_wompi, EstadoPagoEnum.error)
-    pago.id_transaccion_wompi = id_transaccion
-    pago.metodo_pago = transaccion.get("payment_method_type")
-    db.commit()
-
-    if pago.estado == EstadoPagoEnum.aprobado and pago.id_plan:
-        from datetime import timedelta
-        hoy = date.today()
-        suscripcion = Suscripcion(
-            id_barberia=pago.id_barberia,
-            id_plan=pago.id_plan,
-            estado=EstadoSuscripcionEnum.activa,
-            fecha_inicio=hoy,
-            fecha_fin=hoy + timedelta(days=30),
-        )
-        db.add(suscripcion)
-        db.flush()
-        pago.id_suscripcion = suscripcion.id_suscripcion
-        db.commit()
-
+    _procesar_transaccion(db, pago, transaccion)
     return {"mensaje": "Webhook procesado"}
-
-from app.models.fuente_pago import FuentePago
-from app.core.wompi_api import crear_fuente_pago
-from pydantic import BaseModel
 
 
 class TokenizarInput(BaseModel):
@@ -220,8 +227,6 @@ def guardar_fuente_pago(
     if not usuario.email:
         raise HTTPException(status_code=400, detail="Tu usuario necesita un email cargado para guardar la tarjeta")
 
-    from app.core.wompi_api import obtener_detalle_tarjeta
-
     detalle = obtener_detalle_tarjeta(datos.token_tarjeta)
 
     try:
@@ -229,7 +234,6 @@ def guardar_fuente_pago(
     except Exception:
         raise HTTPException(status_code=502, detail="No se pudo registrar la tarjeta con la pasarela de pago")
 
-    # Desactivamos cualquier fuente anterior: solo una tarjeta activa por barbería.
     db.query(FuentePago).filter(FuentePago.id_barberia == id_barberia).update({"activa": False})
 
     nueva = FuentePago(
@@ -265,8 +269,7 @@ def mi_fuente_pago(
         "fecha_creacion": fuente.fecha_creacion,
     }
 
+
 @router.get("/pagos/public-key")
 def obtener_public_key():
     return {"public_key": WOMPI_PUBLIC_KEY}
-
-
