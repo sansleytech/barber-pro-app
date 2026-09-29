@@ -27,7 +27,7 @@ def buscar_direccion(q: str):
                 "format": "json",
                 "addressdetails": 1,
                 "limit": 5,
-                "countrycodes": "co",  # quitá esta línea si operás fuera de Colombia
+                "countrycodes": "co",
             },
             headers=HEADERS,
             timeout=10,
