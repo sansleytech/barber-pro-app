@@ -32,9 +32,11 @@ WOMPI_REDIRECT_URL = os.getenv("WOMPI_REDIRECT_URL", "http://localhost:5173/pago
 
 def _procesar_transaccion(db: Session, pago: Pago, transaccion: dict):
     """Aplica el resultado de una transacción de Wompi a un Pago: actualiza
-    su estado y, si fue aprobado, crea la suscripción correspondiente. La
-    usan tanto el webhook como la consulta activa de respaldo, así el
-    comportamiento es siempre el mismo sin importar por qué camino llegó."""
+    su estado y, si fue aprobado, crea la suscripción correspondiente Y
+    activa la barbería (antes solo se creaba la suscripción, y la barbería
+    se quedaba marcada como 'trial' para siempre aunque ya tuviera un plan
+    pago, lo que hacía que el sistema le siguiera mostrando el aviso de
+    vencimiento del trial)."""
     estado_wompi = transaccion.get("status")
     mapa_estados = {
         "APPROVED": EstadoPagoEnum.aprobado,
@@ -63,6 +65,12 @@ def _procesar_transaccion(db: Session, pago: Pago, transaccion: dict):
         db.add(suscripcion)
         db.flush()
         pago.id_suscripcion = suscripcion.id_suscripcion
+
+        # Activamos la barbería: ya no depende del trial, tiene un plan pago.
+        barberia = db.query(Barberia).filter(Barberia.id_barberia == pago.id_barberia).first()
+        if barberia and barberia.estado != EstadoBarberiaEnum.activa:
+            barberia.estado = EstadoBarberiaEnum.activa
+
         db.commit()
 
 
@@ -85,11 +93,16 @@ def iniciar_pago(
     id_barberia: int = Depends(get_barberia_actual),
 ):
     """Crea un registro de pago pendiente y devuelve los datos para armar el
-    checkout de Wompi (referencia, monto en centavos, firma de integridad)."""
+    checkout de Wompi (referencia, monto en centavos, firma de integridad).
+    Si ya hay un plan pago activo y vigente, no se puede comprar otro hasta
+    que llegue la fecha de corte (antes solo bloqueaba comprar el MISMO
+    plan de nuevo, pero dejaba comprar cualquier otro plan en cualquier
+    momento, lo cual no tiene sentido con una suscripción mensual)."""
     plan = db.query(Plan).filter(Plan.id_plan == datos.id_plan, Plan.activo == True).first()
     if plan is None:
         raise HTTPException(status_code=404, detail="Plan no encontrado")
 
+    hoy = date.today()
     suscripcion_actual = (
         db.query(Suscripcion)
         .filter(Suscripcion.id_barberia == id_barberia)
@@ -99,16 +112,16 @@ def iniciar_pago(
     if (
         suscripcion_actual
         and suscripcion_actual.estado == EstadoSuscripcionEnum.activa
-        and suscripcion_actual.id_plan == plan.id_plan
+        and suscripcion_actual.fecha_fin
+        and suscripcion_actual.fecha_fin >= hoy
     ):
-        fecha_txt = (
-            suscripcion_actual.fecha_fin.strftime("%d/%m/%Y")
-            if suscripcion_actual.fecha_fin
-            else "sin vencimiento"
-        )
+        fecha_txt = suscripcion_actual.fecha_fin.strftime("%d/%m/%Y")
         raise HTTPException(
             status_code=409,
-            detail=f"Ya tenés el plan {plan.nombre} activo (vence el {fecha_txt}). No hace falta pagarlo de nuevo.",
+            detail=(
+                f"Ya tenés el plan {suscripcion_actual.plan.nombre if suscripcion_actual.plan else ''} activo, "
+                f"vigente hasta el {fecha_txt}. Vas a poder cambiar o renovar tu plan a partir de esa fecha."
+            ),
         )
 
     if not WOMPI_PUBLIC_KEY or not WOMPI_INTEGRITY_SECRET:
@@ -136,7 +149,6 @@ def iniciar_pago(
     db.commit()
     db.refresh(nuevo_pago)
 
-    # Datos que el frontend necesita para armar el formulario de checkout de Wompi
     respuesta = PagoRespuesta.model_validate(nuevo_pago).model_dump()
     respuesta["checkout"] = {
         "public_key": WOMPI_PUBLIC_KEY,
@@ -197,8 +209,6 @@ async def webhook_pago(request: Request, db: Session = Depends(get_db)):
     if not transaccion or not timestamp or not firma_recibida:
         raise HTTPException(status_code=400, detail="Payload de webhook incompleto")
 
-    # Arma la cadena concatenando los valores de las propiedades que Wompi indica,
-    # en el orden que Wompi indica (normalmente id, status, amount_in_cents).
     valores = []
     for prop in propiedades:
         clave = prop.split(".")[-1]
@@ -242,7 +252,6 @@ def guardar_fuente_pago(
     except Exception:
         raise HTTPException(status_code=502, detail="No se pudo registrar la tarjeta con la pasarela de pago")
 
-    # Desactivamos cualquier fuente anterior: solo una tarjeta activa por barbería.
     db.query(FuentePago).filter(FuentePago.id_barberia == id_barberia).update({"activa": False})
 
     nueva = FuentePago(
