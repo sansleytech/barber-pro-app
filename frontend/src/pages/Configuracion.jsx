@@ -73,7 +73,6 @@ function Configuracion() {
   const { confirmar, avisar } = useUI();
   const navigate = useNavigate();
   const [cancelando, setCancelando] = useState(false);
-  const [cancelando, setCancelando] = useState(false);
 
   const [busquedaDireccion, setBusquedaDireccion] = useState("");
   const [resultadosDireccion, setResultadosDireccion] = useState([]);
