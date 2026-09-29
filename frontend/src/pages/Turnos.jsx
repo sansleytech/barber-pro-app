@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Lock,
+  X,
 } from "lucide-react";
 import api from "../api/cliente";
 import { useUI } from "../context/UIContext";
@@ -29,6 +30,8 @@ function fechaHoyLocal() {
     String(d.getDate()).padStart(2, "0")
   );
 }
+
+const METODOS_PAGO = ["efectivo", "tarjeta", "transferencia", "nequi"];
 
 function Turnos() {
   const { confirmar, avisar } = useUI();
@@ -48,6 +51,12 @@ function Turnos() {
   // Recibo del turno completado
   const [reciboAbierto, setReciboAbierto] = useState(false);
   const [turnoParaRecibo, setTurnoParaRecibo] = useState(null);
+
+  // Modal de "completar turno" (método de pago + propina)
+  const [modalCompletar, setModalCompletar] = useState(null);
+  const [metodoPagoSel, setMetodoPagoSel] = useState("efectivo");
+  const [propinaMonto, setPropinaMonto] = useState("");
+  const [completando, setCompletando] = useState(false);
 
   const cargarDatos = async () => {
     setCargando(true);
@@ -102,7 +111,9 @@ function Turnos() {
   // Arma los ítems del recibo a partir de los servicios del turno
   const itemsDelTurno = (t) => {
     if (!t.servicios || t.servicios.length === 0) {
-      return [{ nombre: "Servicio", cantidad: 1, subtotal: t.precio_total || 0 }];
+      return [
+        { nombre: "Servicio", cantidad: 1, subtotal: t.precio_total || 0 },
+      ];
     }
     return t.servicios.map((item) => {
       const s = servicios.find((x) => x.id_servicio === item.id_servicio);
@@ -114,48 +125,76 @@ function Turnos() {
     });
   };
 
-  // Ejecuta el cambio de estado real (backend + recibo si corresponde)
+  // Cambios de estado que NO son "completado": no necesitan método de pago ni propina.
   const aplicarCambioEstado = async (turno, nuevoEstado) => {
     try {
-      await api.patch(`/turnos/${turno.id_turno}/estado`, { estado: nuevoEstado });
-
-      if (nuevoEstado === "completado") {
-        const cliente = clienteCompleto(turno.id_cliente);
-        setTurnoParaRecibo({
-          numero: turno.id_turno,
-          fecha: `${turno.fecha}T${turno.hora_inicio || "00:00:00"}`,
-          cliente: cliente
-            ? { nombre: `${cliente.primer_nombre} ${cliente.apellidos}`, documento: cliente.documento }
-            : null,
-          atendioPor: { nombre: nombreBarbero(turno.id_barbero), rol: "Barbero" },
-          items: itemsDelTurno(turno),
-          subtotal: turno.precio_total,
-          iva: 0,
-          total: turno.precio_total,
-          metodoPago: turno.metodo_pago,
-        });
-        setReciboAbierto(true);
-      }
-
+      await api.patch(`/turnos/${turno.id_turno}/estado`, {
+        estado: nuevoEstado,
+      });
       cargarDatos();
     } catch (err) {
-      avisar(err.response?.data?.detail || "No se pudo cambiar el estado", "error");
+      avisar(
+        err.response?.data?.detail || "No se pudo cambiar el estado",
+        "error",
+      );
     }
   };
 
-  // Punto de entrada del <select>: si es "completado", pide confirmación
-  // primero, porque es un cambio irreversible (el turno queda bloqueado).
+  // Punto de entrada del <select>: si es "completado", abrimos el modal de
+  // pago (método + propina) en vez de completar directo.
   const cambiarEstado = (turno, nuevoEstado) => {
     if (nuevoEstado === "completado") {
-      confirmar({
-        titulo: "Completar turno",
-        mensaje: "¿Seguro que querés marcar este turno como completado? Después no vas a poder cambiar su estado.",
-        textoConfirmar: "Sí, completar",
-        onConfirmar: () => aplicarCambioEstado(turno, nuevoEstado),
-      });
+      setMetodoPagoSel("efectivo");
+      setPropinaMonto("");
+      setModalCompletar(turno);
       return;
     }
     aplicarCambioEstado(turno, nuevoEstado);
+  };
+
+  // Confirma el turno con método de pago + propina, todo en un solo pedido,
+  // y ya queda reflejado en Caja sin tener que cargarlo ahí a mano.
+  const confirmarCompletar = async () => {
+    const turno = modalCompletar;
+    if (!turno) return;
+    setCompletando(true);
+    const propinaNum = Number(propinaMonto) || 0;
+    try {
+      await api.patch(`/turnos/${turno.id_turno}/estado`, {
+        estado: "completado",
+        metodo_pago: metodoPagoSel,
+        propina: propinaNum,
+        id_barbero_propina: turno.id_barbero,
+      });
+
+      const cliente = clienteCompleto(turno.id_cliente);
+      setTurnoParaRecibo({
+        numero: turno.id_turno,
+        fecha: `${turno.fecha}T${turno.hora_inicio || "00:00:00"}`,
+        cliente: cliente
+          ? {
+              nombre: `${cliente.primer_nombre} ${cliente.apellidos}`,
+              documento: cliente.documento,
+            }
+          : null,
+        atendioPor: { nombre: nombreBarbero(turno.id_barbero), rol: "Barbero" },
+        items: itemsDelTurno(turno),
+        subtotal: turno.precio_total,
+        iva: 0,
+        total: turno.precio_total,
+        metodoPago: metodoPagoSel,
+      });
+      setReciboAbierto(true);
+      setModalCompletar(null);
+      cargarDatos();
+    } catch (err) {
+      avisar(
+        err.response?.data?.detail || "No se pudo completar el turno",
+        "error",
+      );
+    } finally {
+      setCompletando(false);
+    }
   };
 
   const eliminarTurno = (idTurno) => {
@@ -169,7 +208,10 @@ function Turnos() {
           cargarDatos();
           avisar("Turno cancelado correctamente", "exito");
         } catch (err) {
-          avisar(err.response?.data?.detail || "No se pudo cancelar el turno", "error");
+          avisar(
+            err.response?.data?.detail || "No se pudo cancelar el turno",
+            "error",
+          );
         }
       },
     });
@@ -230,7 +272,6 @@ function Turnos() {
       currency: "COP",
       minimumFractionDigits: 0,
     }).format(valor || 0);
-
 
   const formatoHora = (hora) => {
     if (!hora) return "—";
@@ -413,7 +454,10 @@ function Turnos() {
           <ChevronRight className="w-4 h-4" />
         </button>
         <button
-          onClick={() => { setVerTodos(false); setFecha(fechaHoyLocal()); }}
+          onClick={() => {
+            setVerTodos(false);
+            setFecha(fechaHoyLocal());
+          }}
           className="px-4 py-2 rounded-full text-xs font-semibold bg-ink border border-line text-gray-300 hover:text-white hover:border-gold/40 transition-colors"
         >
           Hoy
@@ -421,10 +465,11 @@ function Turnos() {
         <div className="w-px h-6 bg-line mx-1" />
         <button
           onClick={() => setVerTodos((v) => !v)}
-          className={`px-4 py-2 rounded-full text-xs font-semibold transition-colors ${verTodos
+          className={`px-4 py-2 rounded-full text-xs font-semibold transition-colors ${
+            verTodos
               ? "bg-gold text-ink"
               : "bg-ink border border-line text-gray-300 hover:text-white"
-            }`}
+          }`}
         >
           Ver todos
         </button>
@@ -435,10 +480,11 @@ function Turnos() {
           <button
             key={e}
             onClick={() => setEstadoFiltro(e)}
-            className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${estadoFiltro === e
+            className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              estadoFiltro === e
                 ? "bg-gold text-ink"
                 : "bg-ink-card border border-line text-gray-300 hover:text-white"
-              }`}
+            }`}
           >
             {e === "todos" ? "Todos" : textoEstado(e)}
           </button>
@@ -470,7 +516,9 @@ function Turnos() {
           datos={filtrados}
           vacioTexto={
             verTodos
-              ? (busqueda || estadoFiltro !== "todos" ? "No se encontraron turnos" : "Todavía no hay turnos")
+              ? busqueda || estadoFiltro !== "todos"
+                ? "No se encontraron turnos"
+                : "Todavía no hay turnos"
               : `No hay turnos para el ${fecha}`
           }
         />
@@ -498,6 +546,72 @@ function Turnos() {
             logo_url: usuario?.barberia_logo,
           }}
         />
+      )}
+
+      {/* Modal: completar turno con método de pago + propina */}
+      {modalCompletar && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+          onClick={() => setModalCompletar(null)}
+        >
+          <div
+            className="bg-ink-card border border-line rounded-2xl w-full max-w-sm shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-line">
+              <h3 className="text-white font-semibold">Completar turno</h3>
+              <button
+                onClick={() => setModalCompletar(null)}
+                className="text-gray-500 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">
+                  Método de pago
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {METODOS_PAGO.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setMetodoPagoSel(m)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium capitalize border transition-colors ${
+                        metodoPagoSel === m
+                          ? "bg-gold text-ink border-gold"
+                          : "bg-ink border-line text-gray-300 hover:text-white"
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">
+                  Propina (opcional)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={propinaMonto}
+                  onChange={(e) => setPropinaMonto(e.target.value)}
+                  placeholder="0"
+                  className="w-full bg-ink border border-line rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-gold"
+                />
+              </div>
+              <button
+                onClick={confirmarCompletar}
+                disabled={completando}
+                className="w-full bg-gold text-ink font-semibold rounded-lg py-3 hover:bg-gold-soft transition-colors disabled:opacity-50"
+              >
+                {completando ? "Completando..." : "Completar turno"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
