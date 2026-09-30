@@ -115,65 +115,58 @@ const Login = () => {
   };
 
   const claseInput = (valor, campo) =>
-    `w-full bg-ink-card border rounded-xl pl-12 pr-4 py-4 text-white text-base placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all ${tocado[campo] && !valor
+    `w-full bg-black/40 border rounded-xl pl-12 pr-4 py-3.5 text-white text-base placeholder-gray-600 outline-none transition-all duration-300 ${tocado[campo] && !valor
       ? "border-red-500/50"
-      : "border-line focus:border-gold"
+      : "border-white/10 focus:border-gold/60 focus:bg-black/60"
     }`;
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-ink">
-      {/* Panel de marca */}
-      <div className="md:w-1/2 relative overflow-hidden flex items-center justify-center p-8 md:p-16 min-h-[40vh] md:min-h-screen">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-30"
-          style={{ backgroundImage: "" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-ink/90 via-ink/70 to-ink" />
-        <div
-          className="absolute inset-0 opacity-30"
-          style={{
-            background:
-              "radial-gradient(circle at 30% 40%, rgba(212,175,55,0.5), transparent 55%)",
-          }}
-        />
-        <div className="relative z-10 text-center md:text-left max-w-md animate-fade-in-up">
-          <img src={logo} alt="Barber Pro" className="w-20 h-20 rounded-2xl object-cover mb-8 shadow-lg shadow-gold/20" />
+    <div className="min-h-screen bg-[#050505] relative flex items-center justify-center px-4 py-10 overflow-hidden">
+      {/* Fondo: degradé sutil + una sola luz difusa arriba, quieta, discreta */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 800px 500px at 50% -10%, rgba(212,175,55,0.12), transparent 60%)",
+        }}
+      />
+      <div className="absolute inset-0 bg-[#050505]" style={{ maskImage: "radial-gradient(ellipse 800px 500px at 50% -10%, transparent 20%, black 70%)" }} />
+      <div
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+        }}
+      />
 
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-            Barber <span className="text-gold">Pro</span>
-          </h1>
-          <p className="text-gray-300 text-lg md:text-xl leading-relaxed">
-            Gestioná tu barbería de punta a punta: turnos, clientes, inventario
-            y caja en un solo lugar.
-          </p>
-          <div className="mt-10 flex items-center justify-center md:justify-start gap-4 text-sm text-gray-400">
-            <span>Turnos</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-gold" />
-            <span>Inventario</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-gold" />
-            <span>Reportes</span>
+      <Link
+        to="/"
+        className="absolute top-6 left-6 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gold transition-colors z-10"
+      >
+        <ArrowLeft className="w-4 h-4" /> Volver al inicio
+      </Link>
+
+      {/* Tarjeta única, centrada */}
+      <div className="relative z-10 w-full max-w-[420px] animate-fade-in-up">
+        <div className="bg-[#0d0d0f] border border-white/10 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.6)] p-8">
+          {/* Logo + marca, compacto arriba */}
+          <div className="flex flex-col items-center text-center mb-7">
+            <img src={logo} alt="Barber Pro" className="w-14 h-14 object-contain mb-3" />
+            <h1 className="text-xl font-bold text-white tracking-tight">
+              Barber <span className="text-gold">Pro</span>
+            </h1>
           </div>
-        </div>
-      </div>
-
-      {/* Panel del formulario */}
-      <div className="md:w-1/2 flex items-center justify-center p-8 md:p-16">
-        <div className="w-full max-w-md animate-fade-in delay-200">
-          <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gold transition-colors mb-6">
-            <ArrowLeft className="w-4 h-4" /> Volver al inicio
-          </Link>
 
           {paso === "credenciales" ? (
             <>
-              <div className="mb-8">
-                <h2 className="text-4xl font-bold text-white mb-3">Bienvenido</h2>
-                <p className="text-gray-400 text-lg">
-                  Ingresá a tu cuenta para continuar
-                </p>
+              <div className="mb-6 text-center">
+                <h2 className="text-2xl font-bold text-white mb-1">Bienvenido de nuevo</h2>
+                <p className="text-gray-500 text-sm">Ingresá a tu cuenta para continuar</p>
               </div>
 
               {/* Selector de rol */}
-              <div className="flex gap-1.5 p-1.5 bg-ink-card border border-line rounded-xl mb-8">
+              <div className="flex gap-1 p-1 bg-black/40 border border-white/10 rounded-lg mb-6">
                 {ROLES.map((r) => {
                   const Icono = r.icono;
                   const activo = rolSeleccionado === r.valor;
@@ -182,30 +175,30 @@ const Login = () => {
                       key={r.valor}
                       type="button"
                       onClick={() => { setRolSeleccionado(r.valor); setError(""); }}
-                      className={`flex-1 inline-flex flex-col items-center justify-center gap-1 py-2.5 rounded-lg text-xs font-semibold transition-colors ${
-                        activo ? "bg-gold text-ink" : "text-gray-400 hover:text-white"
+                      className={`flex-1 inline-flex flex-col items-center justify-center gap-1 py-2 rounded-md text-[0.68rem] font-semibold transition-colors ${
+                        activo ? "bg-gold text-ink" : "text-gray-500 hover:text-white"
                       }`}
                     >
-                      <Icono className="w-4 h-4" />
+                      <Icono className="w-3.5 h-3.5" />
                       {r.label}
                     </button>
                   );
                 })}
               </div>
 
-              <form onSubmit={manejarSubmit} className="space-y-5" noValidate>
+              <form onSubmit={manejarSubmit} className="space-y-4" noValidate>
                 {error && (
-                  <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl px-4 py-3 animate-fade-in">
+                  <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-3.5 py-2.5">
                     {error}
                   </div>
                 )}
 
-                <div className="animate-fade-in-up delay-100">
-                  <label className="block text-sm text-gray-300 mb-2 font-medium">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1.5 font-medium">
                     Barbería (subdominio)
                   </label>
                   <div className="relative">
-                    <Store className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <Store className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
                     <input
                       type="text"
                       value={subdominio}
@@ -216,16 +209,16 @@ const Login = () => {
                     />
                   </div>
                   {tocado.subdominio && !subdominio && (
-                    <p className="text-red-400 text-xs mt-1.5">Este campo es obligatorio</p>
+                    <p className="text-red-400 text-xs mt-1">Este campo es obligatorio</p>
                   )}
                 </div>
 
-                <div className="animate-fade-in-up delay-200">
-                  <label className="block text-sm text-gray-300 mb-2 font-medium">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1.5 font-medium">
                     Usuario
                   </label>
                   <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
                     <input
                       type="text"
                       value={usuario}
@@ -236,136 +229,111 @@ const Login = () => {
                     />
                   </div>
                   {tocado.usuario && !usuario && (
-                    <p className="text-red-400 text-xs mt-1.5">Este campo es obligatorio</p>
+                    <p className="text-red-400 text-xs mt-1">Este campo es obligatorio</p>
                   )}
                 </div>
 
-                <div className="animate-fade-in-up delay-300">
-                  <label className="block text-sm text-gray-300 mb-2 font-medium">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1.5 font-medium">
                     Contraseña
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
                     <input
                       type={verPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       onBlur={() => marcarTocado("password")}
                       placeholder="••••••••"
-                      className={claseInput(password, "password") + " pr-12"}
+                      className={claseInput(password, "password") + " pr-11"}
                     />
                     <button
                       type="button"
                       onClick={() => setVerPassword((v) => !v)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gold transition-colors"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gold transition-colors"
                     >
-                      {verPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {verPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                   {tocado.password && !password && (
-                    <p className="text-red-400 text-xs mt-1.5">Este campo es obligatorio</p>
+                    <p className="text-red-400 text-xs mt-1">Este campo es obligatorio</p>
                   )}
                 </div>
 
                 <button
                   type="submit"
                   disabled={cargando}
-                  className="w-full bg-gold text-ink font-semibold rounded-xl py-4 text-base hover:bg-gold-soft hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  className="w-full bg-gold text-ink font-semibold rounded-lg py-3 text-sm hover:bg-gold-soft transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                 >
                   {cargando ? "Entrando..." : "Entrar"}
                 </button>
               </form>
 
-              <p className="text-center text-gray-500 text-sm mt-4">
+              <p className="text-center text-gray-500 text-xs mt-4">
                 <Link to="/olvide-password" className="text-gold hover:underline">¿Olvidaste tu contraseña?</Link>
-              </p>
-
-              <p className="text-center text-gray-500 text-sm mt-10">
-                ¿No tenés cuenta?{" "}
-                <button
-                  type="button"
-                  onClick={() => navigate("/register")}
-                  className="text-gold font-medium hover:underline cursor-pointer"
-                >
-                  Registrá tu barbería
-                </button>
-              </p>
-
-              <p className="text-center text-gray-600 text-xs mt-4">
-                ¿Sos parte del equipo de soporte?{" "}
-                <button
-                  type="button"
-                  onClick={() => navigate("/superadmin/login")}
-                  className="text-gray-500 hover:text-gold hover:underline cursor-pointer"
-                >
-                  Ingresá acá
-                </button>
               </p>
             </>
           ) : (
             <>
-              <div className="mb-8">
-                <div className="w-14 h-14 rounded-2xl bg-gold/10 flex items-center justify-center mb-5">
-                  <Mail className="w-7 h-7 text-gold" />
+              <div className="mb-6 text-center">
+                <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center mx-auto mb-4">
+                  <Mail className="w-6 h-6 text-gold" />
                 </div>
-                <h2 className="text-3xl font-bold text-white mb-3">Revisá tu correo</h2>
-                <p className="text-gray-400">
-                  Te mandamos un código de 6 dígitos. Ingresalo para completar el ingreso.
+                <h2 className="text-xl font-bold text-white mb-1">Revisá tu correo</h2>
+                <p className="text-gray-500 text-sm">
+                  Te mandamos un código de 6 dígitos.
                 </p>
               </div>
 
-              <form onSubmit={manejarVerificarCodigo} className="space-y-5" noValidate>
+              <form onSubmit={manejarVerificarCodigo} className="space-y-4" noValidate>
                 {error && (
-                  <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl px-4 py-3 animate-fade-in">
+                  <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-3.5 py-2.5">
                     {error}
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-sm text-gray-300 mb-3 font-medium">Código de verificación</label>
-                  <div className="flex gap-2 sm:gap-3 justify-center" onPaste={(e) => {
-                    e.preventDefault();
-                    const pegado = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 6);
-                    if (pegado) {
-                      setCodigo(pegado);
-                      const ultimo = document.getElementById(`codigo-${Math.min(pegado.length, 5)}`);
-                      if (ultimo) ultimo.focus();
-                    }
-                  }}>
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
-                      <input
-                        key={i}
-                        id={`codigo-${i}`}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={1}
-                        autoFocus={i === 0}
-                        value={codigo[i] || ""}
-                        onChange={(e) => {
-                          const digito = e.target.value.replace(/[^0-9]/g, "").slice(-1);
-                          const nuevo = codigo.split("");
-                          nuevo[i] = digito;
-                          const nuevoCodigo = nuevo.join("").slice(0, 6);
-                          setCodigo(nuevoCodigo);
-                          if (digito && i < 5) {
-                            document.getElementById(`codigo-${i + 1}`)?.focus();
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Backspace" && !codigo[i] && i > 0) {
-                            document.getElementById(`codigo-${i - 1}`)?.focus();
-                          }
-                        }}
-                        className="w-11 h-14 sm:w-12 sm:h-16 bg-ink-card border border-line rounded-xl text-white text-2xl font-semibold text-center placeholder-gray-700 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition-all"
-                      />
-                    ))}
-                  </div>
+                <div className="flex gap-1.5 sm:gap-2 justify-center" onPaste={(e) => {
+                  e.preventDefault();
+                  const pegado = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 6);
+                  if (pegado) {
+                    setCodigo(pegado);
+                    const ultimo = document.getElementById(`codigo-${Math.min(pegado.length, 5)}`);
+                    if (ultimo) ultimo.focus();
+                  }
+                }}>
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <input
+                      key={i}
+                      id={`codigo-${i}`}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      autoFocus={i === 0}
+                      value={codigo[i] || ""}
+                      onChange={(e) => {
+                        const digito = e.target.value.replace(/[^0-9]/g, "").slice(-1);
+                        const nuevo = codigo.split("");
+                        nuevo[i] = digito;
+                        const nuevoCodigo = nuevo.join("").slice(0, 6);
+                        setCodigo(nuevoCodigo);
+                        if (digito && i < 5) {
+                          document.getElementById(`codigo-${i + 1}`)?.focus();
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Backspace" && !codigo[i] && i > 0) {
+                          document.getElementById(`codigo-${i - 1}`)?.focus();
+                        }
+                      }}
+                      className="w-10 h-13 sm:w-11 sm:h-14 bg-black/40 border border-white/10 rounded-lg text-white text-xl font-semibold text-center placeholder-gray-700 outline-none focus:border-gold/60 transition-all"
+                    />
+                  ))}
                 </div>
 
                 <button
                   type="submit"
                   disabled={cargando || codigo.length !== 6}
-                  className="w-full bg-gold text-ink font-semibold rounded-xl py-4 text-base hover:bg-gold-soft transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-gold text-ink font-semibold rounded-lg py-3 text-sm hover:bg-gold-soft transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {cargando ? "Verificando..." : "Confirmar código"}
                 </button>
@@ -373,13 +341,37 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => { setPaso("credenciales"); setCodigo(""); setError(""); }}
-                  className="w-full text-center text-sm text-gray-500 hover:text-gold transition-colors"
+                  className="w-full text-center text-xs text-gray-500 hover:text-gold transition-colors"
                 >
                   ← Volver a ingresar mis datos
                 </button>
               </form>
             </>
           )}
+        </div>
+
+        {/* Enlaces fuera de la tarjeta */}
+        <div className="text-center mt-6 space-y-2">
+          <p className="text-gray-500 text-sm">
+            ¿No tenés cuenta?{" "}
+            <button
+              type="button"
+              onClick={() => navigate("/register")}
+              className="text-gold font-medium hover:underline cursor-pointer"
+            >
+              Registrá tu barbería
+            </button>
+          </p>
+          <p className="text-gray-600 text-xs">
+            ¿Sos parte del equipo de soporte?{" "}
+            <button
+              type="button"
+              onClick={() => navigate("/superadmin/login")}
+              className="text-gray-500 hover:text-gold hover:underline cursor-pointer"
+            >
+              Ingresá acá
+            </button>
+          </p>
         </div>
       </div>
     </div>
